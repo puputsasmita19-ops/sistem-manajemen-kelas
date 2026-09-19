@@ -93,7 +93,7 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleDelete = (user: User) => {
-    if (user.role === 'admin' && (user.id === 'user-admin' || user.email === 'admin@sekolah.id')) {
+    if (user.role === 'admin' && (user.id === 'user-admin' || user.id === 'user_admin1' || user.email === 'admin@sekolah.id' || user.username === 'admin')) {
       Swal.fire({
         icon: 'error',
         title: 'Akun Dilindungi',

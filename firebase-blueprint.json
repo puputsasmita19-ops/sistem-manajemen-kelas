@@ -132,6 +132,27 @@
         "uploaded_by": { "type": "string", "description": "ID pengguna pengunggah" }
       },
       "required": ["id", "student_id", "file_name", "drive_file_id", "uploaded_at"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Pengaturan identitas sekolah, logo, dan running text portal.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID konfigurasi" },
+        "appName": { "type": "string", "description": "Nama aplikasi atau sekolah" },
+        "tagline": { "type": "string", "description": "Tagline atau deskripsi singkat" }
+      },
+      "required": ["appName"]
+    },
+    "HomeroomNote": {
+      "title": "HomeroomNote",
+      "description": "Catatan pembinaan, konseling, dan prestasi wali kelas.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID catatan" },
+        "studentId": { "type": "string", "description": "ID siswa" }
+      },
+      "required": ["id", "studentId"]
     }
   },
   "firestore": {
@@ -166,6 +187,14 @@
     "/student_photos/{photoId}": {
       "schema": "StudentPhoto",
       "description": "Koleksi indeks tautan file foto siswa yang tersimpan di Google Drive."
+    },
+    "/app_settings/{settingId}": {
+      "schema": "AppSettings",
+      "description": "Koleksi pengaturan identitas dan banner aplikasi."
+    },
+    "/homeroom_notes/{noteId}": {
+      "schema": "HomeroomNote",
+      "description": "Koleksi catatan wali kelas dan konseling."
     }
   }
 }

@@ -245,7 +245,7 @@ export default function App() {
 
   // If user is not authenticated, display the dedicated Login Page!
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return <LoginPage onLoginSuccess={handleLoginSuccess} appSettings={appSettings} />;
   }
 
   // Compute stats for Dashboard
@@ -532,6 +532,29 @@ export default function App() {
                 </button>
               )}
 
+              {/* Running Text Login Tab (Admin only) */}
+              {currentUser.role === 'admin' && (
+                <button
+                  id="tab-running-text"
+                  onClick={() => setActiveTab('running_text')}
+                  className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    activeTab === 'running_text'
+                      ? 'bg-amber-600 text-white shadow-sm shadow-amber-500/25'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                  }`}
+                >
+                  <Megaphone className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Running Text</span>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    activeTab === 'running_text'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                  }`}>
+                    Login
+                  </span>
+                </button>
+              )}
+
               {/* Portal Siswa / Orang Tua Tab */}
               {(currentUser.role === 'siswa' || currentUser.role === 'orang_tua') && (
                 <button
@@ -620,7 +643,12 @@ export default function App() {
 
             {/* VIEW: IDENTITAS & LOGO APLIKASI (Khusus Role Admin) */}
             {activeTab === 'app_settings' && currentUser.role === 'admin' && (
-              <AppSettingsManager />
+              <AppSettingsManager initialTab="general" onSettingsSaved={(saved) => setAppSettings(saved)} />
+            )}
+
+            {/* VIEW: EDIT RUNNING TEXT LOGIN (Khusus Role Admin) */}
+            {activeTab === 'running_text' && currentUser.role === 'admin' && (
+              <AppSettingsManager initialTab="running_text" onSettingsSaved={(saved) => setAppSettings(saved)} />
             )}
 
             {/* VIEW: ATTENDANCE MANAGER (Admin, Wali Kelas, Guru) */}

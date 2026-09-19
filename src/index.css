@@ -42,10 +42,25 @@ body {
 .animate-running-text {
   display: inline-flex;
   white-space: nowrap;
-  animation: running-text-marquee 8s linear infinite;
+  animation: running-text-marquee 12s linear infinite;
   will-change: transform;
 }
 
 .animate-running-text:hover {
   animation-play-state: paused;
+}
+
+.animate-running-text-smooth {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: running-text-marquee 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-running-text-smooth:hover {
+  animation-play-state: paused;
+}
+
+.animate-marquee-paused {
+  animation-play-state: paused !important;
 }

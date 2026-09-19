@@ -10,6 +10,13 @@ export interface User {
   no_wa: string;
 }
 
+export interface RunningTextItem {
+  id: string;
+  badge: string; // e.g. "Sapaan", "Pengumuman", "Sekolah", "Akademik", "Presensi", "Motivasi", "Penting"
+  text: string;
+  isActive: boolean;
+}
+
 export interface AppSettings {
   appName: string;
   appDescription: string;
@@ -19,6 +26,9 @@ export interface AppSettings {
   logoImageUrl?: string;
   creatorName?: string; // Nama pembuat aplikasi (ditampilkan di bagian bawah footer)
   adminPhone?: string;  // Nomor WhatsApp admin untuk bantuan lupa kata sandi
+  runningTextSpeed?: number; // Kecepatan putaran detik (default: 28s)
+  runningTextIncludeGreeting?: boolean; // Sertakan sapaan otomatis sesuai waktu
+  runningTextItems?: RunningTextItem[]; // Daftar pesan running text yang dapat diedit admin
 }
 
 export interface ClassEntity {

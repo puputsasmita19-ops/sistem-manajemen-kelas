@@ -6,11 +6,13 @@ import {
   collection,
   doc,
   setDoc,
+  deleteDoc,
   getDocs,
-  writeBatch
+  writeBatch,
+  onSnapshot
 } from 'firebase/firestore';
 import { DatabaseService } from './databaseService';
-import { INITIAL_DATABASE } from '../mockData';
+import { GoogleDriveService } from './googleDriveService';
 
 export interface SyncStatus {
   isConnected: boolean;
@@ -30,6 +32,7 @@ export class FirestoreSyncService {
     error: null
   };
   private listeners: ((status: SyncStatus) => void)[] = [];
+  private activeSubscriptions: (() => void)[] = [];
 
   public static getInstance(): FirestoreSyncService {
     if (!FirestoreSyncService.instance) {
@@ -56,7 +59,7 @@ export class FirestoreSyncService {
   }
 
   /**
-   * Cek koneksi ke Firestore dan lakukan seeding awal data sekolah
+   * Cek koneksi ke Firestore dan lakukan inisialisasi & sinkronisasi data dua arah
    */
   public async initializeAndSeed(): Promise<boolean> {
     try {
@@ -78,12 +81,17 @@ export class FirestoreSyncService {
         await this.pushAllDataToFirestore();
         this.status.isSeeded = true;
       } else {
-        console.log(`Firestore already contains ${snapshot.size} users.`);
+        console.log(`Firestore contains ${snapshot.size} users. Pulling cloud state...`);
         this.status.isSeeded = true;
         this.status.totalSynced = snapshot.size;
+        await this.pullAllDataFromFirestore();
       }
 
+      // Inisialisasi real-time listeners untuk cloud update
+      this.startRealtimeListeners();
+
       this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
+      this.status.error = null;
       this.notify();
       return true;
     } catch (err: any) {
@@ -95,11 +103,142 @@ export class FirestoreSyncService {
   }
 
   /**
-   * Unggah seluruh data awal (Seed Data) ke Firestore
+   * Membaca seluruh data dari cloud Firestore ke memory & local cache
+   */
+  public async pullAllDataFromFirestore(): Promise<void> {
+    try {
+      const dbService = DatabaseService.getInstance();
+      const current = dbService.getRawSnapshot();
+
+      // 1. Users
+      const usersSnap = await getDocs(collection(firestore, 'users'));
+      if (!usersSnap.empty) {
+        usersSnap.forEach(d => {
+          const u = d.data();
+          if (u.id) current.users[u.id] = u as any;
+        });
+      }
+
+      // 2. Classes
+      const classesSnap = await getDocs(collection(firestore, 'classes'));
+      if (!classesSnap.empty) {
+        classesSnap.forEach(d => {
+          const c = d.data();
+          if (c.id) current.classes[c.id] = c as any;
+        });
+      }
+
+      // 3. Subjects
+      const subjectsSnap = await getDocs(collection(firestore, 'subjects'));
+      if (!subjectsSnap.empty) {
+        subjectsSnap.forEach(d => {
+          const s = d.data();
+          if (s.id) current.subjects[s.id] = s as any;
+        });
+      }
+
+      // 4. Class Members
+      const cmSnap = await getDocs(collection(firestore, 'class_members'));
+      if (!cmSnap.empty) {
+        cmSnap.forEach(d => {
+          const cm = d.data();
+          if (cm.id) current.class_members[cm.id] = cm as any;
+        });
+      }
+
+      // 5. Attendance
+      const attSnap = await getDocs(collection(firestore, 'attendance'));
+      if (!attSnap.empty) {
+        attSnap.forEach(d => {
+          const a = d.data();
+          if (a.id) current.attendance[a.id] = a as any;
+        });
+      }
+
+      // 6. Grades
+      const grdSnap = await getDocs(collection(firestore, 'grades'));
+      if (!grdSnap.empty) {
+        grdSnap.forEach(d => {
+          const g = d.data();
+          if (g.id) current.grades[g.id] = g as any;
+        });
+      }
+
+      // 7. Announcements
+      const annSnap = await getDocs(collection(firestore, 'announcements'));
+      if (!annSnap.empty) {
+        if (!current.announcements) current.announcements = {};
+        annSnap.forEach(d => {
+          const ann = d.data();
+          if (ann.id) current.announcements[ann.id] = ann as any;
+        });
+      }
+
+      // 8. App Settings
+      const settingsSnap = await getDocs(collection(firestore, 'app_settings'));
+      if (!settingsSnap.empty) {
+        settingsSnap.forEach(d => {
+          const st = d.data();
+          if (st) current.app_settings = st as any;
+        });
+      }
+
+      // Simpan pembaruan ke local storage
+      localStorage.setItem('SIMAK_FIREBASE_RTDB_SIMULATION', JSON.stringify(current));
+    } catch (e) {
+      console.warn('Pull all data from Firestore exception:', e);
+    }
+  }
+
+  /**
+   * Menjalankan listener waktu nyata (real-time onSnapshot) pada koleksi penting
+   */
+  private startRealtimeListeners() {
+    this.activeSubscriptions.forEach(unsub => unsub());
+    this.activeSubscriptions = [];
+
+    try {
+      // Listener App Settings
+      const unsubSettings = onSnapshot(collection(firestore, 'app_settings'), (snap) => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data();
+            if (data && data.appName) {
+              const dbService = DatabaseService.getInstance();
+              dbService.updateAppSettings(data as any);
+            }
+          }
+        });
+      }, (err) => console.warn('AppSettings realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubSettings);
+
+      // Listener Announcements
+      const unsubAnn = onSnapshot(collection(firestore, 'announcements'), (snap) => {
+        snap.docChanges().forEach(change => {
+          const dbService = DatabaseService.getInstance();
+          const raw = dbService.getRawSnapshot();
+          if (!raw.announcements) raw.announcements = {};
+          if (change.type === 'added' || change.type === 'modified') {
+            const item = change.doc.data();
+            if (item.id) raw.announcements[item.id] = item as any;
+          } else if (change.type === 'removed') {
+            delete raw.announcements[change.doc.id];
+          }
+        });
+      }, (err) => console.warn('Announcements realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubAnn);
+    } catch (err) {
+      console.warn('Realtime listeners start error:', err);
+    }
+  }
+
+  /**
+   * Unggah seluruh data awal (Seed Data) ke Firestore secara sistematis
    */
   public async pushAllDataToFirestore(): Promise<number> {
     const dbService = DatabaseService.getInstance();
     const snapshot = dbService.getRawSnapshot();
+    const driveService = GoogleDriveService.getInstance();
 
     const batch = writeBatch(firestore);
     let count = 0;
@@ -155,6 +294,21 @@ export class FirestoreSyncService {
       });
     }
 
+    // 8. App Settings
+    if (snapshot.app_settings) {
+      const ref = doc(firestore, 'app_settings', 'global_config');
+      batch.set(ref, snapshot.app_settings, { merge: true });
+      count++;
+    }
+
+    // 9. Google Drive Student Photos
+    const photos = driveService.getAllPhotoRecords();
+    photos.forEach(photo => {
+      const ref = doc(firestore, 'student_photos', photo.id);
+      batch.set(ref, photo, { merge: true });
+      count++;
+    });
+
     await batch.commit();
 
     this.status.totalSynced = count;
@@ -166,7 +320,7 @@ export class FirestoreSyncService {
   }
 
   /**
-   * Simpan atau update dokumen secara individual ke Firestore
+   * Simpan atau perbarui dokumen secara individual ke Firestore
    */
   public async syncDocument(collectionName: string, id: string, data: any): Promise<void> {
     try {
@@ -176,6 +330,38 @@ export class FirestoreSyncService {
       this.notify();
     } catch (err) {
       console.warn(`Background sync failed for ${collectionName}/${id}:`, err);
+    }
+  }
+
+  /**
+   * Hapus dokumen dari Firestore
+   */
+  public async deleteDocument(collectionName: string, id: string): Promise<void> {
+    try {
+      const ref = doc(firestore, collectionName, id);
+      await deleteDoc(ref);
+      this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
+      this.notify();
+    } catch (err) {
+      console.warn(`Background delete failed for ${collectionName}/${id}:`, err);
+    }
+  }
+
+  /**
+   * Simpan sekumpulan dokumen (Batch) ke Firestore
+   */
+  public async syncBatchDocuments(collectionName: string, items: Array<{ id: string; data: any }>): Promise<void> {
+    try {
+      const batch = writeBatch(firestore);
+      items.forEach(item => {
+        const ref = doc(firestore, collectionName, item.id);
+        batch.set(ref, item.data, { merge: true });
+      });
+      await batch.commit();
+      this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
+      this.notify();
+    } catch (err) {
+      console.warn(`Batch sync failed for ${collectionName}:`, err);
     }
   }
 }

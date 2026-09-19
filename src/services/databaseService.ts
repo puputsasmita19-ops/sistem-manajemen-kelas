@@ -1,5 +1,6 @@
 import { INITIAL_DATABASE } from '../mockData';
-import { DatabaseSnapshot, User, ClassEntity, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings } from '../types';
+import { DatabaseSnapshot, User, ClassEntity, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem } from '../types';
+import { FirestoreSyncService } from './firestoreSyncService';
 import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
 
@@ -29,7 +30,7 @@ export class DatabaseService {
             this.db.app_settings.adminPhone = '0812-3456-7890';
           }
         }
-        // Ensure all users have a username
+        // Ensure all users have a username and default credentials
         Object.values(this.db.users).forEach(u => {
           if (!u.username) {
             if (u.role === 'admin') u.username = 'admin';
@@ -37,7 +38,26 @@ export class DatabaseService {
             else if (u.role === 'guru') u.username = 'guru';
             else if (u.role === 'siswa') u.username = 'siswa';
             else if (u.role === 'orang_tua') u.username = 'ortu';
-            else u.username = u.email.split('@')[0];
+            else u.username = u.email ? u.email.split('@')[0] : 'user';
+          }
+        });
+
+        // Guarantee default core role accounts exist with exact default credentials
+        const defaultRoleUsers = [
+          { id: 'user_admin1', role: 'admin', username: 'admin', password_hash: 'admin123', nama: 'Bambang Wijaya, M.Kom', email: 'admin@sekolah.id', no_wa: '081234567890' },
+          { id: 'user_wk1', role: 'wali_kelas', username: 'walikelas', password_hash: 'wali123', nama: 'Budi Santoso, S.Pd', email: 'budi.santoso@sekolah.id', no_wa: '081234567891' },
+          { id: 'user_guru1', role: 'guru', username: 'guru', password_hash: 'guru123', nama: 'Siti Rahmawati, M.Pd', email: 'siti.rahma@sekolah.id', no_wa: '081234567892' },
+          { id: 'user_std1', role: 'siswa', username: 'siswa', password_hash: 'siswa123', nama: 'Ahmad Rizky Pratama', email: 'ahmad.rizky@siswa.sekolah.id', no_wa: '082198765431' },
+          { id: 'user_par1', role: 'orang_tua', username: 'ortu', password_hash: 'ortu123', nama: 'Hendra Pratama (Ayah Ahmad)', email: 'hendra.pratama@gmail.com', no_wa: '081399887766' }
+        ];
+
+        defaultRoleUsers.forEach(defUser => {
+          if (!this.db.users[defUser.id]) {
+            this.db.users[defUser.id] = { ...defUser as User };
+          } else {
+            // Synchronize default username & password_hash if not set or corrupted
+            if (!this.db.users[defUser.id].username) this.db.users[defUser.id].username = defUser.username;
+            if (!this.db.users[defUser.id].password_hash) this.db.users[defUser.id].password_hash = defUser.password_hash;
           }
         });
         this.persist();
@@ -48,6 +68,28 @@ export class DatabaseService {
     } else {
       this.db = JSON.parse(JSON.stringify(INITIAL_DATABASE));
       this.persist();
+    }
+
+    // Cross-tab and window synchronization
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEY && e.newValue) {
+          try {
+            this.db = JSON.parse(e.newValue);
+            if (this.db.app_settings) {
+              this.settingsListeners.forEach(l => {
+                try {
+                  l(this.db.app_settings!);
+                } catch (err) {
+                  console.error('Error notifying settings listener from storage event', err);
+                }
+              });
+            }
+          } catch (err) {
+            console.error('Error parsing updated DB from storage event', err);
+          }
+        }
+      });
     }
   }
 
@@ -71,8 +113,41 @@ export class DatabaseService {
     return this.db;
   }
 
-  // --- APP SETTINGS (Identitas & Logo) ---
+  // --- APP SETTINGS (Identitas, Logo & Running Text) ---
   public getAppSettings(): AppSettings {
+    const defaultRunningItems: RunningTextItem[] = [
+      {
+        id: 'rt_1',
+        badge: 'Sapaan',
+        text: 'Tetap produktif mengawal aktivitas belajar mengajar hari ini.',
+        isActive: true
+      },
+      {
+        id: 'rt_2',
+        badge: 'Sekolah',
+        text: 'Selamat Datang di Portal Resmi Sistem Informasi Manajemen Sekolah',
+        isActive: true
+      },
+      {
+        id: 'rt_3',
+        badge: 'Akademik',
+        text: 'Tahun Ajaran 2024/2025 • Semester Aktif',
+        isActive: true
+      },
+      {
+        id: 'rt_4',
+        badge: 'Presensi',
+        text: 'Wajib lapor kehadiran harian & rekap administrasi tepat waktu',
+        isActive: true
+      },
+      {
+        id: 'rt_5',
+        badge: 'Pengumuman',
+        text: 'Mewujudkan ekosistem sekolah digital yang transparan, adaptif, dan berakhlak mulia',
+        isActive: true
+      }
+    ];
+
     if (!this.db.app_settings) {
       this.db.app_settings = {
         appName: "SIMAK",
@@ -82,7 +157,10 @@ export class DatabaseService {
         logoColor: "blue",
         logoImageUrl: "",
         creatorName: "Puput Sasmita",
-        adminPhone: "0812-3456-7890"
+        adminPhone: "0812-3456-7890",
+        runningTextSpeed: 28,
+        runningTextIncludeGreeting: true,
+        runningTextItems: defaultRunningItems
       };
       this.persist();
     } else {
@@ -92,6 +170,15 @@ export class DatabaseService {
       if (!this.db.app_settings.adminPhone) {
         this.db.app_settings.adminPhone = '0812-3456-7890';
       }
+      if (this.db.app_settings.runningTextItems === undefined) {
+        this.db.app_settings.runningTextItems = defaultRunningItems;
+      }
+      if (!this.db.app_settings.runningTextSpeed) {
+        this.db.app_settings.runningTextSpeed = 28;
+      }
+      if (this.db.app_settings.runningTextIncludeGreeting === undefined) {
+        this.db.app_settings.runningTextIncludeGreeting = true;
+      }
     }
     return this.db.app_settings;
   }
@@ -100,6 +187,7 @@ export class DatabaseService {
     const current = this.getAppSettings();
     this.db.app_settings = { ...current, ...newSettings };
     this.persist();
+    FirestoreSyncService.getInstance().syncDocument('app_settings', 'global_config', this.db.app_settings);
     this.settingsListeners.forEach(l => {
       try {
         l(this.db.app_settings!);
@@ -148,6 +236,7 @@ export class DatabaseService {
     const newUser: User = { id, ...userData, username };
     this.db.users[id] = newUser;
     this.persist();
+    FirestoreSyncService.getInstance().syncDocument('users', id, newUser);
     return newUser;
   }
 
@@ -155,15 +244,18 @@ export class DatabaseService {
     if (!this.db.users[id]) throw new Error('Pengguna tidak ditemukan');
     this.db.users[id] = { ...this.db.users[id], ...userData };
     this.persist();
+    FirestoreSyncService.getInstance().syncDocument('users', id, this.db.users[id]);
     return this.db.users[id];
   }
 
   public deleteUser(id: string): void {
     delete this.db.users[id];
+    FirestoreSyncService.getInstance().deleteDocument('users', id);
     // Clean up class_members if student
     Object.keys(this.db.class_members).forEach(cmId => {
       if (this.db.class_members[cmId].student_id === id) {
         delete this.db.class_members[cmId];
+        FirestoreSyncService.getInstance().deleteDocument('class_members', cmId);
       }
     });
     // Clean up relations
@@ -244,6 +336,7 @@ export class DatabaseService {
     date: string,
     records: { studentId: string; status: AttendanceStatus }[]
   ): void {
+    const batchItems: Array<{ id: string; data: any }> = [];
     records.forEach(({ studentId, status }) => {
       const existingKey = Object.keys(this.db.attendance).find(
         k => this.db.attendance[k].class_id === classId &&
@@ -254,9 +347,10 @@ export class DatabaseService {
 
       if (existingKey) {
         this.db.attendance[existingKey].status = status;
+        batchItems.push({ id: existingKey, data: this.db.attendance[existingKey] });
       } else {
         const newId = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-        this.db.attendance[newId] = {
+        const newAtt = {
           id: newId,
           class_id: classId,
           subject_id: subjectId,
@@ -264,10 +358,15 @@ export class DatabaseService {
           student_id: studentId,
           status
         };
+        this.db.attendance[newId] = newAtt;
+        batchItems.push({ id: newId, data: newAtt });
       }
     });
 
     this.persist();
+    if (batchItems.length > 0) {
+      FirestoreSyncService.getInstance().syncBatchDocuments('attendance', batchItems);
+    }
   }
 
   public getStudentAttendanceSummary(studentId: string) {
@@ -321,19 +420,23 @@ export class DatabaseService {
       g => g.student_id === studentId && g.subject_id === subjectId && g.type === type
     );
 
+    let targetGrade: Grade;
     if (existing) {
       existing.score = score;
+      targetGrade = existing;
     } else {
       const id = 'grd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-      this.db.grades[id] = {
+      targetGrade = {
         id,
         student_id: studentId,
         subject_id: subjectId,
         type,
         score
       };
+      this.db.grades[id] = targetGrade;
     }
     this.persist();
+    FirestoreSyncService.getInstance().syncDocument('grades', targetGrade.id, targetGrade);
   }
 
   public getStudentReport(studentId: string) {
@@ -800,6 +903,7 @@ export class DatabaseService {
     }
     this.db.announcements[newId] = newAnn;
     this.persist();
+    FirestoreSyncService.getInstance().syncDocument('announcements', newId, newAnn);
 
     // Broadcast ke semua listener realtime
     this.announcementListeners.forEach(listener => {
@@ -817,6 +921,7 @@ export class DatabaseService {
     if (this.db.announcements && this.db.announcements[id]) {
       delete this.db.announcements[id];
       this.persist();
+      FirestoreSyncService.getInstance().deleteDocument('announcements', id);
     }
   }
 
@@ -1038,11 +1143,13 @@ export class DatabaseService {
 
         if (!alreadyInClass) {
           const newCmId = 'cm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-          this.db.class_members[newCmId] = {
+          const newMember = {
             id: newCmId,
             class_id: targetClassId,
             student_id: studentId
           };
+          this.db.class_members[newCmId] = newMember;
+          FirestoreSyncService.getInstance().syncDocument('class_members', newCmId, newMember);
           enrolledCount++;
         }
       }
