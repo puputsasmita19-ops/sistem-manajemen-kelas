@@ -736,16 +736,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                     onClick={() => handleSelectRole(cfg)}
                     className={`relative py-2 px-1.5 rounded-xl transition-all flex flex-col items-center justify-center gap-1 cursor-pointer border text-center ${
                       isSelected
-                        ? 'bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 text-white border-sky-300/90 shadow-md shadow-blue-500/25 ring-2 ring-sky-300/40 scale-[1.02]'
-                        : 'bg-white/95 text-slate-700 hover:bg-white hover:text-blue-700 hover:border-sky-300 border-sky-100/90 shadow-2xs'
+                        ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                        : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-blue-700 hover:border-slate-300 border-slate-200 shadow-2xs font-medium'
                     }`}
                     title={cfg.roleTitle}
                   >
                     <IconComponent
-                      className={`w-4 h-4 shrink-0 transition-transform ${
+                      className={`w-4 h-4 shrink-0 ${
                         isSelected
                           ? isAdmin
-                            ? 'text-amber-200 drop-shadow-xs'
+                            ? 'text-amber-300'
                             : 'text-white'
                           : isAdmin
                           ? 'text-amber-600'
@@ -753,12 +753,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                       }`}
                     />
                     <span className={`text-[11px] leading-tight font-bold tracking-tight whitespace-nowrap ${
-                      isSelected ? 'text-white drop-shadow-xs' : 'text-slate-700'
+                      isSelected ? 'text-white' : 'text-slate-700'
                     }`}>
                       {cfg.label}
                     </span>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-300 rounded-full ring-2 ring-white shadow-xs" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
                     )}
                   </button>
                 );
@@ -779,8 +779,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                     onClick={() => handleSelectRole(cfg)}
                     className={`relative py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border text-center ${
                       isSelected
-                        ? 'bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-600 text-white border-sky-300/90 shadow-md shadow-blue-500/25 ring-2 ring-sky-300/40 scale-[1.02]'
-                        : 'bg-white/95 text-slate-700 hover:bg-white hover:text-blue-700 hover:border-sky-300 border-sky-100/90 shadow-2xs'
+                        ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                        : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-blue-700 hover:border-slate-300 border-slate-200 shadow-2xs font-medium'
                     }`}
                     title={cfg.roleTitle}
                   >
@@ -794,12 +794,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                       }`}
                     />
                     <span className={`text-[11px] leading-tight font-bold tracking-tight whitespace-nowrap ${
-                      isSelected ? 'text-white drop-shadow-xs' : 'text-slate-700'
+                      isSelected ? 'text-white' : 'text-slate-700'
                     }`}>
                       {cfg.label}
                     </span>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-300 rounded-full ring-2 ring-white shadow-xs" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
                     )}
                   </button>
                 );
@@ -853,8 +853,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
               <label className="block text-[10px] font-bold text-slate-600 mb-1 px-1 uppercase tracking-wider">
                 Username Akun ({getRoleLabel(selectedRole)})
               </label>
-              <div className="bg-white hover:bg-sky-50/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/30 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 transition-all border border-sky-200/80 shadow-2xs">
-                <UserIcon className="w-4 h-4 text-blue-500/70 shrink-0" />
+              <div className="bg-white focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 transition-colors border border-slate-200">
+                <UserIcon className="w-4 h-4 text-slate-400 shrink-0" />
                 <input
                   id="input-username"
                   type="text"
@@ -873,8 +873,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
               <label className="block text-[10px] font-bold text-slate-600 mb-1 px-1 uppercase tracking-wider">
                 Kata Sandi
               </label>
-              <div className="bg-white hover:bg-sky-50/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/30 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 transition-all border border-sky-200/80 shadow-2xs">
-                <Lock className="w-4 h-4 text-blue-500/70 shrink-0" />
+              <div className="bg-white focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 transition-colors border border-slate-200">
+                <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                 <input
                   id="input-password"
                   type={showPassword ? 'text' : 'password'}
@@ -913,7 +913,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
               id="btn-masuk"
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-sky-600 to-blue-700 hover:from-blue-700 hover:via-sky-700 hover:to-blue-800 active:scale-[0.99] text-white text-sm font-bold shadow-[0_6px_20px_rgba(37,99,235,0.35)] border-t border-white/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1"
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-1 shadow-xs"
             >
               {isLoading ? (
                 <>
