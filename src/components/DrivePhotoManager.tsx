@@ -41,7 +41,19 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
   const classes = dbService.getAllClasses();
   const allStudents = dbService.getAllUsers().filter(u => u.role === 'siswa');
 
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || '');
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_DRIVE_CLASS_ID');
+      if (saved && classes.some(c => c.id === saved)) return saved;
+    } catch (e) {}
+    return classes[0]?.id || '';
+  });
+
+  useEffect(() => {
+    try {
+      if (selectedClassId) localStorage.setItem('SIMAK_DRIVE_CLASS_ID', selectedClassId);
+    } catch (e) {}
+  }, [selectedClassId]);
   const studentsInClass = selectedClassId ? dbService.getStudentsInClass(selectedClassId) : allStudents;
 
   const [photos, setPhotos] = useState<DrivePhotoRecord[]>(driveService.getAllPhotoRecords());

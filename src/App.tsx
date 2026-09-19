@@ -85,9 +85,13 @@ export default function App() {
     return allUsers.find(u => u.role === 'admin') || allUsers[0];
   });
 
-  // Active Tab state - Persisted across page refresh / reload
+  // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash) {
+        return hash;
+      }
       const savedTab = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
       if (savedTab) {
         return savedTab;
@@ -95,8 +99,20 @@ export default function App() {
     } catch (e) {
       // Ignore localStorage errors
     }
-    return 'dashboard';
+    return currentUser?.role === 'siswa' || currentUser?.role === 'orang_tua' ? 'student_portal' : 'dashboard';
   });
+
+  // Listen to browser hash changes (e.g. forward/back buttons or direct links)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash && hash !== activeTab) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab]);
 
   // Navigation scroll container & overflow state
   const navContainerRef = useRef<HTMLDivElement>(null);
@@ -125,11 +141,14 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [currentUser]);
 
-  // Save active tab whenever it changes & auto-scroll into view
+  // Save active tab whenever it changes & update URL hash & auto-scroll into view
   useEffect(() => {
     if (activeTab) {
       try {
         localStorage.setItem(LAST_ACTIVE_TAB_KEY, activeTab);
+        if (window.location.hash.replace(/^#\/?/, '').trim() !== activeTab) {
+          window.history.replaceState(null, '', `#${activeTab}`);
+        }
       } catch (e) {
         // Ignore
       }

@@ -253,10 +253,37 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
   studentList: propStudents
 }) => {
   const service = HomeroomService.getInstance();
-  const [classId, setClassId] = useState<string>(currentClassId);
+  const [classId, setClassId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_HOMEROOM_CLASS_ID');
+      if (saved) return saved;
+    } catch (e) {}
+    return currentClassId;
+  });
   const [dataPackage, setDataPackage] = useState<HomeroomDataPackage | null>(null);
-  const [activeMenu, setActiveMenu] = useState<HomeroomMenuId>('schedule');
+  const [activeMenu, setActiveMenu] = useState<HomeroomMenuId>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_HOMEROOM_ACTIVE_MENU');
+      if (saved && ALL_MENUS.some(m => m.id === saved)) {
+        return saved as HomeroomMenuId;
+      }
+    } catch (e) {}
+    return 'schedule';
+  });
   const [menuSearch, setMenuSearch] = useState('');
+
+  // Save classId and activeMenu when changed
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_HOMEROOM_CLASS_ID', classId);
+    } catch (e) {}
+  }, [classId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_HOMEROOM_ACTIVE_MENU', activeMenu);
+    } catch (e) {}
+  }, [activeMenu]);
 
   const refreshData = () => {
     const pkg = service.getHomeroomData(classId);

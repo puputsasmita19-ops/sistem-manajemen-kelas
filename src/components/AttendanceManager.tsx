@@ -30,14 +30,34 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
 
   // Determine default class
   const homeroom = dbService.getHomeroomClass(currentUserId);
-  const [selectedClassId, setSelectedClassId] = useState<string>(
-    homeroom ? homeroom.id : (classes[0]?.id || '')
-  );
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_ATTENDANCE_CLASS_ID');
+      if (saved && classes.some(c => c.id === saved)) return saved;
+    } catch (e) {}
+    return homeroom ? homeroom.id : (classes[0]?.id || '');
+  });
 
   const teacherSubjects = dbService.getSubjectsByTeacher(currentUserId);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(
-    teacherSubjects[0]?.id || (subjects[0]?.id || '')
-  );
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_ATTENDANCE_SUBJECT_ID');
+      if (saved && subjects.some(s => s.id === saved)) return saved;
+    } catch (e) {}
+    return teacherSubjects[0]?.id || (subjects[0]?.id || '');
+  });
+
+  useEffect(() => {
+    try {
+      if (selectedClassId) localStorage.setItem('SIMAK_ATTENDANCE_CLASS_ID', selectedClassId);
+    } catch (e) {}
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    try {
+      if (selectedSubjectId) localStorage.setItem('SIMAK_ATTENDANCE_SUBJECT_ID', selectedSubjectId);
+    } catch (e) {}
+  }, [selectedSubjectId]);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { User, UserRole, ClassEntity } from '../types';
 import { AppSettingsManager } from './AppSettingsManager';
@@ -28,10 +28,34 @@ import {
 export const UserManagement: React.FC = () => {
   const dbService = DatabaseService.getInstance();
   const classes = dbService.getAllClasses();
-  const [activeAdminView, setActiveAdminView] = useState<'users' | 'settings'>('users');
+  const [activeAdminView, setActiveAdminView] = useState<'users' | 'settings'>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_USER_ADMIN_VIEW');
+      if (saved === 'users' || saved === 'settings') return saved;
+    } catch (e) {}
+    return 'users';
+  });
   const [users, setUsers] = useState<User[]>(dbService.getAllUsers());
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_USER_ROLE_FILTER');
+      if (saved) return saved;
+    } catch (e) {}
+    return 'all';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_USER_ADMIN_VIEW', activeAdminView);
+    } catch (e) {}
+  }, [activeAdminView]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_USER_ROLE_FILTER', roleFilter);
+    } catch (e) {}
+  }, [roleFilter]);
 
   // Modal State for Single User Add/Edit
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -31,10 +31,32 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
 
   // Pick teacher subjects
   const teacherSubjects = dbService.getSubjectsByTeacher(currentUserId);
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || '');
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(
-    teacherSubjects.length > 0 ? teacherSubjects[0].id : (subjects[0]?.id || '')
-  );
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_GRADE_CLASS_ID');
+      if (saved && classes.some(c => c.id === saved)) return saved;
+    } catch (e) {}
+    return classes[0]?.id || '';
+  });
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_GRADE_SUBJECT_ID');
+      if (saved && subjects.some(s => s.id === saved)) return saved;
+    } catch (e) {}
+    return teacherSubjects.length > 0 ? teacherSubjects[0].id : (subjects[0]?.id || '');
+  });
+
+  useEffect(() => {
+    try {
+      if (selectedClassId) localStorage.setItem('SIMAK_GRADE_CLASS_ID', selectedClassId);
+    } catch (e) {}
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    try {
+      if (selectedSubjectId) localStorage.setItem('SIMAK_GRADE_SUBJECT_ID', selectedSubjectId);
+    } catch (e) {}
+  }, [selectedSubjectId]);
 
   const [rows, setRows] = useState<StudentGradeRow[]>([]);
   const [isExporting, setIsExporting] = useState(false);
