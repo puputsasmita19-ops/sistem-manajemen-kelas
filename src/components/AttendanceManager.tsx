@@ -1,0 +1,425 @@
+import React, { useState, useEffect } from 'react';
+import { DatabaseService } from '../services/databaseService';
+import { AttendanceStatus, ClassEntity, Subject, User } from '../types';
+import Swal from 'sweetalert2';
+import {
+  CheckCircle2,
+  AlertCircle,
+  FileSpreadsheet,
+  Download,
+  Save,
+  RefreshCw,
+  Calendar,
+  BookOpen,
+  Users,
+  QrCode,
+  FileText,
+  Sparkles
+} from 'lucide-react';
+import { QRScannerSection } from './QRScannerSection';
+
+interface AttendanceManagerProps {
+  currentRole: string;
+  currentUserId: string;
+}
+
+export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRole, currentUserId }) => {
+  const dbService = DatabaseService.getInstance();
+  const classes = dbService.getAllClasses();
+  const subjects = dbService.getAllSubjects();
+
+  // Determine default class
+  const homeroom = dbService.getHomeroomClass(currentUserId);
+  const [selectedClassId, setSelectedClassId] = useState<string>(
+    homeroom ? homeroom.id : (classes[0]?.id || '')
+  );
+
+  const teacherSubjects = dbService.getSubjectsByTeacher(currentUserId);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(
+    teacherSubjects[0]?.id || (subjects[0]?.id || '')
+  );
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState<string>(todayStr.substring(0, 7)); // 'YYYY-MM'
+  const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+
+  const [studentRows, setStudentRows] = useState<
+    { studentId: string; nama: string; no_wa: string; status: AttendanceStatus }[]
+  >([]);
+
+  const selectedClassObj = dbService.getClassById(selectedClassId);
+  const classStudents = dbService.getClassStudents(selectedClassId);
+
+  const loadData = () => {
+    if (!selectedClassId) return;
+    const records = dbService.getAttendanceByClassAndDate(selectedClassId, selectedDate, selectedSubjectId);
+    setStudentRows(records);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedClassId, selectedDate, selectedSubjectId]);
+
+  const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+    setStudentRows(prev =>
+      prev.map(row => (row.studentId === studentId ? { ...row, status } : row))
+    );
+  };
+
+  const handleMarkAll = (status: AttendanceStatus) => {
+    setStudentRows(prev => prev.map(row => ({ ...row, status })));
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: `Semua siswa ditandai ${status === 'H' ? 'Hadir' : status === 'I' ? 'Izin' : status === 'S' ? 'Sakit' : 'Alpa'}`,
+      showConfirmButton: false,
+      timer: 1500
+    });
+  };
+
+  const handleSave = () => {
+    try {
+      dbService.saveBulkAttendance(
+        selectedClassId,
+        selectedSubjectId,
+        selectedDate,
+        studentRows.map(r => ({ studentId: r.studentId, status: r.status }))
+      );
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Presensi Tersimpan!',
+        text: `Data presensi untuk ${studentRows.length} siswa berhasil disimpan ke Firebase Realtime Database.`,
+        timer: 1800,
+        showConfirmButton: false
+      });
+      loadData();
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Menyimpan',
+        text: err.message || 'Terjadi kesalahan sistem.'
+      });
+    }
+  };
+
+  const handleExportPDF = () => {
+    dbService.exportAttendancePDF(selectedClassId, selectedDate, selectedSubjectId);
+  };
+
+  const handleExportMonthlyReport = () => {
+    dbService.exportMonthlyAttendanceReportPDF(selectedClassId, selectedMonth);
+  };
+
+  const handleQRStudentScanned = (studentId: string, nama: string) => {
+    handleStatusChange(studentId, 'H');
+
+    // Auto-save instantly to DB
+    const updated = studentRows.map(r => ({
+      studentId: r.studentId,
+      status: r.studentId === studentId ? ('H' as AttendanceStatus) : r.status
+    }));
+    dbService.saveBulkAttendance(selectedClassId, selectedSubjectId, selectedDate, updated);
+  };
+
+  // Quick stats
+  const totalStudents = studentRows.length;
+  const countH = studentRows.filter(r => r.status === 'H').length;
+  const countI = studentRows.filter(r => r.status === 'I').length;
+  const countS = studentRows.filter(r => r.status === 'S').length;
+  const countA = studentRows.filter(r => r.status === 'A').length;
+
+  return (
+    <div className="space-y-6">
+      {/* Top Filter Controls */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition-colors">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Manajemen Presensi Harian (Bulk Input & QR Scanner)
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+              Catat dan verifikasi kehadiran seluruh siswa per kelas dengan input manual atau scan kartu QR otomatis.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Toggle Mode QR Scanner */}
+            <button
+              id="btn-toggle-qr-scanner"
+              type="button"
+              onClick={() => setShowQRScanner(!showQRScanner)}
+              className={`px-3.5 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition shadow-xs ${
+                showQRScanner
+                  ? 'bg-amber-600 text-white hover:bg-amber-700'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              <QrCode className="w-4 h-4" />
+              <span>{showQRScanner ? 'Tutup Scanner QR' : 'Buka Scanner QR'}</span>
+            </button>
+
+            {/* Monthly Report PDF Trigger */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg border border-slate-200 dark:border-slate-600">
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none px-1.5 cursor-pointer"
+                title="Pilih Bulan Rekapitulasi"
+              />
+              <button
+                id="btn-export-monthly-pdf"
+                onClick={handleExportMonthlyReport}
+                className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black rounded-md flex items-center gap-1.5 transition shadow-xs"
+                title="Cetak Laporan Bulanan Resmi Wali Kelas"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                <span>Cetak Laporan Bulanan (PDF)</span>
+              </button>
+            </div>
+
+            {/* CSV Log Export Button */}
+            <button
+              id="btn-export-attendance-csv"
+              onClick={() => dbService.exportAttendanceLogsToCSV(selectedClassId, selectedMonth)}
+              className="px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+              title="Ekspor Seluruh Log Presensi ke CSV Spreadsheet"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Ekspor Log CSV</span>
+            </button>
+
+            <button
+              id="btn-export-attendance-pdf"
+              onClick={handleExportPDF}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg flex items-center gap-2 transition"
+              title="Ekspor rekap harian hari ini"
+            >
+              <Download className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              PDF Harian
+            </button>
+            <button
+              id="btn-save-attendance"
+              onClick={handleSave}
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+            >
+              <Save className="w-4 h-4" />
+              Simpan Presensi
+            </button>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" /> Pilih Kelas
+            </label>
+            <select
+              id="select-attendance-class"
+              value={selectedClassId}
+              onChange={e => setSelectedClassId(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              {classes.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.nama_kelas} ({c.tahun_ajaran})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5" /> Mata Pelajaran
+            </label>
+            <select
+              id="select-attendance-subject"
+              value={selectedSubjectId}
+              onChange={e => setSelectedSubjectId(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              {subjects.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.nama_mapel}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" /> Tanggal Presensi
+            </label>
+            <input
+              id="input-attendance-date"
+              type="date"
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* QR SCANNER VIEWPORT MODAL/EXPANDED SECTION */}
+      {showQRScanner && (
+        <QRScannerSection
+          classId={selectedClassId}
+          classNameTitle={selectedClassObj?.nama_kelas || 'Kelas'}
+          students={classStudents}
+          onAttendanceMarked={handleQRStudentScanned}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
+
+      {/* Quick Stat Badges & Bulk Shortcuts */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-medium text-emerald-800 dark:text-emerald-300">Hadir (H)</div>
+            <div className="text-xl font-bold text-emerald-900 dark:text-emerald-100">{countH} / {totalStudents}</div>
+          </div>
+          <button
+            onClick={() => handleMarkAll('H')}
+            className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-white bg-emerald-100 dark:bg-emerald-900/60 hover:bg-emerald-200 dark:hover:bg-emerald-800 px-2.5 py-1 rounded-md transition"
+            title="Tandai semua siswa hadir"
+          >
+            Semua H
+          </button>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-medium text-blue-800 dark:text-blue-300">Izin (I)</div>
+            <div className="text-xl font-bold text-blue-900 dark:text-blue-100">{countI}</div>
+          </div>
+          <button
+            onClick={() => handleMarkAll('I')}
+            className="text-[11px] font-bold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-white bg-blue-100 dark:bg-blue-900/60 hover:bg-blue-200 dark:hover:bg-blue-800 px-2.5 py-1 rounded-md transition"
+          >
+            Semua I
+          </button>
+        </div>
+
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Sakit (S)</div>
+            <div className="text-xl font-bold text-amber-900 dark:text-amber-100">{countS}</div>
+          </div>
+          <button
+            onClick={() => handleMarkAll('S')}
+            className="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-white bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 dark:hover:bg-amber-800 px-2.5 py-1 rounded-md transition"
+          >
+            Semua S
+          </button>
+        </div>
+
+        <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-medium text-rose-800 dark:text-rose-300">Alpa (A)</div>
+            <div className="text-xl font-bold text-rose-900 dark:text-rose-100">{countA}</div>
+          </div>
+          <button
+            onClick={() => handleMarkAll('A')}
+            className="text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-white bg-rose-100 dark:bg-rose-900/60 hover:bg-rose-200 dark:hover:bg-rose-800 px-2.5 py-1 rounded-md transition"
+          >
+            Semua A
+          </button>
+        </div>
+      </div>
+
+      {/* Attendance Multi-Input Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+        <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Daftar Siswa Kelas & Status Kehadiran
+          </div>
+          <div className="text-xs text-slate-600 dark:text-slate-300">
+            Format: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Hadir</span>, <span className="font-semibold text-blue-600 dark:text-blue-400">Izin</span>, <span className="font-semibold text-amber-600 dark:text-amber-400">Sakit</span>, <span className="font-semibold text-rose-600 dark:text-rose-400">Alpa</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] uppercase tracking-wider font-semibold text-slate-600 dark:text-slate-300">
+                <th className="py-3 px-4 w-12 text-center">No</th>
+                <th className="py-3 px-4">Nama Siswa</th>
+                <th className="py-3 px-4 hidden sm:table-cell">Kontak / WhatsApp</th>
+                <th className="py-3 px-4 text-center">Status Kehadiran</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
+              {studentRows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
+                    Tidak ada siswa terdaftar pada kelas ini.
+                  </td>
+                </tr>
+              ) : (
+                studentRows.map((row, index) => (
+                  <tr key={row.studentId} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="py-3 px-4 text-center text-slate-700 dark:text-slate-200 font-mono text-xs font-bold">
+                      {index + 1}
+                    </td>
+                    <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
+                      <div>{row.nama}</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300 sm:hidden">{row.no_wa}</div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 text-xs hidden sm:table-cell">
+                      {row.no_wa || '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-center gap-1 sm:gap-2">
+                        {(['H', 'I', 'S', 'A'] as AttendanceStatus[]).map(st => {
+                          const isSelected = row.status === st;
+                          let activeClass = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600';
+                          if (isSelected) {
+                            if (st === 'H') activeClass = 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-700';
+                            if (st === 'I') activeClass = 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 dark:ring-blue-700';
+                            if (st === 'S') activeClass = 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-300 dark:ring-amber-700';
+                            if (st === 'A') activeClass = 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300 dark:ring-rose-700';
+                          }
+
+                          return (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() => handleStatusChange(row.studentId, st)}
+                              className={`w-9 h-9 sm:w-10 sm:h-8 rounded-lg text-xs font-bold transition flex items-center justify-center ${activeClass}`}
+                              title={`Tandai ${st}`}
+                            >
+                              {st}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
+          <div>
+            💡 <span className="font-medium">Relasi NoSQL:</span> Nilai status disimpan dalam path <code className="font-mono bg-slate-200 dark:bg-slate-700 dark:text-slate-200 px-1 py-0.5 rounded">/attendance/&#123;pushId&#125;</code> dengan foreign key <code className="font-mono">student_id</code>, <code className="font-mono">class_id</code>, dan <code className="font-mono">subject_id</code>.
+          </div>
+          <button
+            onClick={handleSave}
+            className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

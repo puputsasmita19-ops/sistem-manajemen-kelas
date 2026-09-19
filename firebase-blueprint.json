@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Akun pengguna sistem SIMAK dengan hak akses RBAC (admin, wali_kelas, guru, siswa, orang_tua).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Primary key ID pengguna" },
+        "nama": { "type": "string", "description": "Nama lengkap pengguna" },
+        "email": { "type": "string", "format": "email", "description": "Alamat email login pengguna" },
+        "password_hash": { "type": "string", "description": "Hash atau kredensial sandi pengguna" },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "wali_kelas", "guru", "siswa", "orang_tua"],
+          "description": "Peran hak akses pada sistem"
+        },
+        "no_wa": { "type": "string", "description": "Nomor WhatsApp untuk notifikasi" },
+        "photo_url": { "type": "string", "description": "URL foto profil atau ID Google Drive" },
+        "drive_file_id": { "type": "string", "description": "ID file foto di Google Drive" }
+      },
+      "required": ["id", "nama", "email", "role"]
+    },
+    "ClassEntity": {
+      "title": "ClassEntity",
+      "description": "Data rombongan belajar / kelas siswa.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID unik kelas" },
+        "nama_kelas": { "type": "string", "description": "Nama rombel kelas, contoh: X MIPA 1" },
+        "wali_kelas_id": { "type": "string", "description": "Foreign key ID guru wali kelas" },
+        "tahun_ajaran": { "type": "string", "description": "Periode tahun ajaran, contoh: 2025/2026" }
+      },
+      "required": ["id", "nama_kelas", "wali_kelas_id", "tahun_ajaran"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Mata pelajaran yang diajarkan oleh guru.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID mata pelajaran" },
+        "nama_mapel": { "type": "string", "description": "Nama mata pelajaran" },
+        "guru_id": { "type": "string", "description": "Foreign key ID guru pengampu" }
+      },
+      "required": ["id", "nama_mapel", "guru_id"]
+    },
+    "ClassMember": {
+      "title": "ClassMember",
+      "description": "Relasi many-to-many keanggotaan siswa dalam kelas.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID unik relasi" },
+        "class_id": { "type": "string", "description": "Foreign key ID kelas" },
+        "student_id": { "type": "string", "description": "Foreign key ID siswa" }
+      },
+      "required": ["id", "class_id", "student_id"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Log presensi harian siswa.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID log presensi" },
+        "class_id": { "type": "string", "description": "Foreign key ID kelas" },
+        "subject_id": { "type": "string", "description": "ID mapel atau HOMEROOM" },
+        "date": { "type": "string", "description": "Tanggal presensi YYYY-MM-DD" },
+        "student_id": { "type": "string", "description": "Foreign key ID siswa" },
+        "status": {
+          "type": "string",
+          "enum": ["H", "I", "S", "A"],
+          "description": "Status presensi: H (Hadir), I (Izin), S (Sakit), A (Alpa)"
+        },
+        "note": { "type": "string", "description": "Catatan opsional kehadiran" },
+        "photo_evidence_url": { "type": "string", "description": "URL bukti foto atau surat sakit di Google Drive" },
+        "drive_file_id": { "type": "string", "description": "ID file Google Drive bukti presensi" }
+      },
+      "required": ["id", "class_id", "subject_id", "date", "student_id", "status"]
+    },
+    "Grade": {
+      "title": "Grade",
+      "description": "Catatan nilai akademik siswa.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID nilai" },
+        "student_id": { "type": "string", "description": "Foreign key ID siswa" },
+        "subject_id": { "type": "string", "description": "Foreign key ID mata pelajaran" },
+        "type": {
+          "type": "string",
+          "enum": ["TUGAS", "UTS", "UAS"],
+          "description": "Jenis penilaian"
+        },
+        "score": { "type": "number", "description": "Nilai capaian siswa (0 - 100)" }
+      },
+      "required": ["id", "student_id", "subject_id", "type", "score"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Pengumuman resmi sekolah terintegrasi secara realtime.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID pengumuman" },
+        "title": { "type": "string", "description": "Judul pengumuman" },
+        "content": { "type": "string", "description": "Isi lengkap pengumuman" },
+        "date": { "type": "string", "description": "Tanggal rilis YYYY-MM-DD" },
+        "time": { "type": "string", "description": "Jam rilis HH:MM" },
+        "targetRole": {
+          "type": "string",
+          "enum": ["all", "admin", "wali_kelas", "guru", "siswa", "orang_tua"],
+          "description": "Target penerima pengumuman"
+        },
+        "author": { "type": "string", "description": "Nama pembuat pengumuman" },
+        "priority": {
+          "type": "string",
+          "enum": ["normal", "urgent"],
+          "description": "Tingkat kepentingan pengumuman"
+        }
+      },
+      "required": ["id", "title", "content", "date", "time", "targetRole", "author", "priority"]
+    },
+    "StudentPhoto": {
+      "title": "StudentPhoto",
+      "description": "Metadata foto siswa yang tersimpan di Google Drive.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID foto" },
+        "student_id": { "type": "string", "description": "Foreign key ID siswa" },
+        "file_name": { "type": "string", "description": "Nama berkas foto" },
+        "mime_type": { "type": "string", "description": "Tipe MIME, misal image/jpeg" },
+        "drive_file_id": { "type": "string", "description": "ID file di Google Drive" },
+        "drive_view_url": { "type": "string", "description": "Link pratinjau Google Drive" },
+        "drive_download_url": { "type": "string", "description": "Link unduh langsung Google Drive" },
+        "uploaded_at": { "type": "string", "description": "Waktu unggah ISO 8601" },
+        "uploaded_by": { "type": "string", "description": "ID pengguna pengunggah" }
+      },
+      "required": ["id", "student_id", "file_name", "drive_file_id", "uploaded_at"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Koleksi data seluruh akun pengguna sistem SIMAK."
+    },
+    "/classes/{classId}": {
+      "schema": "ClassEntity",
+      "description": "Koleksi data rombel / kelas."
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Koleksi data mata pelajaran sekolah."
+    },
+    "/class_members/{memberId}": {
+      "schema": "ClassMember",
+      "description": "Koleksi keanggotaan siswa di kelas."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Koleksi riwayat dan catatan presensi siswa."
+    },
+    "/grades/{gradeId}": {
+      "schema": "Grade",
+      "description": "Koleksi buku nilai siswa per mata pelajaran."
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Koleksi pengumuman siaran sekolah."
+    },
+    "/student_photos/{photoId}": {
+      "schema": "StudentPhoto",
+      "description": "Koleksi indeks tautan file foto siswa yang tersimpan di Google Drive."
+    }
+  }
+}

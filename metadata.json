@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Manajemen Kelas (SIMAK)",
+  "description": "Aplikasi Manajemen Kelas Berbasis Tab dengan Firebase Realtime Database, RBAC multi-role, Chart.js, SweetAlert2, dan ekspor laporan PDF.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

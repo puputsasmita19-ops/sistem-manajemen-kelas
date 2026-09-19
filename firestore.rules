@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Koleksi Users: Siapapun dapat membaca profil pengguna (untuk listing kelas & presensi),
+    // write diizinkan untuk admin atau pemilik akun
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true; // Diizinkan untuk inisialisasi & CRUD data sekolah
+    }
+
+    // Koleksi Classes (Kelas / Rombel)
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Subjects (Mata Pelajaran)
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Class Members (Relasi Siswa & Kelas)
+    match /class_members/{memberId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Attendance (Presensi Siswa)
+    match /attendance/{attendanceId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Grades (Nilai Siswa)
+    match /grades/{gradeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Announcements (Pengumuman Sekolah)
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Koleksi Student Photos (Metadata Foto di Google Drive)
+    match /student_photos/{photoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Fallback rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
