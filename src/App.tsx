@@ -101,17 +101,32 @@ export default function App() {
     return currentUser?.role === 'siswa' || currentUser?.role === 'orang_tua' ? 'student_portal' : 'dashboard';
   });
 
+  // When user is not logged in, enforce '#login' in the URL hash
+  useEffect(() => {
+    if (!currentUser) {
+      if (window.location.hash !== '#login') {
+        window.history.replaceState(null, '', '#login');
+      }
+    }
+  }, [currentUser]);
+
   // Listen to browser hash changes (e.g. forward/back buttons or direct links)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
-      if (hash && hash !== activeTab) {
+      if (!currentUser) {
+        if (hash !== 'login') {
+          window.history.replaceState(null, '', '#login');
+        }
+        return;
+      }
+      if (hash && hash !== 'login' && hash !== activeTab) {
         setActiveTab(hash);
       }
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [activeTab]);
+  }, [activeTab, currentUser]);
 
   // Navigation scroll container & overflow state
   const navContainerRef = useRef<HTMLDivElement>(null);
@@ -142,6 +157,13 @@ export default function App() {
 
   // Save active tab whenever it changes & update URL hash & auto-scroll into view
   useEffect(() => {
+    if (!currentUser) {
+      if (window.location.hash !== '#login') {
+        window.history.replaceState(null, '', '#login');
+      }
+      return;
+    }
+
     if (activeTab) {
       try {
         localStorage.setItem(LAST_ACTIVE_TAB_KEY, activeTab);
@@ -161,7 +183,7 @@ export default function App() {
         checkNavScroll();
       }, 100);
     }
-  }, [activeTab]);
+  }, [activeTab, currentUser]);
 
   // Ensure active tab is accessible for currentUser role; fallback to 'dashboard' if not allowed
   useEffect(() => {
@@ -226,7 +248,7 @@ export default function App() {
           localStorage.removeItem(SESSION_STORAGE_KEY);
           localStorage.removeItem(LAST_ACTIVE_TAB_KEY);
         } catch (e) {}
-        window.history.replaceState(null, '', window.location.pathname);
+        window.history.replaceState(null, '', '#login');
         setCurrentUser(null);
         Swal.fire({
           toast: true,
