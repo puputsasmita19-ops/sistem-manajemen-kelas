@@ -48,6 +48,7 @@ import { HomeroomCases } from './HomeroomCases';
 import { HomeroomAchievements } from './HomeroomAchievements';
 import { HomeroomHomeVisits } from './HomeroomHomeVisits';
 import { HomeroomBulletinBoard } from './HomeroomBulletinBoard';
+import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 
 interface HomeroomDashboardProps {
   currentClassId?: string;
@@ -415,6 +416,20 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
                 <option value="class_11_mipa1">Kelas XI-MIPA-1</option>
               </select>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (dataPackage) {
+                  HomeroomPdfExporter.exportAllHomeroomPDF(currentClassName, dataPackage);
+                }
+              }}
+              title="Cetak seluruh rangkuman dokumen administrasi 18 menu ke PDF"
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-[11px] font-bold text-white flex items-center gap-1.5 transition shadow-xs shadow-indigo-500/25 cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak Buku Lengkap</span>
+            </button>
+
             <button
               type="button"
               onClick={handleResetClassData}

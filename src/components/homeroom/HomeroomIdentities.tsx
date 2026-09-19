@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { StudentIdentityItem } from '../../types/homeroom';
 import { HomeroomService } from '../../services/homeroomService';
+import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 
 interface HomeroomIdentitiesProps {
   classId: string;
@@ -74,7 +75,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
 
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => HomeroomPdfExporter.exportIdentitiesPDF(className, identities)}
           className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
         >
           <Printer className="w-3.5 h-3.5" />

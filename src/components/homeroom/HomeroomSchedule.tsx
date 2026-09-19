@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { LessonScheduleItem } from '../../types/homeroom';
 import { HomeroomService } from '../../services/homeroomService';
+import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 
 interface HomeroomScheduleProps {
   classId: string;
@@ -98,7 +99,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    HomeroomPdfExporter.exportSchedulePDF(className, schedules);
   };
 
   return (

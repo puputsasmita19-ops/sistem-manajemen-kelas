@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { StudentCaseItem } from '../../types/homeroom';
 import { HomeroomService } from '../../services/homeroomService';
+import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 
 interface HomeroomCasesProps {
   classId: string;
@@ -141,7 +142,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => HomeroomPdfExporter.exportCasesPDF(className, cases)}
             className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
