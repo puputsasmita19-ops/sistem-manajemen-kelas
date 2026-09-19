@@ -731,14 +731,14 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
-        {/* Tab Content Views with Smooth Fade-in Transition */}
-        <AnimatePresence mode="wait">
+        {/* Tab Content Views with Ultra-Fast Responsive Transition */}
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-6"
           >
             {/* VIEW: DASHBOARD (Overview) */}
@@ -980,7 +980,7 @@ export default function App() {
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 420, mass: 0.8 }}
               className="relative bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 p-5 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto"
             >
               {/* Sheet Drag Handle & Title */}
@@ -1136,6 +1136,20 @@ export default function App() {
                     <div className="text-[10px] text-slate-500 dark:text-slate-400">Audit trail & riwayat sistem</div>
                   </div>
                 </button>
+              </div>
+
+              {/* Quick Setting: Tema & Mode Tampilan Smartphone */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">Mode Tampilan</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Gelap / Terang (OLED friendly)</div>
+                  </div>
+                </div>
+                <ThemeToggle />
               </div>
             </motion.div>
           </div>

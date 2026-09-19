@@ -14,31 +14,58 @@ function getInitialTheme(): ThemeMode {
   if (document.documentElement.classList.contains('dark')) {
     return 'dark';
   }
+
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
   
   return 'light';
 }
 
 let globalTheme: ThemeMode = getInitialTheme();
 const listeners = new Set<(theme: ThemeMode) => void>();
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
-function applyThemeToDOM(theme: ThemeMode) {
+function applyThemeToDOM(theme: ThemeMode, withTransition: boolean = false) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+
+  // Trigger smooth transition class temporarily for 280ms on toggle
+  if (withTransition) {
+    root.classList.add('theme-transitioning');
+    if (transitionTimer) clearTimeout(transitionTimer);
+    transitionTimer = setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 280);
+  }
+
   if (theme === 'dark') {
     root.classList.add('dark');
     root.setAttribute('data-theme', 'dark');
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute('content', '#0f172a');
+    root.style.colorScheme = 'dark';
+
+    // Synchronize smartphone top address/status bar with dark theme
+    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemes.forEach((m) => m.setAttribute('content', '#0f172a'));
+
+    const appleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleStatus) appleStatus.setAttribute('content', 'black-translucent');
   } else {
     root.classList.remove('dark');
     root.setAttribute('data-theme', 'light');
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) metaTheme.setAttribute('content', '#1e3a8a');
+    root.style.colorScheme = 'light';
+
+    // Synchronize smartphone top address/status bar with clean light theme
+    const metaThemes = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemes.forEach((m) => m.setAttribute('content', '#ffffff'));
+
+    const appleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleStatus) appleStatus.setAttribute('content', 'default');
   }
 }
 
-// Initial application immediately on script load
-applyThemeToDOM(globalTheme);
+// Initial application immediately on script load (without transition)
+applyThemeToDOM(globalTheme, false);
 
 export function setGlobalTheme(newTheme: ThemeMode) {
   globalTheme = newTheme;
@@ -47,7 +74,7 @@ export function setGlobalTheme(newTheme: ThemeMode) {
   } catch {
     // Ignore quota errors
   }
-  applyThemeToDOM(newTheme);
+  applyThemeToDOM(newTheme, true);
   listeners.forEach((listener) => listener(newTheme));
 }
 
