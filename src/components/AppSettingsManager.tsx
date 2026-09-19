@@ -916,14 +916,16 @@ export const AppSettingsManager: React.FC<AppSettingsManagerProps> = ({ onSettin
                     Kecepatan Gerak Running Text
                   </span>
                   <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                    {settings.runningTextSpeed || 28} Detik / Putaran
+                    {(settings.runningTextSpeed || 28) >= 60
+                      ? '60 Detik (1 Menit) / Putaran'
+                      : `${settings.runningTextSpeed || 28} Detik / Putaran`}
                   </span>
                 </div>
                 <input
                   type="range"
-                  min="16"
-                  max="45"
-                  step="2"
+                  min="10"
+                  max="60"
+                  step="1"
                   value={settings.runningTextSpeed || 28}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10);
@@ -932,16 +934,16 @@ export const AppSettingsManager: React.FC<AppSettingsManagerProps> = ({ onSettin
                   }}
                   className="w-full accent-blue-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
                 />
-                <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 font-medium">
+                <div className="grid grid-cols-4 gap-1 text-[10px] text-slate-600 dark:text-slate-300 font-medium text-center">
                   <button
                     type="button"
                     onClick={() => {
-                      const nextSettings = { ...settings, runningTextSpeed: 18 };
+                      const nextSettings = { ...settings, runningTextSpeed: 15 };
                       persistRunningTextDirectly(nextSettings);
                     }}
-                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                    className="py-1 px-1 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer font-bold"
                   >
-                    Cepat (18s)
+                    Cepat (15s)
                   </button>
                   <button
                     type="button"
@@ -949,19 +951,29 @@ export const AppSettingsManager: React.FC<AppSettingsManagerProps> = ({ onSettin
                       const nextSettings = { ...settings, runningTextSpeed: 28 };
                       persistRunningTextDirectly(nextSettings);
                     }}
-                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                    className="py-1 px-1 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer font-bold"
                   >
                     Standar (28s)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      const nextSettings = { ...settings, runningTextSpeed: 38 };
+                      const nextSettings = { ...settings, runningTextSpeed: 45 };
                       persistRunningTextDirectly(nextSettings);
                     }}
-                    className="px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                    className="py-1 px-1 rounded border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer font-bold"
                   >
-                    Santai (38s)
+                    Santai (45s)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextSettings = { ...settings, runningTextSpeed: 60 };
+                      persistRunningTextDirectly(nextSettings);
+                    }}
+                    className="py-1 px-1 rounded border border-blue-400 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 cursor-pointer font-bold"
+                  >
+                    1 Menit (60s)
                   </button>
                 </div>
               </div>

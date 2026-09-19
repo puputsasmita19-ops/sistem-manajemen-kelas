@@ -577,17 +577,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
 
         <div className="relative w-full bg-white/90 backdrop-blur-2xl rounded-[32px] p-6 sm:p-7 shadow-[0_20px_50px_-10px_rgba(20,70,120,0.18),0_0_0_1px_rgba(255,255,255,0.95)_inset] border border-white/90 transition-all">
           
-          {/* 1) LOGO APLIKASI */}
-          <div className="flex flex-col items-center justify-center mb-2.5">
-            <AppLogo settings={appSettings} size="lg" className="shadow-lg shadow-blue-500/20 transition-transform hover:scale-105" />
-            <span className="text-xs font-extrabold tracking-tight text-slate-800 uppercase mt-2">
-              {appSettings.appName}
-            </span>
+          {/* 1) LOGO & JUDUL BESAR APLIKASI */}
+          <div className="flex flex-col items-center justify-center mb-2">
+            <AppLogo settings={appSettings} size="lg" className="shadow-md shadow-blue-500/15 transition-transform hover:scale-105" />
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase mt-2">
+              {appSettings.appName || 'SIMAK'}
+            </h1>
+            <p className="text-[11px] font-semibold text-slate-500">
+              Sistem Manajemen Kelas & Administrasi
+            </p>
           </div>
 
           {/* 2) TANGGAL & JAM REALTIME */}
-          <div className="flex items-center justify-center mb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-700 text-xs shadow-2xs">
+          <div className="flex items-center justify-center mb-2.5">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-slate-100/90 border border-slate-200/80 text-slate-700 text-xs shadow-2xs">
               <div className="flex items-center gap-1.5 font-medium text-slate-700">
                 <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span>{clock.dateFormatted}</span>
@@ -601,14 +604,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
           </div>
 
           {/* 3) SAPAAN SESUAI WAKTU & MODE RUNNING TEXT */}
-          <div className="text-center mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center justify-center gap-2">
+          <div className="text-center mb-3">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
               <span>{clock.greeting}</span>
               {renderGreetingIcon(clock.period)}
-            </h1>
+            </h2>
 
             {/* CONTAINER RUNNING TEXT / MODE STATIS */}
-            <div className="mt-2">
+            <div className="mt-1.5">
               {runningTextMode === 'running' ? (
                 <div className="relative overflow-hidden w-full rounded-2xl bg-gradient-to-r from-sky-50 via-blue-50/80 to-sky-50 border border-sky-200/80 p-1.5 flex items-center gap-2 shadow-2xs group">
                   {/* Badge Label Running Text */}
@@ -705,25 +708,31 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
           </div>
 
           {/* ===================================================================== */}
-          {/* TAMPILAN ROLE AKSES LEBIH PROPORSIONAL & SEIMBANG (3 + 2 GRID)        */}
+          {/* ROLE AKSES: RINGKAS, RAPI & EFISIEN                                   */}
           {/* ===================================================================== */}
-          <div className="mb-4 p-2.5 bg-sky-50/80 rounded-2xl border border-sky-200/60 shadow-2xs">
-            <div className="flex items-center justify-between px-0.5 mb-2">
+          <div className="mb-3 p-2 bg-slate-50/90 rounded-2xl border border-slate-200/80">
+            <div className="flex items-center justify-between px-1 mb-1.5">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
-                  Pilih Role Akses:
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
+                  Pilih Role Akses
                 </span>
-                <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.2 rounded-md border border-blue-200/50">
+                <span className="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.2 rounded">
                   5 Peran
                 </span>
               </div>
-              <span className="text-[10px] text-blue-700 font-bold bg-white border border-blue-200/80 px-2 py-0.5 rounded-full shadow-2xs">
-                Wajib Sesuai Role
-              </span>
+              <button
+                type="button"
+                onClick={handleResetToDefault}
+                title="Isi form dengan kredensial default peran ini"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 hover:text-blue-900 cursor-pointer bg-white px-2 py-0.5 rounded-md border border-slate-200 hover:bg-slate-50 transition"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>Isi Default</span>
+              </button>
             </div>
 
-            {/* Baris 1: 3 Role Tenaga Pendidik & Admin */}
-            <div className="grid grid-cols-3 gap-1.5">
+            {/* Grid 3 Role Tenaga Pendidik & Admin */}
+            <div className="grid grid-cols-3 gap-1">
               {DEFAULT_ROLE_ACCOUNTS.slice(0, 3).map((cfg) => {
                 const isSelected = selectedRole === cfg.role;
                 const IconComponent = cfg.icon;
@@ -734,15 +743,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                     type="button"
                     id={`btn-role-${cfg.role}`}
                     onClick={() => handleSelectRole(cfg)}
-                    className={`relative py-2 px-1.5 rounded-xl transition-all flex flex-col items-center justify-center gap-1 cursor-pointer border text-center ${
+                    className={`relative py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center justify-center gap-0.5 cursor-pointer border text-center ${
                       isSelected
                         ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                        : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-blue-700 hover:border-slate-300 border-slate-200 shadow-2xs font-medium'
+                        : 'bg-white text-slate-700 hover:bg-slate-100/70 border-slate-200 font-medium'
                     }`}
                     title={cfg.roleTitle}
                   >
                     <IconComponent
-                      className={`w-4 h-4 shrink-0 ${
+                      className={`w-3.5 h-3.5 shrink-0 ${
                         isSelected
                           ? isAdmin
                             ? 'text-amber-300'
@@ -752,21 +761,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                           : 'text-blue-600'
                       }`}
                     />
-                    <span className={`text-[11px] leading-tight font-bold tracking-tight whitespace-nowrap ${
+                    <span className={`text-[10px] leading-tight font-bold tracking-tight whitespace-nowrap ${
                       isSelected ? 'text-white' : 'text-slate-700'
                     }`}>
                       {cfg.label}
                     </span>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full" />
                     )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Baris 2: 2 Role Siswa & Orang Tua */}
-            <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+            {/* Grid 2 Role Siswa & Orang Tua */}
+            <div className="grid grid-cols-2 gap-1 mt-1">
               {DEFAULT_ROLE_ACCOUNTS.slice(3, 5).map((cfg) => {
                 const isSelected = selectedRole === cfg.role;
                 const IconComponent = cfg.icon;
@@ -777,15 +786,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                     type="button"
                     id={`btn-role-${cfg.role}`}
                     onClick={() => handleSelectRole(cfg)}
-                    className={`relative py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border text-center ${
+                    className={`relative py-1.5 px-1.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer border text-center ${
                       isSelected
                         ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                        : 'bg-white text-slate-700 hover:bg-slate-50 hover:text-blue-700 hover:border-slate-300 border-slate-200 shadow-2xs font-medium'
+                        : 'bg-white text-slate-700 hover:bg-slate-100/70 border-slate-200 font-medium'
                     }`}
                     title={cfg.roleTitle}
                   >
                     <IconComponent
-                      className={`w-4 h-4 shrink-0 ${
+                      className={`w-3.5 h-3.5 shrink-0 ${
                         isSelected
                           ? 'text-white'
                           : isStudent
@@ -793,53 +802,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                           : 'text-indigo-600'
                       }`}
                     />
-                    <span className={`text-[11px] leading-tight font-bold tracking-tight whitespace-nowrap ${
+                    <span className={`text-[10px] leading-tight font-bold tracking-tight whitespace-nowrap ${
                       isSelected ? 'text-white' : 'text-slate-700'
                     }`}>
                       {cfg.label}
                     </span>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white" />
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full" />
                     )}
                   </button>
                 );
               })}
             </div>
 
-            {/* DETAIL KREDENSIAL DEFAULT PERAN AKTIF */}
-            <div className="mt-2 pt-2 border-t border-sky-200/60 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Peran Aktif:</span>
-                  <span className="text-[11px] font-extrabold text-blue-900 truncate">
-                    {currentRoleConfig.roleTitle}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleResetToDefault}
-                  title="Klik untuk mengisi kembali username dan password default"
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 hover:text-blue-900 cursor-pointer bg-white px-2 py-0.5 rounded-md border border-blue-200/80 hover:bg-blue-50 shadow-2xs transition"
-                >
-                  <RotateCcw className="w-2.5 h-2.5" />
-                  <span>Isi Default</span>
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between bg-white/95 px-2.5 py-1.5 rounded-xl border border-sky-200/70 text-[11px] text-slate-600 shadow-2xs">
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 text-[10px] font-medium">User:</span>
-                  <code className="font-mono font-bold text-blue-900 bg-sky-50 border border-sky-200/60 px-1.5 py-0.5 rounded text-[11px]">
-                    {currentRoleConfig.username}
-                  </code>
-                </div>
-                <span className="text-sky-200">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 text-[10px] font-medium">Pass:</span>
-                  <code className="font-mono font-bold text-blue-900 bg-sky-50 border border-sky-200/60 px-1.5 py-0.5 rounded text-[11px]">
-                    {currentRoleConfig.password}
-                  </code>
-                </div>
+            {/* Detail Kredensial Cepat 1 Baris */}
+            <div className="mt-1.5 pt-1.5 border-t border-slate-200/80 flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-slate-200 text-[10px] text-slate-600">
+              <span className="font-bold text-slate-700 truncate max-w-[130px]">
+                {currentRoleConfig.roleTitle}
+              </span>
+              <div className="flex items-center gap-2 font-mono">
+                <span>User: <strong className="text-blue-900 bg-slate-100 px-1 py-0.2 rounded font-bold">{currentRoleConfig.username}</strong></span>
+                <span>Pass: <strong className="text-blue-900 bg-slate-100 px-1 py-0.2 rounded font-bold">{currentRoleConfig.password}</strong></span>
               </div>
             </div>
           </div>
