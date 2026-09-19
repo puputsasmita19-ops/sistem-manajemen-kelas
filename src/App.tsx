@@ -20,6 +20,10 @@ import { DrivePhotoManager } from './components/DrivePhotoManager';
 import { DashboardOverview } from './components/DashboardOverview';
 import { HomeroomDashboard } from './components/homeroom/HomeroomDashboard';
 import { RunningText } from './components/RunningText';
+import { ActivityLogViewer } from './components/ActivityLogViewer';
+import { realtimeNotificationService } from './services/realtimeNotificationService';
+import { antiCheatSecurityService } from './services/antiCheatSecurityService';
+import { TourService } from './services/tourService';
 import { useRealtimeClock } from './utils/timeUtils';
 import Swal from 'sweetalert2';
 import {
@@ -51,7 +55,9 @@ import {
   Code2,
   LayoutGrid,
   MoreHorizontal,
-  X
+  X,
+  History,
+  HelpCircle
 } from 'lucide-react';
 
 const SESSION_STORAGE_KEY = 'SIMAK_ACTIVE_USER_SESSION';
@@ -66,15 +72,6 @@ export default function App() {
   const [appSettings, setAppSettings] = useState<AppSettings>(() => dbService.getAppSettings());
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
-  // Subscribe to changes in AppSettings
-  useEffect(() => {
-    const unsub = dbService.subscribeAppSettings((updated) => {
-      setAppSettings(updated);
-      document.title = `${updated.appName} - Sistem Manajemen Sekolah`;
-    });
-    return () => unsub();
-  }, []);
-
   // Authentication State - Defaults to null (Login Page) so any new visitor lands on the login page first
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem(SESSION_STORAGE_KEY);
@@ -87,6 +84,39 @@ export default function App() {
     }
     return null;
   });
+
+  // Subscribe to changes in AppSettings & Initialize Anti-Cheat Security Suite
+  useEffect(() => {
+    antiCheatSecurityService.initialize();
+    const unsub = dbService.subscribeAppSettings((updated) => {
+      setAppSettings(updated);
+      document.title = `${updated.appName} - Sistem Manajemen Sekolah`;
+    });
+    return () => unsub();
+  }, []);
+
+  // Initialize Realtime Notifications for announcements and grades updates
+  useEffect(() => {
+    realtimeNotificationService.init(() => currentUser);
+    if (currentUser) {
+      realtimeNotificationService.checkLoginUrgentPushNotifications(currentUser);
+    }
+  }, [currentUser]);
+
+  // Auto-trigger role tour on first login / session start
+  useEffect(() => {
+    if (currentUser) {
+      const timer = setTimeout(() => {
+        TourService.getInstance().startTour(
+          currentUser,
+          appSettings.appName,
+          (tab) => setActiveTab(tab),
+          false
+        );
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser?.id]);
 
   // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -201,7 +231,7 @@ export default function App() {
       setActiveTab('dashboard');
     } else if (activeTab === 'homeroom' && !(role === 'admin' || role === 'wali_kelas')) {
       setActiveTab('dashboard');
-    } else if ((activeTab === 'users' || activeTab === 'app_settings' || activeTab === 'architecture' || activeTab === 'drive_photos') && !isAdmin) {
+    } else if ((activeTab === 'users' || activeTab === 'app_settings' || activeTab === 'architecture' || activeTab === 'drive_photos' || activeTab === 'running_text' || activeTab === 'activity_logs') && !isAdmin) {
       setActiveTab('dashboard');
     } else if (activeTab === 'student_portal' && !isStudentOrParent) {
       setActiveTab('dashboard');
@@ -388,8 +418,26 @@ export default function App() {
               {/* Divider */}
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-              {/* Unified Proportional Action Dock: Gelap/Terang, Reset Data, Exit (Sebelah Icon Wifi) */}
+              {/* Unified Proportional Action Dock: Panduan Tour, Gelap/Terang, Reset Data, Exit (Sebelah Icon Wifi) */}
               <div className="flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/70 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs shrink-0">
+                {/* 0. Panduan Tour Interaktif */}
+                <button
+                  id="btn-interactive-tour"
+                  onClick={() => {
+                    TourService.getInstance().startTour(
+                      currentUser,
+                      appSettings.appName,
+                      (tab) => setActiveTab(tab),
+                      true
+                    );
+                  }}
+                  className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/80 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/80 transition shadow-2xs cursor-pointer"
+                  title="Mulai Panduan Tour Interaktif Berdasarkan Role"
+                  aria-label="Panduan Interaktif"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+
                 {/* 1. Theme Toggle */}
                 <ThemeToggle />
 
@@ -643,6 +691,22 @@ export default function App() {
                   <span>Skema & Keamanan</span>
                 </button>
               )}
+
+              {/* Log Aktivitas Tab (Audit Trail - Khusus Admin) */}
+              {currentUser.role === 'admin' && (
+                <button
+                  id="tab-activity-logs"
+                  onClick={() => setActiveTab('activity_logs')}
+                  className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    activeTab === 'activity_logs'
+                      ? 'bg-amber-600 text-white shadow-sm shadow-amber-500/25'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                  }`}
+                >
+                  <History className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>Log Aktivitas</span>
+                </button>
+              )}
             </nav>
           </div>
 
@@ -690,6 +754,7 @@ export default function App() {
                 iCount={iCount}
                 sCount={sCount}
                 aCount={aCount}
+                onNavigateTab={(tab) => setActiveTab(tab)}
               />
             )}
 
@@ -740,6 +805,11 @@ export default function App() {
             {/* VIEW: ARCHITECTURE & SECURITY RULES (Khusus Role Admin) */}
             {activeTab === 'architecture' && currentUser.role === 'admin' && (
               <SchemaAndRulesViewer />
+            )}
+
+            {/* VIEW: LOG AKTIVITAS & AUDIT TRAIL (Khusus Role Admin) */}
+            {activeTab === 'activity_logs' && currentUser.role === 'admin' && (
+              <ActivityLogViewer currentUserRole={currentUser.role} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -876,12 +946,12 @@ export default function App() {
               type="button"
               onClick={() => setIsMobileMoreOpen(true)}
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                ['users', 'app_settings', 'running_text', 'drive_photos', 'architecture'].includes(activeTab)
+                ['users', 'app_settings', 'running_text', 'drive_photos', 'architecture', 'activity_logs'].includes(activeTab)
                   ? 'text-blue-600 dark:text-blue-400 font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <div className={`p-1 rounded-lg ${['users', 'app_settings', 'running_text', 'drive_photos', 'architecture'].includes(activeTab) ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+              <div className={`p-1 rounded-lg ${['users', 'app_settings', 'running_text', 'drive_photos', 'architecture', 'activity_logs'].includes(activeTab) ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
                 <LayoutGrid className="w-4 h-4" />
               </div>
               <span className="text-[10px] leading-tight mt-0.5">Lainnya</span>
@@ -1030,20 +1100,40 @@ export default function App() {
                     setActiveTab('architecture');
                     setIsMobileMoreOpen(false);
                   }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer col-span-2 ${
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
                     activeTab === 'architecture'
                       ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 shadow-2xs'
                       : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
-                      <Database className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold">Skema & Keamanan Firestore</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Struktur koleksi & security rules</div>
-                    </div>
+                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                    <Database className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Skema & Keamanan</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Rules & skema Firestore</div>
+                  </div>
+                </button>
+
+                {/* 6. Log Aktivitas */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('activity_logs');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
+                    activeTab === 'activity_logs'
+                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                    <History className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Log Aktivitas</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Audit trail & riwayat sistem</div>
                   </div>
                 </button>
               </div>

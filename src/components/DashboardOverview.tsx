@@ -19,6 +19,8 @@ import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
 import { WeeklyAttendanceSparkline } from './WeeklyAttendanceSparkline';
 import { StudentDirectorySearch } from './StudentDirectorySearch';
+import { DashboardQuickActions } from './DashboardQuickActions';
+import { AcademicCalendarWidget } from './AcademicCalendarWidget';
 
 interface DashboardOverviewProps {
   currentUser: User;
@@ -38,6 +40,7 @@ interface DashboardOverviewProps {
   iCount: number;
   sCount: number;
   aCount: number;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
@@ -49,7 +52,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   hCount,
   iCount,
   sCount,
-  aCount
+  aCount,
+  onNavigateTab
 }) => {
   // Weekly achievements metrics calculation
   const totalPresensi = (hCount + iCount + sCount + aCount) || 1;
@@ -59,6 +63,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   const taskCompletionPercent = Math.round((completedTasks / totalTasks) * 100);
   const onTimeSubmissions = Math.round(completedTasks * 0.88);
 
+  const isTeacherOrAdmin = currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru';
+
   return (
     <div className="space-y-6">
       {/* Sistem Notifikasi Pengumuman Realtime */}
@@ -66,6 +72,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         currentUserRole={currentUser.role}
         currentUserName={currentUser.nama}
       />
+
+      {/* QUICK ACTIONS & PRESENSI HARI INI (Khusus Admin & Tenaga Pendidik / Guru) */}
+      {isTeacherOrAdmin && (
+        <DashboardQuickActions
+          currentUser={currentUser}
+          classes={classes}
+          subjects={subjects}
+          onNavigateTab={onNavigateTab}
+        />
+      )}
 
       {/* Role-Specific Metric Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -114,16 +130,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
-      {/* TREN KEHADIRAN MINGGUAN (SPARKLINE CHART) */}
-      <WeeklyAttendanceSparkline
-        classes={classes}
-        totalStudentsCount={students.length}
-      />
-
       {/* PENCARIAN & DIREKTORI SISWA (SEARCH BAR BY NAME OR CLASS ID) */}
       <StudentDirectorySearch
         students={students}
         classes={classes}
+      />
+
+      {/* KOMPONEN KALENDER AKADEMIK & AGENDA SEKOLAH (SINKRONISASI FIREBASE) */}
+      <AcademicCalendarWidget
+        currentUserRole={currentUser.role}
+        currentUserName={currentUser.nama}
+      />
+
+      {/* TREN KEHADIRAN MINGGUAN (SPARKLINE CHART) */}
+      <WeeklyAttendanceSparkline
+        classes={classes}
+        totalStudentsCount={students.length}
       />
 
       {/* Kartu Ringkasan 'Pencapaian Minggu Ini' (Weekly Achievement Showcase) */}
@@ -302,67 +324,65 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
-      {/* RBAC Access Matrix Reference */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs transition">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          Matriks Hak Akses Pengguna (RBAC)
-        </h3>
+      {/* RBAC Access Matrix Reference (Hanya tampil untuk role Admin) */}
+      {currentUser.role === 'admin' && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs transition">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            Matriks Hak Akses Pengguna (RBAC)
+          </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-          <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${currentUser.role === 'admin' ? 'bg-purple-100 dark:bg-purple-950/70 border-purple-300 dark:border-purple-700 ring-2 ring-purple-400' : 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800'}`}>
-            <div>
-              <div className="font-bold text-purple-950 dark:text-purple-100 flex items-center justify-between">
-                <span>👑 Admin</span>
-                {currentUser.role === 'admin' && <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>}
-              </div>
-              <div className="text-purple-950 dark:text-purple-100 font-medium mt-1.5 leading-relaxed">Full CRUD semua data, kelola pengguna & kelas, pengaturan aplikasi, database foto Drive, dan ekspor laporan.</div>
-            </div>
-          </div>
-
-          <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${currentUser.role === 'wali_kelas' ? 'bg-blue-100 dark:bg-blue-950/70 border-blue-300 dark:border-blue-700 ring-2 ring-blue-400' : 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'}`}>
-            <div>
-              <div className="font-bold text-blue-950 dark:text-blue-100 flex items-center justify-between">
-                <span>🎓 Wali Kelas</span>
-                {currentUser.role === 'wali_kelas' && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>}
-              </div>
-              <div className="text-blue-950 dark:text-blue-100 font-medium mt-1.5 leading-relaxed">
-                Input presensi harian, review ledger nilai, 18 menu administrasi wali kelas (jadwal, piket, denah, inventaris, jurnal, kasus, prestasi, mading, dll), dan cetak rapor.
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl border flex flex-col justify-between bg-purple-100 dark:bg-purple-950/70 border-purple-300 dark:border-purple-700 ring-2 ring-purple-400">
+              <div>
+                <div className="font-bold text-purple-950 dark:text-purple-100 flex items-center justify-between">
+                  <span>👑 Admin</span>
+                  <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>
+                </div>
+                <div className="text-purple-950 dark:text-purple-100 font-medium mt-1.5 leading-relaxed">Full CRUD semua data, kelola pengguna & kelas, pengaturan aplikasi, database foto Drive, dan ekspor laporan.</div>
               </div>
             </div>
-          </div>
 
-          <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${currentUser.role === 'guru' ? 'bg-emerald-100 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-700 ring-2 ring-emerald-400' : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'}`}>
-            <div>
-              <div className="font-bold text-emerald-950 dark:text-emerald-100 flex items-center justify-between">
-                <span>👨‍🏫 Guru Mapel</span>
-                {currentUser.role === 'guru' && <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>}
+            <div className="p-3.5 rounded-xl border flex flex-col justify-between bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+              <div>
+                <div className="font-bold text-blue-950 dark:text-blue-100 flex items-center justify-between">
+                  <span>🎓 Wali Kelas</span>
+                </div>
+                <div className="text-blue-950 dark:text-blue-100 font-medium mt-1.5 leading-relaxed">
+                  Input presensi harian, review ledger nilai, 18 menu administrasi wali kelas (jadwal, piket, denah, inventaris, jurnal, kasus, prestasi, mading, dll), dan cetak rapor.
+                </div>
               </div>
-              <div className="text-emerald-950 dark:text-emerald-100 font-medium mt-1.5 leading-relaxed">Input/edit nilai tugas, UTS, UAS, dan presensi sesi mengajar untuk mata pelajaran yang diampu.</div>
             </div>
-          </div>
 
-          <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${currentUser.role === 'siswa' ? 'bg-indigo-100 dark:bg-indigo-950/70 border-indigo-300 dark:border-indigo-700 ring-2 ring-indigo-400' : 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800'}`}>
-            <div>
-              <div className="font-bold text-indigo-950 dark:text-indigo-100 flex items-center justify-between">
-                <span>🎒 Siswa</span>
-                {currentUser.role === 'siswa' && <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>}
+            <div className="p-3.5 rounded-xl border flex flex-col justify-between bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+              <div>
+                <div className="font-bold text-emerald-950 dark:text-emerald-100 flex items-center justify-between">
+                  <span>👨‍🏫 Guru Mapel</span>
+                </div>
+                <div className="text-emerald-950 dark:text-emerald-100 font-medium mt-1.5 leading-relaxed">Input/edit nilai tugas, UTS, UAS, dan presensi sesi mengajar untuk mata pelajaran yang diampu.</div>
               </div>
-              <div className="text-indigo-950 dark:text-indigo-100 font-medium mt-1.5 leading-relaxed">Melihat jadwal pelajaran, nilai tugas & ujian, dan rekap kehadiran pribadi.</div>
             </div>
-          </div>
 
-          <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${currentUser.role === 'orang_tua' ? 'bg-amber-100 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700 ring-2 ring-amber-400' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'}`}>
-            <div>
-              <div className="font-bold text-amber-950 dark:text-amber-100 flex items-center justify-between">
-                <span>👨‍👦 Orang Tua</span>
-                {currentUser.role === 'orang_tua' && <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.5 rounded font-bold">AKSES ANDA</span>}
+            <div className="p-3.5 rounded-xl border flex flex-col justify-between bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800">
+              <div>
+                <div className="font-bold text-indigo-950 dark:text-indigo-100 flex items-center justify-between">
+                  <span>🎒 Siswa</span>
+                </div>
+                <div className="text-indigo-950 dark:text-indigo-100 font-medium mt-1.5 leading-relaxed">Melihat jadwal pelajaran, nilai tugas & ujian, dan rekap kehadiran pribadi.</div>
               </div>
-              <div className="text-amber-950 dark:text-amber-100 font-medium mt-1.5 leading-relaxed">Memantau rekap nilai, presensi harian, dan grafik capaian akademik anak kandung.</div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border flex flex-col justify-between bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+              <div>
+                <div className="font-bold text-amber-950 dark:text-amber-100 flex items-center justify-between">
+                  <span>👨‍👦 Orang Tua</span>
+                </div>
+                <div className="text-amber-950 dark:text-amber-100 font-medium mt-1.5 leading-relaxed">Memantau rekap nilai, presensi harian, dan grafik capaian akademik anak kandung.</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

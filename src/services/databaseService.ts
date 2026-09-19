@@ -1,5 +1,5 @@
 import { INITIAL_DATABASE } from '../mockData';
-import { DatabaseSnapshot, User, ClassEntity, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem } from '../types';
+import { DatabaseSnapshot, User, ClassEntity, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem, AcademicEvent, ActivityLog, ActivityActionType } from '../types';
 import { FirestoreSyncService } from './firestoreSyncService';
 import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
@@ -11,6 +11,15 @@ export class DatabaseService {
   private db: DatabaseSnapshot;
   private announcementListeners: Array<(ann: SchoolAnnouncement) => void> = [];
   private settingsListeners: Array<(settings: AppSettings) => void> = [];
+  private gradeUpdateListeners: Array<(info: {
+    studentId: string;
+    studentName: string;
+    subjectName: string;
+    scoreType: string;
+    score: number;
+    updatedBy: string;
+  }) => void> = [];
+  private activityLogListeners: Array<(logs: ActivityLog[]) => void> = [];
 
   private constructor() {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -19,6 +28,12 @@ export class DatabaseService {
         this.db = JSON.parse(saved);
         if (!this.db.announcements) {
           this.db.announcements = JSON.parse(JSON.stringify(INITIAL_DATABASE.announcements || {}));
+        }
+        if (!this.db.academic_events || Object.keys(this.db.academic_events).length === 0) {
+          this.db.academic_events = JSON.parse(JSON.stringify(INITIAL_DATABASE.academic_events || {}));
+        }
+        if (!this.db.activity_logs || Object.keys(this.db.activity_logs).length === 0) {
+          this.db.activity_logs = JSON.parse(JSON.stringify(INITIAL_DATABASE.activity_logs || {}));
         }
         if (!this.db.app_settings) {
           this.db.app_settings = JSON.parse(JSON.stringify(INITIAL_DATABASE.app_settings));
@@ -160,7 +175,13 @@ export class DatabaseService {
         adminPhone: "0812-3456-7890",
         runningTextSpeed: 28,
         runningTextIncludeGreeting: true,
-        runningTextItems: defaultRunningItems
+        runningTextItems: defaultRunningItems,
+        schoolLatitude: -6.2088,
+        schoolLongitude: 106.8456,
+        schoolRadiusMeters: 200,
+        schoolAddress: "Kompleks Pendidikan Utama No. 1, Jakarta",
+        attendanceCutoffTime: "07:30",
+        antiCheatEnabled: true
       };
       this.persist();
     } else {
@@ -178,6 +199,24 @@ export class DatabaseService {
       }
       if (this.db.app_settings.runningTextIncludeGreeting === undefined) {
         this.db.app_settings.runningTextIncludeGreeting = true;
+      }
+      if (this.db.app_settings.schoolLatitude === undefined) {
+        this.db.app_settings.schoolLatitude = -6.2088;
+      }
+      if (this.db.app_settings.schoolLongitude === undefined) {
+        this.db.app_settings.schoolLongitude = 106.8456;
+      }
+      if (this.db.app_settings.schoolRadiusMeters === undefined) {
+        this.db.app_settings.schoolRadiusMeters = 200;
+      }
+      if (!this.db.app_settings.schoolAddress) {
+        this.db.app_settings.schoolAddress = 'Kompleks Pendidikan Utama No. 1, Jakarta';
+      }
+      if (!this.db.app_settings.attendanceCutoffTime) {
+        this.db.app_settings.attendanceCutoffTime = '07:30';
+      }
+      if (this.db.app_settings.antiCheatEnabled === undefined) {
+        this.db.app_settings.antiCheatEnabled = true;
       }
     }
     return this.db.app_settings;
@@ -203,6 +242,178 @@ export class DatabaseService {
     return () => {
       this.settingsListeners = this.settingsListeners.filter(l => l !== listener);
     };
+  }
+
+  // --- ACTIVITY LOGS (LOG AKTIVITAS SISTEM & AUDIT TRAIL) ---
+  public logActivity(
+    actionType: ActivityActionType,
+    actionTitle: string,
+    details: string,
+    targetEntity?: string,
+    metadata?: Record<string, any>,
+    userOverride?: { id: string; nama: string; role: UserRole }
+  ): ActivityLog {
+    if (!this.db.activity_logs) {
+      this.db.activity_logs = {};
+    }
+
+    let actorId = 'user_admin1';
+    let actorName = 'Admin';
+    let actorRole: UserRole = 'admin';
+
+    if (userOverride) {
+      actorId = userOverride.id;
+      actorName = userOverride.nama;
+      actorRole = userOverride.role;
+    } else if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('SIMAK_ACTIVE_USER_SESSION');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id) {
+            actorId = parsed.id;
+            actorName = parsed.nama || actorName;
+            actorRole = parsed.role || actorRole;
+          }
+        }
+      } catch (e) {}
+    }
+
+    const logId = 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const newLog: ActivityLog = {
+      id: logId,
+      timestamp: new Date().toISOString(),
+      userId: actorId,
+      userName: actorName,
+      userRole: actorRole,
+      actionType,
+      actionTitle,
+      details,
+      targetEntity,
+      metadata,
+      ipOrDevice: typeof navigator !== 'undefined' ? (navigator.userAgent.includes('Chrome') ? 'Chrome / Desktop' : 'Web Client') : 'Web Client',
+      syncedToFirebase: true
+    };
+
+    this.db.activity_logs[logId] = newLog;
+    this.persist();
+    FirestoreSyncService.getInstance().syncDocument('logs', logId, newLog);
+
+    const allLogs = this.getAllActivityLogs();
+    this.activityLogListeners.forEach(listener => {
+      try {
+        listener(allLogs);
+      } catch (e) {}
+    });
+
+    return newLog;
+  }
+
+  public getAllActivityLogs(): ActivityLog[] {
+    if (!this.db.activity_logs || Object.keys(this.db.activity_logs).length === 0) {
+      this.db.activity_logs = JSON.parse(JSON.stringify(INITIAL_DATABASE.activity_logs || {}));
+      this.persist();
+    }
+    return Object.values(this.db.activity_logs || {}).sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  public clearActivityLogs(): void {
+    this.db.activity_logs = {};
+    this.persist();
+    FirestoreSyncService.getInstance().syncDocument('logs', 'cleared_marker', { clearedAt: new Date().toISOString() });
+    this.activityLogListeners.forEach(l => {
+      try { l([]); } catch (e) {}
+    });
+  }
+
+  public subscribeActivityLogs(listener: (logs: ActivityLog[]) => void): () => void {
+    this.activityLogListeners.push(listener);
+    listener(this.getAllActivityLogs());
+    return () => {
+      this.activityLogListeners = this.activityLogListeners.filter(l => l !== listener);
+    };
+  }
+
+  public exportLogsToCSV(): void {
+    const logs = this.getAllActivityLogs();
+    const headers = ['No', 'Waktu (ISO/WIB)', 'Nama Pengguna', 'Peran (Role)', 'Tipe Aksi', 'Judul Aktivitas', 'Rincian Aktivitas', 'Perangkat/Klien'];
+    const rows = logs.map((l, idx) => [
+      `"${idx + 1}"`,
+      `"${new Date(l.timestamp).toLocaleString('id-ID')}"`,
+      `"${l.userName.replace(/"/g, '""')}"`,
+      `"${l.userRole.toUpperCase()}"`,
+      `"${l.actionType}"`,
+      `"${l.actionTitle.replace(/"/g, '""')}"`,
+      `"${l.details.replace(/"/g, '""')}"`,
+      `"${(l.ipOrDevice || '-').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const fileName = `SIMAK_Audit_Log_Aktivitas_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.downloadCSVFile(csvContent, fileName);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Log Aktivitas Berhasil Diekspor',
+      text: `File "${fileName}" berisi ${logs.length} catatan audit log berhasil diunduh.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  }
+
+  // --- REAL-TIME EVENT LISTENERS (GRADES & ANNOUNCEMENTS) ---
+  public subscribeGradeUpdates(listener: (info: {
+    studentId: string;
+    studentName: string;
+    subjectName: string;
+    scoreType: string;
+    score: number;
+    updatedBy: string;
+  }) => void): () => void {
+    this.gradeUpdateListeners.push(listener);
+    return () => {
+      this.gradeUpdateListeners = this.gradeUpdateListeners.filter(l => l !== listener);
+    };
+  }
+
+  public notifyGradeUpdate(info: {
+    studentId: string;
+    studentName: string;
+    subjectName: string;
+    scoreType: string;
+    score: number;
+    updatedBy: string;
+  }): void {
+    this.gradeUpdateListeners.forEach(listener => {
+      try {
+        listener(info);
+      } catch (err) {
+        console.error('Error notifying grade update:', err);
+      }
+    });
+  }
+
+  public subscribeAnnouncementUpdates(listener: (ann: SchoolAnnouncement) => void): () => void {
+    this.announcementListeners.push(listener);
+    return () => {
+      this.announcementListeners = this.announcementListeners.filter(l => l !== listener);
+    };
+  }
+
+  public notifyAnnouncementUpdate(ann: SchoolAnnouncement): void {
+    this.announcementListeners.forEach(listener => {
+      try {
+        listener(ann);
+      } catch (err) {
+        console.error('Error broadcasting announcement:', err);
+      }
+    });
+  }
+
+  public isStudentChildOfParent(parentId: string, studentId: string): boolean {
+    return Object.values(this.db.parent_student_relations).some(
+      r => r.parent_id === parentId && r.student_id === studentId
+    );
   }
 
   // --- USERS & AUTH ---
@@ -237,18 +448,39 @@ export class DatabaseService {
     this.db.users[id] = newUser;
     this.persist();
     FirestoreSyncService.getInstance().syncDocument('users', id, newUser);
+    
+    this.logActivity(
+      'user_create',
+      'Penambahan Akun Pengguna Baru',
+      `Akun pengguna baru didaftarkan: ${newUser.nama} (@${newUser.username}) dengan role ${newUser.role.toUpperCase()}.`,
+      `user_${id}`
+    );
+
     return newUser;
   }
 
   public updateUser(id: string, userData: Partial<User>): User {
     if (!this.db.users[id]) throw new Error('Pengguna tidak ditemukan');
+    const oldName = this.db.users[id].nama;
     this.db.users[id] = { ...this.db.users[id], ...userData };
     this.persist();
     FirestoreSyncService.getInstance().syncDocument('users', id, this.db.users[id]);
+
+    this.logActivity(
+      'user_update',
+      'Pembaruan Data Pengguna',
+      `Data profil pengguna "${oldName}" diperbarui oleh administrator.`,
+      `user_${id}`
+    );
+
     return this.db.users[id];
   }
 
   public deleteUser(id: string): void {
+    const targetUser = this.db.users[id];
+    const targetName = targetUser?.nama || id;
+    const targetRole = targetUser?.role || 'user';
+
     delete this.db.users[id];
     FirestoreSyncService.getInstance().deleteDocument('users', id);
     // Clean up class_members if student
@@ -265,6 +497,13 @@ export class DatabaseService {
       }
     });
     this.persist();
+
+    this.logActivity(
+      'user_delete',
+      'Penghapusan Akun Pengguna',
+      `Akun pengguna "${targetName}" (${targetRole.toUpperCase()}) telah dihapus dari sistem beserta relasi datanya.`,
+      `user_${id}`
+    );
   }
 
   // --- CLASSES & SUBJECTS ---
@@ -278,6 +517,12 @@ export class DatabaseService {
 
   public getHomeroomClass(teacherId: string): ClassEntity | undefined {
     return Object.values(this.db.classes).find(c => c.wali_kelas_id === teacherId);
+  }
+
+  public getStudentClass(studentId: string): ClassEntity | undefined {
+    const cm = Object.values(this.db.class_members).find(m => m.student_id === studentId);
+    if (!cm) return undefined;
+    return this.db.classes[cm.class_id];
   }
 
   public getAllSubjects(): Subject[] {
@@ -367,6 +612,14 @@ export class DatabaseService {
     if (batchItems.length > 0) {
       FirestoreSyncService.getInstance().syncBatchDocuments('attendance', batchItems);
     }
+
+    const cls = this.db.classes[classId];
+    this.logActivity(
+      'attendance_input',
+      'Input Presensi Harian Siswa',
+      `Presensi tanggal ${date} untuk ${cls ? cls.nama_kelas : 'Kelas'} sebanyak ${records.length} siswa berhasil diperbarui.`,
+      `att_${classId}_${date}`
+    );
   }
 
   public getStudentAttendanceSummary(studentId: string) {
@@ -378,6 +631,129 @@ export class DatabaseService {
       }
     });
     return { summary, records };
+  }
+
+  // --- PRESENSI MANDIRI REALTIME: Foto Selfie, Timestamp & Validasi GPS ---
+  public getStudentTodayAttendance(studentId: string, dateStr?: string): Attendance | null {
+    const date = dateStr || new Date().toISOString().split('T')[0];
+    const rec = Object.values(this.db.attendance).find(
+      a => a.student_id === studentId && a.date === date
+    );
+    return rec || null;
+  }
+
+  public saveStudentSelfieAttendance(params: {
+    studentId: string;
+    classId: string;
+    status: AttendanceStatus;
+    photoUrl: string;
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    distanceMeters: number;
+    isWithinRadius: boolean;
+    address?: string;
+    note?: string;
+    timestamp?: string;
+  }): Attendance {
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime =
+      params.timestamp ||
+      new Date().toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }) + ' WIB';
+
+    // Cari apakah sudah ada record presensi hari ini
+    const existingKey = Object.keys(this.db.attendance).find(
+      k =>
+        this.db.attendance[k].student_id === params.studentId &&
+        this.db.attendance[k].date === today
+    );
+
+    let savedAttendance: Attendance;
+
+    if (existingKey) {
+      this.db.attendance[existingKey] = {
+        ...this.db.attendance[existingKey],
+        class_id: params.classId,
+        status: params.status,
+        photoUrl: params.photoUrl,
+        latitude: params.latitude,
+        longitude: params.longitude,
+        accuracy: params.accuracy,
+        distanceMeters: params.distanceMeters,
+        isWithinRadius: params.isWithinRadius,
+        address: params.address || this.db.app_settings?.schoolAddress || 'Sekolah',
+        timestamp: nowTime,
+        note: params.note || (params.isWithinRadius ? 'Hadir tepat waktu di area sekolah' : 'Presensi di luar radius sekolah'),
+        verifiedBy: 'self_scan_gps'
+      };
+      savedAttendance = this.db.attendance[existingKey];
+    } else {
+      const newId = 'att_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      savedAttendance = {
+        id: newId,
+        class_id: params.classId,
+        subject_id: 'HOMEROOM',
+        date: today,
+        student_id: params.studentId,
+        status: params.status,
+        photoUrl: params.photoUrl,
+        latitude: params.latitude,
+        longitude: params.longitude,
+        accuracy: params.accuracy,
+        distanceMeters: params.distanceMeters,
+        isWithinRadius: params.isWithinRadius,
+        address: params.address || this.db.app_settings?.schoolAddress || 'Sekolah',
+        timestamp: nowTime,
+        note: params.note || (params.isWithinRadius ? 'Hadir tepat waktu di area sekolah' : 'Presensi di luar radius sekolah'),
+        verifiedBy: 'self_scan_gps'
+      };
+      this.db.attendance[newId] = savedAttendance;
+    }
+
+    this.persist();
+    FirestoreSyncService.getInstance().syncDocument('attendance', savedAttendance.id, savedAttendance);
+
+    const student = this.db.users[params.studentId];
+    const studentName = student ? student.nama : 'Siswa';
+
+    // Catat log aktivitas keamanan & presensi
+    this.logActivity(
+      'attendance_input',
+      'Presensi Mandiri Realtime (Selfie & GPS)',
+      `Siswa ${studentName} melakukan presensi selfie mandiri pada ${nowTime}. Jarak: ${params.distanceMeters}m (${params.isWithinRadius ? 'Dalam Radius' : 'Luar Radius'}).`,
+      `att_${savedAttendance.id}`,
+      {
+        studentId: params.studentId,
+        lat: params.latitude,
+        lng: params.longitude,
+        distanceMeters: params.distanceMeters,
+        isWithinRadius: params.isWithinRadius
+      },
+      student ? { id: student.id, nama: student.nama, role: 'siswa' } : undefined
+    );
+
+    return savedAttendance;
+  }
+
+  public getAllAttendanceWithDetails(dateStr?: string) {
+    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const records = Object.values(this.db.attendance).filter(a => a.date === targetDate);
+
+    return records.map(r => {
+      const student = this.db.users[r.student_id];
+      const cls = this.db.classes[r.class_id];
+      return {
+        ...r,
+        studentName: student ? student.nama : 'Siswa',
+        studentUsername: student ? student.username : '',
+        className: cls ? cls.nama_kelas : 'Kelas',
+        academicYear: cls ? cls.tahun_ajaran : ''
+      };
+    }).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
   }
 
   // --- RELATIONAL JOIN: Nilai Siswa ---
@@ -421,6 +797,7 @@ export class DatabaseService {
     );
 
     let targetGrade: Grade;
+    const isNew = !existing;
     if (existing) {
       existing.score = score;
       targetGrade = existing;
@@ -437,6 +814,29 @@ export class DatabaseService {
     }
     this.persist();
     FirestoreSyncService.getInstance().syncDocument('grades', targetGrade.id, targetGrade);
+
+    const student = this.db.users[studentId];
+    const subject = this.db.subjects[subjectId];
+    const studentName = student ? student.nama : 'Siswa';
+    const subjectName = subject ? subject.nama_mapel : 'Mata Pelajaran';
+
+    // Log Activity
+    this.logActivity(
+      isNew ? 'grade_input' : 'grade_update',
+      'Pembaruan Nilai Siswa',
+      `Nilai ${type} mapel ${subjectName} untuk siswa ${studentName} disimpan (Skor: ${score}).`,
+      `grade_${targetGrade.id}`
+    );
+
+    // Trigger Realtime Notification Broadcast
+    this.notifyGradeUpdate({
+      studentId,
+      studentName,
+      subjectName,
+      scoreType: type,
+      score,
+      updatedBy: 'Guru Pengampu'
+    });
   }
 
   public getStudentReport(studentId: string) {
@@ -905,6 +1305,13 @@ export class DatabaseService {
     this.persist();
     FirestoreSyncService.getInstance().syncDocument('announcements', newId, newAnn);
 
+    this.logActivity(
+      'announcement_create',
+      'Penerbitan Pengumuman Sekolah',
+      `Pengumuman baru "${newAnn.title}" diterbitkan untuk sasaran: ${newAnn.targetRole.toUpperCase()}.`,
+      `ann_${newId}`
+    );
+
     // Broadcast ke semua listener realtime
     this.announcementListeners.forEach(listener => {
       try {
@@ -919,9 +1326,17 @@ export class DatabaseService {
 
   public deleteAnnouncement(id: string): void {
     if (this.db.announcements && this.db.announcements[id]) {
+      const title = this.db.announcements[id].title;
       delete this.db.announcements[id];
       this.persist();
       FirestoreSyncService.getInstance().deleteDocument('announcements', id);
+
+      this.logActivity(
+        'announcement_delete',
+        'Penghapusan Pengumuman',
+        `Pengumuman "${title}" telah dihapus oleh administrator.`,
+        `ann_${id}`
+      );
     }
   }
 
@@ -930,6 +1345,52 @@ export class DatabaseService {
     return () => {
       this.announcementListeners = this.announcementListeners.filter(l => l !== listener);
     };
+  }
+
+  // --- ACADEMIC CALENDAR & IMPORTANT EVENTS CRUD ---
+  public getAllAcademicEvents(): AcademicEvent[] {
+    if (!this.db.academic_events || Object.keys(this.db.academic_events).length === 0) {
+      this.db.academic_events = JSON.parse(JSON.stringify(INITIAL_DATABASE.academic_events || {}));
+      this.persist();
+    }
+    const eventsObj = this.db.academic_events || {};
+    return Object.values(eventsObj).sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }
+
+  public createAcademicEvent(data: Omit<AcademicEvent, 'id'>): AcademicEvent {
+    const newId = `evt_${Date.now()}`;
+    const newEvent: AcademicEvent = {
+      ...data,
+      id: newId
+    };
+
+    if (!this.db.academic_events) {
+      this.db.academic_events = {};
+    }
+    this.db.academic_events[newId] = newEvent;
+    this.persist();
+    FirestoreSyncService.getInstance().syncDocument('academic_events', newId, newEvent);
+
+    return newEvent;
+  }
+
+  public updateAcademicEvent(id: string, data: Partial<AcademicEvent>): AcademicEvent | null {
+    if (!this.db.academic_events || !this.db.academic_events[id]) return null;
+    this.db.academic_events[id] = {
+      ...this.db.academic_events[id],
+      ...data
+    };
+    this.persist();
+    FirestoreSyncService.getInstance().syncDocument('academic_events', id, this.db.academic_events[id]);
+    return this.db.academic_events[id];
+  }
+
+  public deleteAcademicEvent(id: string): void {
+    if (this.db.academic_events && this.db.academic_events[id]) {
+      delete this.db.academic_events[id];
+      this.persist();
+      FirestoreSyncService.getInstance().deleteDocument('academic_events', id);
+    }
   }
 
   // --- CSV UTILITIES & EXPORT / BULK-IMPORT METHODS ---
@@ -1030,36 +1491,193 @@ export class DatabaseService {
     });
   }
 
-  public downloadSampleStudentCSV(): void {
-    const headers = ['Nama Lengkap', 'Email', 'No_WhatsApp'];
-    const sampleRows = [
-      ['"Muhammad Rizky Pratama"', '"rizky.pratama@sekolah.sch.id"', '"081298765432"'],
-      ['"Siti Aisyah Putri"', '"siti.aisyah@sekolah.sch.id"', '"081376543210"'],
-      ['"Dimas Arya Saputra"', '"dimas.arya@sekolah.sch.id"', '"081512345678"']
+  // --- ADVANCED MULTI-ROLE EXPORT, IMPORT & BULK CREDENTIALS ---
+  public exportUsersMultiRoleCSV(options: {
+    role?: string;
+    classId?: string;
+    includePassword?: boolean;
+  } = {}): void {
+    const { role = 'all', classId = 'all', includePassword = true } = options;
+    let users = this.getAllUsers();
+
+    if (role && role !== 'all') {
+      users = users.filter(u => u.role === role);
+    }
+
+    if (classId && classId !== 'all') {
+      const classMemberStudentIds = new Set(
+        Object.values(this.db.class_members)
+          .filter(cm => cm.class_id === classId)
+          .map(cm => cm.student_id)
+      );
+      users = users.filter(u => classMemberStudentIds.has(u.id));
+    }
+
+    const headers = [
+      'ID Pengguna',
+      'Nama Lengkap',
+      'Username',
+      'Email',
+      'Role Akses',
+      'No. WhatsApp',
+      ...(includePassword ? ['Password Akun'] : []),
+      'Kelas Siswa',
+      'Wali Kelas Dari',
+      'Mata Pelajaran Diampu',
+      'Relasi Anak (Orang Tua)'
     ];
 
-    const content = [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\n');
-    this.downloadCSVFile(content, 'Template_Import_Siswa_SIMAK.csv');
+    const rows = users.map(u => {
+      // Find class info if student
+      let studentClassName = '-';
+      if (u.role === 'siswa') {
+        const cm = Object.values(this.db.class_members).find(m => m.student_id === u.id);
+        if (cm) {
+          const cls = this.getClassById(cm.class_id);
+          if (cls) studentClassName = `${cls.nama_kelas} (${cls.tahun_ajaran})`;
+        }
+      }
+
+      // Find homeroom class if wali_kelas
+      let homeroomClass = '-';
+      if (u.role === 'wali_kelas') {
+        const cls = Object.values(this.db.classes).find(c => c.wali_kelas_id === u.id);
+        if (cls) homeroomClass = `${cls.nama_kelas} (${cls.tahun_ajaran})`;
+      }
+
+      // Find taught subjects if guru
+      let taughtSubjects = '-';
+      if (u.role === 'guru') {
+        const subs = Object.values(this.db.subjects).filter(s => s.guru_id === u.id);
+        if (subs.length > 0) taughtSubjects = subs.map(s => s.nama_mapel).join('; ');
+      }
+
+      // Find children if parent
+      let childrenNames = '-';
+      if (u.role === 'orang_tua') {
+        const children = this.getChildrenOfParent(u.id);
+        if (children.length > 0) childrenNames = children.map(c => `${c.nama} (@${c.username || c.email})`).join('; ');
+      }
+
+      return [
+        `"${u.id}"`,
+        `"${u.nama.replace(/"/g, '""')}"`,
+        `"${(u.username || u.email.split('@')[0]).replace(/"/g, '""')}"`,
+        `"${u.email.replace(/"/g, '""')}"`,
+        `"${u.role}"`,
+        `"${(u.no_wa || '-').replace(/"/g, '""')}"`,
+        ...(includePassword ? [`"${(u.password_hash || 'pass123').replace(/"/g, '""')}"`] : []),
+        `"${studentClassName.replace(/"/g, '""')}"`,
+        `"${homeroomClass.replace(/"/g, '""')}"`,
+        `"${taughtSubjects.replace(/"/g, '""')}"`,
+        `"${childrenNames.replace(/"/g, '""')}"`
+      ];
+    });
+
+    const csvString = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const roleLabel = role === 'all' ? 'Semua_Role' : role;
+    const fileName = `SIMAK_Data_Pengguna_${roleLabel}_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.downloadCSVFile(csvString, fileName);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Ekspor Data Berhasil!',
+      text: `File "${fileName}" berisi ${users.length} akun pengguna (${roleLabel}) berhasil diunduh.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
   }
 
-  public importStudentsFromCSV(csvText: string, targetClassId: string): {
+  public downloadMultiRoleTemplateCSV(templateType: 'all' | 'guru' | 'siswa' | 'orang_tua' | 'admin' = 'all'): void {
+    let headers: string[] = [];
+    let sampleRows: string[][] = [];
+    let fileName = '';
+
+    if (templateType === 'all') {
+      headers = ['Nama Lengkap', 'Role', 'Username', 'Email', 'Password', 'No_WhatsApp', 'Kelas', 'Siswa_Terkait'];
+      sampleRows = [
+        ['"Drs. H. Ahmad Subarjo, M.Pd"', '"admin"', '"admin_utama"', '"admin.utama@sekolah.sch.id"', '"admin123"', '"081234567890"', '""', '""'],
+        ['"Budi Santoso, S.Kom"', '"guru"', '"guru_budi"', '"budi.santoso@sekolah.sch.id"', '"guru123"', '"081298765432"', '""', '""'],
+        ['"Siti Rahmawati, S.Pd"', '"wali_kelas"', '"wali_siti"', '"siti.rahmawati@sekolah.sch.id"', '"wali123"', '"081376543210"', '"X-A"', '""'],
+        ['"Muhammad Rizky Pratama"', '"siswa"', '"rizky_pratama"', '"rizky.pratama@sekolah.sch.id"', '"siswa123"', '"081512345678"', '"X-A"', '""'],
+        ['"Aisyah Putri Maharani"', '"siswa"', '"aisyah_putri"', '"aisyah.putri@sekolah.sch.id"', '"siswa123"', '"081698761234"', '"X-A"', '""'],
+        ['"Hendra Pratama (Wali Rizky)"', '"orang_tua"', '"ortu_rizky"', '"hendra.pratama@gmail.com"', '"ortu123"', '"081287654321"', '""', '"rizky.pratama@sekolah.sch.id"']
+      ];
+      fileName = 'Template_Import_Semua_Role_SIMAK.csv';
+    } else if (templateType === 'guru') {
+      headers = ['Nama Lengkap', 'Role', 'Username', 'Email', 'Password', 'No_WhatsApp'];
+      sampleRows = [
+        ['"Budi Santoso, S.Kom"', '"guru"', '"guru_budi"', '"budi.santoso@sekolah.sch.id"', '"guru123"', '"081298765432"'],
+        ['"Dewi Sartika, S.Pd"', '"guru"', '"guru_dewi"', '"dewi.sartika@sekolah.sch.id"', '"guru123"', '"081387654321"'],
+        ['"Siti Rahmawati, S.Pd"', '"wali_kelas"', '"wali_siti"', '"siti.rahmawati@sekolah.sch.id"', '"wali123"', '"081598765432"']
+      ];
+      fileName = 'Template_Import_Guru_WaliKelas_SIMAK.csv';
+    } else if (templateType === 'siswa') {
+      headers = ['Nama Lengkap', 'Username', 'Email', 'Password', 'No_WhatsApp', 'Kelas'];
+      sampleRows = [
+        ['"Muhammad Rizky Pratama"', '"rizky_pratama"', '"rizky.pratama@sekolah.sch.id"', '"siswa123"', '"081298765432"', '"X-A"'],
+        ['"Siti Aisyah Putri"', '"siti_aisyah"', '"siti.aisyah@sekolah.sch.id"', '"siswa123"', '"081376543210"', '"X-A"'],
+        ['"Dimas Arya Saputra"', '"dimas_arya"', '"dimas.arya@sekolah.sch.id"', '"siswa123"', '"081512345678"', '"X-B"']
+      ];
+      fileName = 'Template_Import_Siswa_Kelas_SIMAK.csv';
+    } else if (templateType === 'orang_tua') {
+      headers = ['Nama Orang Tua / Wali', 'Username', 'Email', 'Password', 'No_WhatsApp', 'Email_Atau_Username_Siswa_Anak'];
+      sampleRows = [
+        ['"Hendra Pratama"', '"ortu_rizky"', '"hendra.pratama@gmail.com"', '"ortu123"', '"081287654321"', '"rizky.pratama@sekolah.sch.id"'],
+        ['"Ratna Sari"', '"ortu_aisyah"', '"ratna.sari@gmail.com"', '"ortu123"', '"081398765432"', '"siti.aisyah@sekolah.sch.id"']
+      ];
+      fileName = 'Template_Import_OrangTua_Wali_SIMAK.csv';
+    } else {
+      headers = ['Nama Lengkap', 'Role', 'Username', 'Email', 'Password', 'No_WhatsApp'];
+      sampleRows = [
+        ['"Administrator Tata Usaha"', '"admin"', '"admin_tu"', '"admin.tu@sekolah.sch.id"', '"admin123"', '"081234567890"']
+      ];
+      fileName = 'Template_Import_Admin_SIMAK.csv';
+    }
+
+    const content = [headers.join(','), ...sampleRows.map(r => r.join(','))].join('\r\n');
+    this.downloadCSVFile(content, fileName);
+  }
+
+  public importUsersMultiRoleCSV(
+    csvText: string,
+    options: {
+      defaultRole?: UserRole;
+      defaultClassId?: string;
+      duplicateStrategy?: 'update' | 'skip';
+      defaultPassword?: string;
+    } = {}
+  ): {
     success: boolean;
     createdCount: number;
+    updatedCount: number;
+    skippedCount: number;
     enrolledCount: number;
+    parentLinkedCount: number;
     errorMessages: string[];
+    processedUsers: User[];
   } {
+    const {
+      defaultRole = 'siswa',
+      defaultClassId = '',
+      duplicateStrategy = 'update',
+      defaultPassword = ''
+    } = options;
+
     const lines = csvText.split(/\r\n|\n/).map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length <= 1) {
       return {
         success: false,
         createdCount: 0,
+        updatedCount: 0,
+        skippedCount: 0,
         enrolledCount: 0,
-        errorMessages: ['File CSV kosong atau hanya memiliki baris header.']
+        parentLinkedCount: 0,
+        errorMessages: ['File CSV kosong atau hanya memiliki satu baris header.'],
+        processedUsers: []
       };
     }
 
-    // Parse header to find column indices
-    const headerLine = lines[0];
     const parseCSVRow = (row: string): string[] => {
       const result: string[] = [];
       let current = '';
@@ -1085,72 +1703,186 @@ export class DatabaseService {
       return result;
     };
 
-    const headers = parseCSVRow(headerLine).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-    
-    // Determine indices
-    let nameIdx = headers.findIndex(h => h.includes('nama') || h.includes('name'));
-    let emailIdx = headers.findIndex(h => h.includes('email') || h.includes('surel'));
-    let phoneIdx = headers.findIndex(h => h.includes('wa') || h.includes('telepon') || h.includes('phone') || h.includes('hp'));
+    const headerLine = lines[0];
+    const headerCols = parseCSVRow(headerLine).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, ''));
 
-    if (nameIdx === -1) nameIdx = 0; // Default first col
-    if (emailIdx === -1) emailIdx = 1; // Default second col
-    if (phoneIdx === -1) phoneIdx = 2; // Default third col
+    // Intelligent index mapper
+    const findIndexByKeywords = (keywords: string[]) => {
+      return headerCols.findIndex(col => keywords.some(k => col.includes(k)));
+    };
+
+    const nameIdx = findIndexByKeywords(['nama', 'name']);
+    const roleIdx = findIndexByKeywords(['role', 'peran', 'jabatan', 'tipe']);
+    const userIdx = findIndexByKeywords(['username', 'user', 'uname', 'login']);
+    const emailIdx = findIndexByKeywords(['email', 'surel', 'mail']);
+    const passIdx = findIndexByKeywords(['pass', 'sandi', 'password', 'pwd']);
+    const phoneIdx = findIndexByKeywords(['wa', 'telepon', 'phone', 'hp', 'ponsel', 'kontak']);
+    const classIdx = findIndexByKeywords(['kelas', 'class', 'rombel']);
+    const childIdx = findIndexByKeywords(['anak', 'siswa', 'child', 'student', 'terkait', 'relasi']);
 
     let createdCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
     let enrolledCount = 0;
+    let parentLinkedCount = 0;
     const errorMessages: string[] = [];
+    const processedUsers: User[] = [];
 
-    for (let idx = 1; idx < lines.length; idx++) {
-      const line = lines[idx];
+    const validRoles: UserRole[] = ['admin', 'wali_kelas', 'guru', 'siswa', 'orang_tua'];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
       if (!line) continue;
       const cols = parseCSVRow(line);
 
-      const nama = cols[nameIdx];
-      const email = cols[emailIdx];
-      const no_wa = phoneIdx < cols.length ? cols[phoneIdx] : '';
-
-      if (!nama || !email) {
-        errorMessages.push(`Baris ${idx + 1}: Nama atau email kosong (${line})`);
+      const rawName = nameIdx !== -1 && nameIdx < cols.length ? cols[nameIdx] : cols[0];
+      if (!rawName) {
+        errorMessages.push(`Baris ${i + 1}: Nama tidak boleh kosong.`);
         continue;
       }
 
-      // Check if user already exists
-      let existingUser = this.findUserByEmail(email);
-      let studentId = existingUser?.id;
-
-      if (!existingUser) {
-        // Create user
-        const generatedUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || `siswa_${Date.now()}_${idx}`;
-        const newUser = this.createUser({
-          nama,
-          username: generatedUsername,
-          email,
-          role: 'siswa',
-          password_hash: 'siswa123',
-          no_wa: no_wa || '-'
-        });
-        studentId = newUser.id;
-        createdCount++;
-      } else {
-        studentId = existingUser.id;
+      // Parse email
+      let rawEmail = emailIdx !== -1 && emailIdx < cols.length ? cols[emailIdx] : '';
+      if (!rawEmail) {
+        // Auto-generate email from name if missing
+        const safeName = rawName.toLowerCase().replace(/[^a-z0-9]/g, '.');
+        rawEmail = `${safeName}@sekolah.sch.id`;
       }
 
-      // Enroll in targetClassId if specified and not already enrolled
-      if (targetClassId && studentId) {
-        const alreadyInClass = Object.values(this.db.class_members).some(
-          cm => cm.class_id === targetClassId && cm.student_id === studentId
-        );
+      // Parse Role
+      let rawRole: UserRole = defaultRole;
+      if (roleIdx !== -1 && roleIdx < cols.length && cols[roleIdx]) {
+        const candidateRole = cols[roleIdx].toLowerCase().trim();
+        if (candidateRole.includes('admin')) rawRole = 'admin';
+        else if (candidateRole.includes('wali')) rawRole = 'wali_kelas';
+        else if (candidateRole.includes('guru') || candidateRole.includes('pengajar') || candidateRole.includes('teacher')) rawRole = 'guru';
+        else if (candidateRole.includes('ortu') || candidateRole.includes('orang_tua') || candidateRole.includes('orang') || candidateRole.includes('parent')) rawRole = 'orang_tua';
+        else if (candidateRole.includes('siswa') || candidateRole.includes('murid') || candidateRole.includes('student')) rawRole = 'siswa';
+        else if (validRoles.includes(candidateRole as UserRole)) rawRole = candidateRole as UserRole;
+      }
 
-        if (!alreadyInClass) {
-          const newCmId = 'cm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-          const newMember = {
-            id: newCmId,
-            class_id: targetClassId,
-            student_id: studentId
-          };
-          this.db.class_members[newCmId] = newMember;
-          FirestoreSyncService.getInstance().syncDocument('class_members', newCmId, newMember);
-          enrolledCount++;
+      // Parse Username
+      let rawUsername = userIdx !== -1 && userIdx < cols.length ? cols[userIdx] : '';
+      if (!rawUsername) {
+        rawUsername = rawEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || `user_${Date.now()}_${i}`;
+      }
+      rawUsername = rawUsername.toLowerCase().replace(/\s+/g, '');
+
+      // Parse Password
+      let rawPassword = passIdx !== -1 && passIdx < cols.length ? cols[passIdx] : '';
+      if (!rawPassword) {
+        if (defaultPassword) {
+          rawPassword = defaultPassword;
+        } else {
+          // Standard default password according to role
+          if (rawRole === 'admin') rawPassword = 'admin123';
+          else if (rawRole === 'guru' || rawRole === 'wali_kelas') rawPassword = 'guru123';
+          else if (rawRole === 'orang_tua') rawPassword = 'ortu123';
+          else rawPassword = 'siswa123';
+        }
+      }
+
+      // Parse Phone
+      const rawPhone = phoneIdx !== -1 && phoneIdx < cols.length ? cols[phoneIdx] : '-';
+
+      // Parse Class (if specified)
+      const rawClass = classIdx !== -1 && classIdx < cols.length ? cols[classIdx] : '';
+
+      // Parse Child/Student for parent (if specified)
+      const rawChild = childIdx !== -1 && childIdx < cols.length ? cols[childIdx] : '';
+
+      // Check existing user by email or username
+      let existingUser = this.findUserByEmail(rawEmail);
+      if (!existingUser && rawUsername) {
+        existingUser = this.findUserByUsername(rawUsername);
+      }
+
+      let activeUserId = '';
+
+      if (existingUser) {
+        if (duplicateStrategy === 'skip') {
+          skippedCount++;
+          processedUsers.push(existingUser);
+          continue;
+        } else {
+          // Update existing user
+          this.updateUser(existingUser.id, {
+            nama: rawName,
+            username: rawUsername,
+            email: rawEmail,
+            role: rawRole,
+            no_wa: rawPhone || existingUser.no_wa,
+            password_hash: rawPassword || existingUser.password_hash
+          });
+          activeUserId = existingUser.id;
+          updatedCount++;
+          processedUsers.push(this.db.users[activeUserId]);
+        }
+      } else {
+        // Create new user
+        const newUser = this.createUser({
+          nama: rawName,
+          username: rawUsername,
+          email: rawEmail,
+          role: rawRole,
+          no_wa: rawPhone || '-',
+          password_hash: rawPassword
+        });
+        activeUserId = newUser.id;
+        createdCount++;
+        processedUsers.push(newUser);
+      }
+
+      // Handle Class Enrollment for Students
+      if (rawRole === 'siswa' && activeUserId) {
+        let targetClass = '';
+        if (rawClass) {
+          // Find class by name or ID
+          const matchedClass = Object.values(this.db.classes).find(
+            c => c.id === rawClass || c.nama_kelas.toLowerCase() === rawClass.toLowerCase()
+          );
+          if (matchedClass) targetClass = matchedClass.id;
+        }
+        if (!targetClass && defaultClassId) {
+          targetClass = defaultClassId;
+        }
+
+        if (targetClass) {
+          const alreadyInClass = Object.values(this.db.class_members).some(
+            cm => cm.class_id === targetClass && cm.student_id === activeUserId
+          );
+          if (!alreadyInClass) {
+            const newCmId = 'cm_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+            const memberObj = {
+              id: newCmId,
+              class_id: targetClass,
+              student_id: activeUserId
+            };
+            this.db.class_members[newCmId] = memberObj;
+            FirestoreSyncService.getInstance().syncDocument('class_members', newCmId, memberObj);
+            enrolledCount++;
+          }
+        }
+      }
+
+      // Handle Parent-Student Relation for Orang Tua
+      if (rawRole === 'orang_tua' && activeUserId && rawChild) {
+        const student = this.findUserByEmail(rawChild) || this.findUserByUsername(rawChild) || Object.values(this.db.users).find(u => u.nama.toLowerCase() === rawChild.toLowerCase() && u.role === 'siswa');
+        if (student) {
+          const alreadyLinked = Object.values(this.db.parent_student_relations).some(
+            psr => psr.parent_id === activeUserId && psr.student_id === student.id
+          );
+          if (!alreadyLinked) {
+            const newPsrId = 'psr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+            const relObj = {
+              id: newPsrId,
+              parent_id: activeUserId,
+              student_id: student.id
+            };
+            this.db.parent_student_relations[newPsrId] = relObj;
+            FirestoreSyncService.getInstance().syncDocument('parent_student_relations', newPsrId, relObj);
+            parentLinkedCount++;
+          }
         }
       }
     }
@@ -1158,10 +1890,325 @@ export class DatabaseService {
     this.persist();
 
     return {
-      success: createdCount > 0 || enrolledCount > 0,
+      success: createdCount > 0 || updatedCount > 0,
       createdCount,
+      updatedCount,
+      skippedCount,
       enrolledCount,
-      errorMessages
+      parentLinkedCount,
+      errorMessages,
+      processedUsers
     };
+  }
+
+  // --- BULK USERNAME & PASSWORD MANAGEMENT ---
+  public bulkUpdateUserCredentials(updates: Array<{
+    userId: string;
+    newUsername?: string;
+    newPassword?: string;
+  }>): { success: boolean; count: number } {
+    let count = 0;
+    updates.forEach(u => {
+      const user = this.db.users[u.userId];
+      if (user) {
+        let changed = false;
+        if (u.newUsername && u.newUsername.trim() && u.newUsername !== user.username) {
+          user.username = u.newUsername.trim().toLowerCase().replace(/\s+/g, '');
+          changed = true;
+        }
+        if (u.newPassword && u.newPassword.trim() && u.newPassword !== user.password_hash) {
+          user.password_hash = u.newPassword.trim();
+          changed = true;
+        }
+        if (changed) {
+          FirestoreSyncService.getInstance().syncDocument('users', user.id, user);
+          count++;
+        }
+      }
+    });
+
+    if (count > 0) {
+      this.persist();
+      this.logActivity(
+        'bulk_action',
+        'Pembaruan Massal Kredensial Pengguna',
+        `Berhasil memperbarui username / kata sandi untuk ${count} akun pengguna.`,
+        'bulk_credentials'
+      );
+    }
+
+    return { success: count > 0, count };
+  }
+
+  public exportUserCredentialsCSV(usersList: Array<{
+    id: string;
+    nama: string;
+    role: string;
+    username: string;
+    password_hash: string;
+    className?: string;
+    no_wa?: string;
+  }>): void {
+    const headers = ['No', 'Nama Lengkap', 'Role Akses', 'Kelas', 'Username (ID Login)', 'Password Akun', 'No. WhatsApp'];
+    const rows = usersList.map((u, idx) => [
+      `"${idx + 1}"`,
+      `"${u.nama.replace(/"/g, '""')}"`,
+      `"${u.role.toUpperCase()}"`,
+      `"${(u.className || '-').replace(/"/g, '""')}"`,
+      `"${(u.username || '-').replace(/"/g, '""')}"`,
+      `"${(u.password_hash || '-').replace(/"/g, '""')}"`,
+      `"${(u.no_wa || '-').replace(/"/g, '""')}"`
+    ]);
+
+    const csvString = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const fileName = `SIMAK_Daftar_Kredensial_Akun_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.downloadCSVFile(csvString, fileName);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Daftar Kredensial Berhasil Diekspor',
+      text: `File "${fileName}" berisi ${usersList.length} akun berhasil diunduh.`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+  }
+
+  public exportUserCredentialsPDF(usersList: Array<{
+    id: string;
+    nama: string;
+    role: string;
+    username: string;
+    password_hash: string;
+    className?: string;
+    no_wa?: string;
+  }>): void {
+    if (usersList.length === 0) {
+      Swal.fire({ icon: 'warning', title: 'Pilih Akun', text: 'Tidak ada data pengguna yang dipilih untuk dicetak.' });
+      return;
+    }
+
+    const appSettings = this.getAppSettings();
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // 6 Cards per A4 page (2 columns x 3 rows)
+    const cardWidth = 88;
+    const cardHeight = 80;
+    const marginX = 12;
+    const marginY = 16;
+    const gapX = 10;
+    const gapY = 8;
+    const cardsPerPage = 6;
+
+    usersList.forEach((user, idx) => {
+      const pageIndex = Math.floor(idx / cardsPerPage);
+      const cardIndexOnPage = idx % cardsPerPage;
+
+      if (idx > 0 && cardIndexOnPage === 0) {
+        doc.addPage();
+      }
+
+      const col = cardIndexOnPage % 2;
+      const row = Math.floor(cardIndexOnPage / 2);
+      const x = marginX + col * (cardWidth + gapX);
+      const y = marginY + row * (cardHeight + gapY);
+
+      // Card Container Outer Box
+      doc.setDrawColor(203, 213, 225); // slate-300
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'FD');
+
+      // Card Header Banner
+      let bannerColor = [79, 70, 229]; // indigo-600
+      if (user.role === 'admin') bannerColor = [147, 51, 234]; // purple-600
+      else if (user.role === 'guru') bannerColor = [37, 99, 235]; // blue-600
+      else if (user.role === 'wali_kelas') bannerColor = [2, 132, 199]; // sky-600
+      else if (user.role === 'siswa') bannerColor = [5, 150, 105]; // emerald-600
+      else if (user.role === 'orang_tua') bannerColor = [217, 119, 6]; // amber-600
+
+      doc.setFillColor(bannerColor[0], bannerColor[1], bannerColor[2]);
+      doc.roundedRect(x, y, cardWidth, 14, 3, 3, 'F');
+      doc.rect(x, y + 8, cardWidth, 6, 'F'); // square bottom of banner
+
+      // Header Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(appSettings.appName.toUpperCase() || 'SIMAK SEKOLAH', x + 5, y + 6);
+
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`KARTU AKSES & LOGIN: ${user.role.toUpperCase().replace('_', ' ')}`, x + 5, y + 11);
+
+      // Body Details
+      doc.setTextColor(30, 41, 59); // slate-800
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      const truncatedName = doc.splitTextToSize(user.nama, cardWidth - 10)[0];
+      doc.text(truncatedName, x + 5, y + 21);
+
+      if (user.className && user.className !== '-') {
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Kelas: ${user.className}`, x + 5, y + 26);
+      }
+
+      // Box Credentials Container
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.roundedRect(x + 5, y + 29, cardWidth - 10, 28, 2, 2, 'FD');
+
+      // Username Field
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.setFont('helvetica', 'bold');
+      doc.text('USERNAME / ID LOGIN:', x + 8, y + 35);
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
+      doc.setFont('courier', 'bold');
+      doc.text(`@${user.username}`, x + 8, y + 41);
+
+      // Password Field
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont('helvetica', 'bold');
+      doc.text('KATA SANDI (PASSWORD):', x + 8, y + 47);
+      doc.setFontSize(9);
+      doc.setTextColor(225, 29, 72); // rose-600
+      doc.setFont('courier', 'bold');
+      doc.text(user.password_hash || 'pass123', x + 8, y + 53);
+
+      // Footer note & cut line
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.text('Rahasiakan akun Anda. Ganti kata sandi setelah login pertama.', x + 5, y + 62);
+      doc.text('Diterbitkan oleh Admin Sistem Informasi Akademik.', x + 5, y + 66);
+
+      // Dashed cutting line around each card for scissors
+      doc.setLineDashPattern([2, 2], 0);
+      doc.setDrawColor(203, 213, 225);
+      doc.rect(x - 1, y - 1, cardWidth + 2, cardHeight + 2, 'S');
+      doc.setLineDashPattern([], 0); // reset dash
+    });
+
+    const fileName = `SIMAK_Kartu_Akses_Login_${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(fileName);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Kartu Akun Siap Dicetak!',
+      text: `File "${fileName}" berisi ${usersList.length} kartu kredensial berhasil dibuat (format A4 siap cetak & gunting).`,
+      timer: 2500,
+      showConfirmButton: false
+    });
+  }
+
+  /**
+   * Mengunduh seluruh snapshot database Firebase/Lokal ke file JSON lokal sebagai cadangan mandiri Admin
+   */
+  public exportDatabaseJSON(customFileName?: string): { blob: Blob; filename: string; summary: Record<string, number> } {
+    const snapshot = this.getRawSnapshot();
+    const summary: Record<string, number> = {
+      users: Object.keys(snapshot.users || {}).length,
+      classes: Object.keys(snapshot.classes || {}).length,
+      subjects: Object.keys(snapshot.subjects || {}).length,
+      class_members: Object.keys(snapshot.class_members || {}).length,
+      attendance: Object.keys(snapshot.attendance || {}).length,
+      grades: Object.keys(snapshot.grades || {}).length,
+      parent_student_relations: Object.keys(snapshot.parent_student_relations || {}).length,
+      announcements: Object.keys(snapshot.announcements || {}).length,
+      academic_events: Object.keys(snapshot.academic_events || {}).length,
+      activity_logs: Object.keys(snapshot.activity_logs || {}).length
+    };
+
+    const backupPayload = {
+      _meta: {
+        appName: snapshot.app_settings?.appName || 'SIMAK',
+        appVersion: '3.2',
+        backupDate: new Date().toISOString(),
+        backupTimestamp: Date.now(),
+        totalEntities: Object.values(summary).reduce((a, b) => a + b, 0),
+        recordCounts: summary,
+        systemCreator: snapshot.app_settings?.creatorName || 'Puput Sasmita'
+      },
+      database: snapshot
+    };
+
+    const jsonStr = JSON.stringify(backupPayload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+    const dateFormatted = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = customFileName || `SIMAK_Backup_Database_${dateFormatted}.json`;
+
+    // Trigger browser download
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Audit log
+    this.logActivity(
+      'export_data',
+      'Unduh Cadangan Database JSON',
+      `Mengunduh cadangan lengkap database JSON (${backupPayload._meta.totalEntities} data)`,
+      filename,
+      summary
+    );
+
+    return { blob, filename, summary };
+  }
+
+  /**
+   * Memulihkan (restore) seluruh database dari file JSON cadangan
+   */
+  public restoreDatabaseJSON(jsonContent: string): { success: boolean; message: string; summary?: Record<string, number> } {
+    try {
+      const parsed = JSON.parse(jsonContent);
+      const dataToRestore: DatabaseSnapshot = parsed.database ? parsed.database : parsed;
+
+      // Basic structure validation
+      if (!dataToRestore.users || !dataToRestore.classes) {
+        return {
+          success: false,
+          message: 'Format file JSON tidak valid. Pastikan file berisi node "users" dan "classes".'
+        };
+      }
+
+      this.db = dataToRestore;
+      this.persist();
+
+      const summary: Record<string, number> = {
+        users: Object.keys(this.db.users || {}).length,
+        classes: Object.keys(this.db.classes || {}).length,
+        subjects: Object.keys(this.db.subjects || {}).length,
+        attendance: Object.keys(this.db.attendance || {}).length,
+        grades: Object.keys(this.db.grades || {}).length
+      };
+
+      this.logActivity(
+        'import_data',
+        'Pemulihan Database dari JSON',
+        `Memulihkan database dari file cadangan JSON`,
+        'restore_backup',
+        summary
+      );
+
+      return {
+        success: true,
+        message: 'Database berhasil dipulihkan dari cadangan JSON.',
+        summary
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        message: `Gagal memproses file JSON: ${e?.message || 'Format tidak valid'}`
+      };
+    }
   }
 }

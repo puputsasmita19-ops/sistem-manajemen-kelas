@@ -216,17 +216,36 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
             </button>
 
             {canManage && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsModalOpen(true);
-                }}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Buat Baru</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {currentUserRole === 'admin' && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNewPriority('high');
+                      setNewCategory('Penting');
+                      setIsModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition"
+                    title="Siarkan pengumuman darurat/mendesak yang muncul saat pengguna login"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Push Mendesak</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNewPriority('normal');
+                    setIsModalOpen(true);
+                  }}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Buat Baru</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -368,6 +387,15 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                   </select>
                 </div>
               </div>
+
+              {newPriority === 'high' && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Mode Siaran Mendesak Aktif:</span> Pesan ini akan muncul otomatis sebagai pop-up layar penuh (push banner) seketika saat pengguna target login ke akun mereka.
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">

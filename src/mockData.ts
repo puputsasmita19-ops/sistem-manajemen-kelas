@@ -234,6 +234,133 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       targetRole: "siswa"
     }
   },
+  academic_events: {
+    evt_1: {
+      id: "evt_1",
+      title: "Penilaian Tengah Semester (PTS) Ganjil",
+      description: "Pelaksanaan asesmen sumatif tengah semester untuk seluruh mata pelajaran kelas X, XI, dan XII.",
+      startDate: "2026-09-28",
+      endDate: "2026-10-03",
+      category: "ujian",
+      location: "Ruang Kelas & Lab Komputer",
+      targetRole: "all",
+      isHoliday: false
+    },
+    evt_2: {
+      id: "evt_2",
+      title: "Maulid Nabi Muhammad SAW 1448 H",
+      description: "Hari libur nasional peringatan Maulid Nabi Muhammad SAW.",
+      startDate: "2026-09-24",
+      category: "libur",
+      targetRole: "all",
+      isHoliday: true
+    },
+    evt_3: {
+      id: "evt_3",
+      title: "Rapat Koordinasi Evaluasi Pembelajaran & Kurikulum",
+      description: "Rapat evaluasi capaian kurikulum merdeka dan kesiapan penilaian tengah semester bersama dewan guru.",
+      startDate: "2026-09-22",
+      category: "rapat",
+      location: "Ruang Guru & Aula Utama",
+      targetRole: "guru",
+      isHoliday: false
+    },
+    evt_4: {
+      id: "evt_4",
+      title: "Simulasi & Gladi Bersih ANBK 2026",
+      description: "Gladi bersih Asesmen Nasional Berbasis Komputer bagi siswa terpilih.",
+      startDate: "2026-09-14",
+      endDate: "2026-09-16",
+      category: "ujian",
+      location: "Laboratorium Komputer 1 & 2",
+      targetRole: "siswa",
+      isHoliday: false
+    },
+    evt_5: {
+      id: "evt_5",
+      title: "Pekan Olahraga & Seni (Porseni) Antarkelas",
+      description: "Kompetisi futsal, basket, catur, tari kreasi, dan mading antarkelas.",
+      startDate: "2026-10-12",
+      endDate: "2026-10-16",
+      category: "kegiatan",
+      location: "Lapangan Olahraga & Panggung Seni",
+      targetRole: "all",
+      isHoliday: false
+    },
+    evt_6: {
+      id: "evt_6",
+      title: "Pembagian KHS / Rapor Siswa Tengah Semester",
+      description: "Penyerahan laporan hasil belajar siswa tengah semester ganjil kepada orang tua/wali murid.",
+      startDate: "2026-10-24",
+      category: "rapor",
+      location: "Ruang Kelas Masing-masing",
+      targetRole: "orang_tua",
+      isHoliday: false
+    },
+    evt_7: {
+      id: "evt_7",
+      title: "Penilaian Akhir Semester (PAS) Ganjil",
+      description: "Ujian akhir semester ganjil tahun ajaran 2026/2027.",
+      startDate: "2026-12-01",
+      endDate: "2026-12-10",
+      category: "ujian",
+      location: "Ruang Ujian Utama",
+      targetRole: "all",
+      isHoliday: false
+    }
+  },
+  activity_logs: {
+    log_1: {
+      id: "log_1",
+      timestamp: "2026-09-19T07:15:20.000Z",
+      userId: "user_admin1",
+      userName: "Bambang Wijaya, M.Kom",
+      userRole: "admin",
+      actionType: "login",
+      actionTitle: "Autentikasi Pengguna Berhasil",
+      details: "Administrator Bambang Wijaya berhasil login ke sistem SIMAK.",
+      ipOrDevice: "Chrome / Desktop (192.168.1.10)",
+      syncedToFirebase: true
+    },
+    log_2: {
+      id: "log_2",
+      timestamp: "2026-09-19T07:30:12.000Z",
+      userId: "user_guru1",
+      userName: "Siti Rahmawati, M.Pd",
+      userRole: "guru",
+      actionType: "grade_input",
+      actionTitle: "Pembaruan Nilai Siswa",
+      details: "Guru Siti Rahmawati menyimpan nilai Tugas & UTS mata pelajaran Matematika kelas X IPA 1.",
+      targetEntity: "grades_matematika_x_ipa1",
+      ipOrDevice: "Firefox / Laptop",
+      syncedToFirebase: true
+    },
+    log_3: {
+      id: "log_3",
+      timestamp: "2026-09-19T08:00:45.000Z",
+      userId: "user_wk1",
+      userName: "Budi Santoso, S.Pd",
+      userRole: "wali_kelas",
+      actionType: "attendance_input",
+      actionTitle: "Input Presensi Harian Siswa",
+      details: "Presensi harian tanggal 2026-09-19 untuk kelas X IPA 1 dicatat (Hadir: 5, Izin: 0, Sakit: 0, Alpa: 0).",
+      targetEntity: "attendance_2026-09-19",
+      ipOrDevice: "Safari / iPad",
+      syncedToFirebase: true
+    },
+    log_4: {
+      id: "log_4",
+      timestamp: "2026-09-19T08:20:00.000Z",
+      userId: "user_admin1",
+      userName: "Bambang Wijaya, M.Kom",
+      userRole: "admin",
+      actionType: "settings_update",
+      actionTitle: "Sinkronisasi Cloud Firebase",
+      details: "Koleksi data sekolah berhasil disinkronkan ke Firebase Firestore.",
+      ipOrDevice: "Chrome / Admin Console",
+      syncedToFirebase: true
+    }
+  },
   app_settings: {
     appName: "SIMAK",
     appDescription: "Sistem Informasi Manajemen Kelas",

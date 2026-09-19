@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { GradeType } from '../types';
 import Swal from 'sweetalert2';
-import { Award, Save, BookOpen, Users, CheckCircle2, TrendingUp, Download, FileText, Printer, FileSpreadsheet } from 'lucide-react';
+import { Award, Save, BookOpen, Users, CheckCircle2, TrendingUp, Download, FileText, Printer, FileSpreadsheet, Maximize2, Minimize2, Sparkles, Check } from 'lucide-react';
 import { ChartGrades } from './ChartGrades';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,6 +28,9 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
   const classes = dbService.getAllClasses();
   const subjects = dbService.getAllSubjects();
   const appSettings = dbService.getAppSettings();
+
+  // Zen Mode state for distraction-free grade input
+  const [isZenMode, setIsZenMode] = useState<boolean>(false);
 
   // Pick teacher subjects
   const teacherSubjects = dbService.getSubjectsByTeacher(currentUserId);
@@ -57,6 +60,17 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
       if (selectedSubjectId) localStorage.setItem('SIMAK_GRADE_SUBJECT_ID', selectedSubjectId);
     } catch (e) {}
   }, [selectedSubjectId]);
+
+  // Listen for Escape key to exit Zen Mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZenMode) {
+        setIsZenMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZenMode]);
 
   const [rows, setRows] = useState<StudentGradeRow[]>([]);
   const [isExporting, setIsExporting] = useState(false);
@@ -391,6 +405,18 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {/* Zen Mode Button */}
+            <button
+              id="btn-toggle-zen-mode"
+              type="button"
+              onClick={() => setIsZenMode(true)}
+              className="px-3.5 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer flex-1 sm:flex-initial"
+              title="Aktifkan Mode Fokus (Zen Mode) untuk menyembunyikan navigasi & distraksi saat input nilai"
+            >
+              <Maximize2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>Mode Fokus (Zen)</span>
+            </button>
+
             {/* PDF Export Button for Class Grade Data */}
             <button
               id="btn-export-pdf-grades"
@@ -618,6 +644,207 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
             uas={rows.map(r => r.uas)}
             finalScores={rows.map(r => r.finalScore)}
           />
+        </div>
+      )}
+
+      {/* ZEN MODE FULLSCREEN OVERLAY (Hides all navbar, sidebar, tabs & distractions) */}
+      {isZenMode && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/95 backdrop-blur-md overflow-y-auto p-3 sm:p-6 flex flex-col justify-start animate-in fade-in duration-200">
+          <div className="max-w-7xl w-full mx-auto space-y-4">
+            {/* Top Floating Zen Bar */}
+            <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-30">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold">
+                  <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
+                      Mode Fokus / Zen Mode (Input Nilai Siswa)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      Bebas Distraksi
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Navigasi dan menu disembunyikan. Tekan <kbd className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200 font-mono text-[10px] border border-slate-600">Esc</kbd> untuk keluar.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Selectors in Zen Bar */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                  <span className="text-slate-400 font-medium">Kelas:</span>
+                  <select
+                    value={selectedClassId}
+                    onChange={e => setSelectedClassId(e.target.value)}
+                    className="bg-transparent text-white font-bold outline-none cursor-pointer"
+                  >
+                    {classes.map(c => (
+                      <option key={c.id} value={c.id} className="bg-slate-800 text-white">
+                        {c.nama_kelas}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                  <span className="text-slate-400 font-medium">Mapel:</span>
+                  <select
+                    value={selectedSubjectId}
+                    onChange={e => setSelectedSubjectId(e.target.value)}
+                    className="bg-transparent text-white font-bold outline-none cursor-pointer"
+                  >
+                    {subjects.map(s => (
+                      <option key={s.id} value={s.id} className="bg-slate-800 text-white">
+                        {s.nama_mapel}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Save All Button in Zen Mode */}
+                <button
+                  type="button"
+                  onClick={handleSaveAll}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Nilai</span>
+                </button>
+
+                {/* Exit Zen Mode Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsZenMode(false)}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-slate-600"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>Keluar (Esc)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar in Zen Mode */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">Rata-Rata</span>
+                <p className="text-xl font-bold text-white mt-0.5">{averageFinal} / 100</p>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-emerald-400 uppercase font-semibold">Predikat A</span>
+                <p className="text-xl font-bold text-emerald-300 mt-0.5">{countA} Siswa</p>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-blue-400 uppercase font-semibold">Predikat B</span>
+                <p className="text-xl font-bold text-blue-300 mt-0.5">{countB} Siswa</p>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-amber-400 uppercase font-semibold">Predikat C</span>
+                <p className="text-xl font-bold text-amber-300 mt-0.5">{countC} Siswa</p>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-center">
+                <span className="text-[10px] text-rose-400 uppercase font-semibold">Predikat D</span>
+                <p className="text-xl font-bold text-rose-300 mt-0.5">{countD} Siswa</p>
+              </div>
+            </div>
+
+            {/* Zen Mode Grade Input Table */}
+            <div className="bg-slate-800/90 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-700 bg-slate-900/60 text-[11px] uppercase tracking-wider font-bold text-slate-300">
+                      <th className="py-3.5 px-4 w-12 text-center">No</th>
+                      <th className="py-3.5 px-4">Nama Siswa</th>
+                      <th className="py-3.5 px-4 w-32 text-center text-indigo-300">Tugas (30%)</th>
+                      <th className="py-3.5 px-4 w-32 text-center text-indigo-300">UTS (30%)</th>
+                      <th className="py-3.5 px-4 w-32 text-center text-indigo-300">UAS (40%)</th>
+                      <th className="py-3.5 px-4 w-28 text-center text-white">Nilai Akhir</th>
+                      <th className="py-3.5 px-4 w-24 text-center">Predikat</th>
+                      <th className="py-3.5 px-4 w-28 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/60 text-sm">
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
+                          Tidak ada siswa pada kelas yang dipilih.
+                        </td>
+                      </tr>
+                    ) : (
+                      rows.map((row, index) => {
+                        let badgeColor = 'bg-rose-900/40 text-rose-300 border-rose-700';
+                        if (row.predicate === 'A') badgeColor = 'bg-emerald-900/40 text-emerald-300 border-emerald-700';
+                        if (row.predicate === 'B') badgeColor = 'bg-blue-900/40 text-blue-300 border-blue-700';
+                        if (row.predicate === 'C') badgeColor = 'bg-amber-900/40 text-amber-300 border-amber-700';
+
+                        return (
+                          <tr key={`zen-${row.studentId}`} className="hover:bg-slate-700/40 transition-colors">
+                            <td className="py-3.5 px-4 text-center text-slate-400 font-mono text-xs font-bold">
+                              {index + 1}
+                            </td>
+                            <td className="py-3.5 px-4 font-bold text-white">
+                              {row.nama}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.tugas}
+                                onChange={e => handleScoreChange(row.studentId, 'tugas', parseInt(e.target.value))}
+                                className="w-24 text-center font-mono font-bold text-base bg-slate-900 border border-slate-600 focus:border-indigo-400 rounded-xl py-2 px-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.uts}
+                                onChange={e => handleScoreChange(row.studentId, 'uts', parseInt(e.target.value))}
+                                className="w-24 text-center font-mono font-bold text-base bg-slate-900 border border-slate-600 focus:border-indigo-400 rounded-xl py-2 px-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={row.uas}
+                                onChange={e => handleScoreChange(row.studentId, 'uas', parseInt(e.target.value))}
+                                className="w-24 text-center font-mono font-bold text-base bg-slate-900 border border-slate-600 focus:border-indigo-400 rounded-xl py-2 px-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                              />
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-mono font-bold text-lg text-white">
+                              {row.finalScore}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold border ${badgeColor}`}>
+                                {row.predicate}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => exportIndividualStudentPDF(row)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-300 bg-blue-900/40 hover:bg-blue-800/50 border border-blue-700 rounded-xl transition cursor-pointer"
+                              >
+                                <FileText className="w-3 h-3 text-blue-400" />
+                                <span>Rapor</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

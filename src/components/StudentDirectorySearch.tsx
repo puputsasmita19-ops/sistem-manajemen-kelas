@@ -10,7 +10,11 @@ import {
   Filter,
   CheckCircle2,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Award,
+  Download,
+  Eye,
+  UserCheck
 } from 'lucide-react';
 import { User, ClassEntity } from '../types';
 import { DatabaseService } from '../services/databaseService';
@@ -27,6 +31,7 @@ export const StudentDirectorySearch: React.FC<StudentDirectorySearchProps> = ({
   const dbService = DatabaseService.getInstance();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('ALL');
+  const [selectedStudentForModal, setSelectedStudentForModal] = useState<any | null>(null);
 
   // Retrieve raw class_members mapping
   const classMembers = useMemo(() => {
@@ -83,6 +88,12 @@ export const StudentDirectorySearch: React.FC<StudentDirectorySearchProps> = ({
     setSearchTerm('');
     setSelectedClassId('ALL');
   };
+
+  // Prepare student detailed report info when modal opens
+  const studentModalReport = useMemo(() => {
+    if (!selectedStudentForModal) return null;
+    return dbService.getStudentReport(selectedStudentForModal.id);
+  }, [dbService, selectedStudentForModal]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs transition space-y-4">
@@ -247,25 +258,31 @@ export const StudentDirectorySearch: React.FC<StudentDirectorySearchProps> = ({
                   </div>
                 </div>
 
-                {/* Contact Footer */}
-                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-1 truncate" title={student.email}>
-                    <Mail className="w-3 h-3 shrink-0 text-slate-400" />
-                    <span className="truncate">{student.email || '-'}</span>
-                  </div>
+                {/* Footer Actions & Quick Detail */}
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudentForModal(student)}
+                    className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-bold transition cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Lihat Detail Rapor</span>
+                  </button>
 
-                  {student.no_wa && (
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold shrink-0 ml-2"
-                      title="Hubungi via WhatsApp"
-                    >
-                      <Phone className="w-3 h-3" />
-                      <span>WA</span>
-                    </a>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {student.no_wa && (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                        title="Hubungi via WhatsApp"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>WA</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -297,6 +314,153 @@ export const StudentDirectorySearch: React.FC<StudentDirectorySearchProps> = ({
           </button>
         </div>
       )}
+
+      {/* MODAL: DETAIL LENGKAP SISWA (HASIL PENCARIAN) */}
+      {selectedStudentForModal && studentModalReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-700 gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white font-bold text-lg flex items-center justify-center shadow-xs">
+                  {selectedStudentForModal.nama.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {selectedStudentForModal.nama}
+                  </h3>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                    @{selectedStudentForModal.username} • {selectedStudentForModal.className} ({selectedStudentForModal.academicYear})
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedStudentForModal(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Presensi Summary Badges */}
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300">Hadir</div>
+                <div className="text-lg font-black text-emerald-900 dark:text-emerald-100">
+                  {studentModalReport.attendanceSummary.H} <span className="text-[10px] font-normal">hr</span>
+                </div>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-blue-800 dark:text-blue-300">Izin</div>
+                <div className="text-lg font-black text-blue-900 dark:text-blue-100">
+                  {studentModalReport.attendanceSummary.I} <span className="text-[10px] font-normal">hr</span>
+                </div>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-amber-800 dark:text-amber-300">Sakit</div>
+                <div className="text-lg font-black text-amber-900 dark:text-amber-100">
+                  {studentModalReport.attendanceSummary.S} <span className="text-[10px] font-normal">hr</span>
+                </div>
+              </div>
+              <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-rose-800 dark:text-rose-300">Alpa</div>
+                <div className="text-lg font-black text-rose-900 dark:text-rose-100">
+                  {studentModalReport.attendanceSummary.A} <span className="text-[10px] font-normal">hr</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Grades Table */}
+            <div>
+              <div className="flex items-center justify-between pb-1.5">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-indigo-500" />
+                  Rekapitulasi Nilai Mata Pelajaran
+                </span>
+                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">
+                  {studentModalReport.gradeDetails.length} Mapel
+                </span>
+              </div>
+
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-bold">
+                    <tr>
+                      <th className="py-2 px-3 text-left">Mata Pelajaran</th>
+                      <th className="py-2 px-2 text-center">Tugas</th>
+                      <th className="py-2 px-2 text-center">UTS</th>
+                      <th className="py-2 px-2 text-center">UAS</th>
+                      <th className="py-2 px-3 text-center">Nilai Akhir</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-slate-300">
+                    {studentModalReport.gradeDetails.length > 0 ? (
+                      studentModalReport.gradeDetails.map((row: any) => (
+                        <tr key={row.subjectId} className="hover:bg-slate-50 dark:hover:bg-slate-750">
+                          <td className="py-2 px-3 font-semibold">{row.subjectName}</td>
+                          <td className="py-2 px-2 text-center">{row.tugas}</td>
+                          <td className="py-2 px-2 text-center">{row.uts}</td>
+                          <td className="py-2 px-2 text-center">{row.uas}</td>
+                          <td className="py-2 px-3 text-center font-bold text-indigo-600 dark:text-indigo-400">
+                            {row.finalScore} ({row.predicate})
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-slate-400">
+                          Belum ada data nilai tersimpan untuk siswa ini.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Wali Kelas & Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div>
+                <span className="text-slate-400 font-medium">Wali Kelas:</span>
+                <div className="font-bold text-slate-800 dark:text-slate-200">
+                  {studentModalReport.waliKelas?.nama || '-'}
+                </div>
+                <div className="text-[11px] text-slate-500">{studentModalReport.waliKelas?.no_wa || '-'}</div>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium">Status & Angkatan:</span>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                  Siswa Aktif
+                </div>
+                <div className="text-[11px] text-slate-500">{selectedStudentForModal.academicYear}</div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedStudentForModal(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+              >
+                Tutup
+              </button>
+
+              <button
+                type="button"
+                onClick={() => dbService.exportStudentReportPDF(selectedStudentForModal.id)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>Unduh Rapor PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

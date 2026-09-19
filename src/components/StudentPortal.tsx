@@ -1,10 +1,26 @@
 import React, { useState } from 'react';
 import { DatabaseService } from '../services/databaseService';
-import { User } from '../types';
+import { User, Attendance } from '../types';
 import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
-import { Download, BookOpen, CheckCircle, Calendar, AlertCircle, HeartHandshake, Clock } from 'lucide-react';
-import { useRealtimeClock } from '../utils/timeUtils';
+import { StudentSelfieAttendanceModal } from './StudentSelfieAttendanceModal';
+import { AttendanceProofViewerModal } from './AttendanceProofViewerModal';
+import {
+  Download,
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+  Users,
+  Camera,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Zap,
+  CheckCircle2,
+  ExternalLink,
+  Eye,
+  RotateCcw
+} from 'lucide-react';
 
 interface StudentPortalProps {
   currentUser: User;
@@ -12,7 +28,6 @@ interface StudentPortalProps {
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => {
   const dbService = DatabaseService.getInstance();
-  const clock = useRealtimeClock();
   const isParent = currentUser.role === 'orang_tua';
 
   // Determine active student
@@ -26,6 +41,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
     targetStudentId = selectedChildId || (children[0]?.id || '');
   }
 
+  const [showSelfieModal, setShowSelfieModal] = useState<boolean>(false);
+  const [selectedProofAttendance, setSelectedProofAttendance] = useState<Attendance | null>(null);
+
   const report = dbService.getStudentReport(targetStudentId);
 
   if (!report) {
@@ -37,6 +55,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
   }
 
   const { student, studentClass, waliKelas, gradeDetails, attendanceSummary } = report;
+  const todayAttendance = dbService.getStudentTodayAttendance(targetStudentId);
+  const studentAttendanceRecords = dbService.getStudentAttendanceSummary(targetStudentId).records;
 
   const handleDownloadPDF = () => {
     dbService.exportStudentReportPDF(targetStudentId);
@@ -44,33 +64,132 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
 
   return (
     <div className="space-y-6">
-      {/* If Parent, Show Child Selector */}
-      {isParent && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
-            <HeartHandshake className="w-5 h-5 text-amber-700 dark:text-amber-400" />
-            <div>
-              <span className="font-bold text-sm">Portal Wali Murid:</span> Memantau perkembangan akademik anak kandung.
-            </div>
+      {/* If Parent has multiple children, show compact Child Selector */}
+      {isParent && children.length > 1 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-amber-300 dark:border-amber-700/60 p-3.5 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-300">
+            <Users className="w-4 h-4" />
+            <span>Pilih Data Anak:</span>
           </div>
-          {children.length > 1 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">Pilih Anak:</span>
-              <select
-                value={selectedChildId}
-                onChange={e => setSelectedChildId(e.target.value)}
-                className="bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-xs text-amber-950 dark:text-amber-100 font-bold focus:ring-2 focus:ring-amber-500"
-              >
-                {children.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <select
+            value={selectedChildId}
+            onChange={e => setSelectedChildId(e.target.value)}
+            className="bg-amber-50 dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg px-3 py-1.5 text-xs text-amber-950 dark:text-amber-100 font-bold focus:ring-2 focus:ring-amber-500"
+          >
+            {children.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.nama}
+              </option>
+            ))}
+          </select>
         </div>
       )}
+
+      {/* REALTIME ATTENDANCE HERO WIDGET (GPS & SELFIE WITH TIMESTAMP) */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-blue-600/30 relative overflow-hidden">
+        {/* Background ambient lighting */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2 max-w-xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur-xs text-blue-100 border border-white/20 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" /> Presensi Realtime Anti-Kecurangan
+              </span>
+              <span className="text-[11px] text-blue-200 font-medium">
+                Hari ini, {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              {isParent
+                ? `Status Kehadiran Realtime Ananda ${student.nama}`
+                : 'Presensi Masuk Harian (Selfie & Validasi Peta GPS)'}
+            </h2>
+
+            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
+              {isParent
+                ? todayAttendance
+                  ? `Ananda telah tercatat hadir pada pukul ${todayAttendance.timestamp || '07:15 WIB'} dengan verifikasi foto selfie dan lokasi radius sekolah.`
+                  : `Ananda ${student.nama} belum tercatat melakukan presensi masuk di sekolah hari ini.`
+                : todayAttendance
+                ? `Presensi Anda telah sukses terverifikasi pada pukul ${todayAttendance.timestamp || '07:15 WIB'} (${todayAttendance.isWithinRadius !== false ? 'Dalam Radius Sekolah' : 'Luar Radius'}).`
+                : 'Lakukan presensi kilat 1-Tap dengan kamera selfie dan validasi geofence sekolah otomatis.'}
+            </p>
+          </div>
+
+          {/* Quick Action / Status Badge */}
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 shrink-0">
+            {todayAttendance ? (
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center gap-4 w-full sm:w-auto">
+                {todayAttendance.photoUrl ? (
+                  <div
+                    onClick={() => setSelectedProofAttendance(todayAttendance)}
+                    className="w-14 h-14 rounded-xl overflow-hidden bg-black border border-white/30 cursor-pointer shrink-0 shadow-md group relative"
+                    title="Klik untuk memperbesar bukti selfie"
+                  >
+                    <img
+                      src={todayAttendance.photoUrl}
+                      alt="Selfie"
+                      className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                      <Eye className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-14 h-14 rounded-xl bg-emerald-500/30 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-7 h-7 text-emerald-300" />
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Hadir Terverifikasi</span>
+                  </div>
+                  <div className="text-xs text-white font-mono mt-0.5">
+                    Pukul: <strong>{todayAttendance.timestamp || '07:15 WIB'}</strong>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProofAttendance(todayAttendance)}
+                      className="text-[11px] font-bold text-blue-200 hover:text-white underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3 h-3" /> Bukti Stempel & Peta
+                    </button>
+                    {!isParent && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSelfieModal(true)}
+                        className="text-[11px] font-bold text-amber-300 hover:text-amber-200 underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Ambil Ulang
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : !isParent ? (
+              <button
+                type="button"
+                id="btn-open-selfie-attendance"
+                onClick={() => setShowSelfieModal(true)}
+                className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/20 transition transform active:scale-98 cursor-pointer"
+              >
+                <Zap className="w-5 h-5 text-slate-950 fill-current" />
+                <span>⚡ SCAN PRESENSI KILAT SEKARANG</span>
+              </button>
+            ) : (
+              <div className="px-4 py-3 bg-rose-500/20 border border-rose-400/30 rounded-2xl text-xs text-rose-200 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
+                <span>Belum ada data presensi masuk ananda hari ini.</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Student Profile & Quick Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition-colors">
@@ -79,20 +198,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
             <div className="text-xs uppercase font-bold tracking-wider text-blue-600 dark:text-blue-400">
               {isParent ? 'Laporan Perkembangan Akademik Siswa' : 'Kartu Hasil Belajar Siswa'}
             </div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{student.nama}</h2>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 font-extrabold text-xs">
-                {isParent ? '👨‍👦 Akses: Orang Tua' : '🎒 Akses: Siswa'}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs font-medium">
-                <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                {clock.dateFormatted}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 font-mono text-xs font-bold">
-                <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                {clock.timeFormatted} WIB
-              </span>
-            </div>
+            {isParent && (
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{student.nama}</h2>
+            )}
             <div className="flex items-center gap-4 text-xs text-slate-600 dark:text-slate-300 mt-2 flex-wrap">
               <span>Kelas: <strong className="text-slate-800 dark:text-slate-100">{studentClass?.nama_kelas || '-'}</strong></span>
               <span>•</span>
@@ -102,14 +210,27 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
             </div>
           </div>
 
-          <button
-            id="btn-download-rapor"
-            onClick={handleDownloadPDF}
-            className="px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl flex items-center gap-2 shadow-sm transition"
-          >
-            <Download className="w-4 h-4" />
-            Unduh Rapor PDF
-          </button>
+          <div className="flex items-center gap-2">
+            {!isParent && (
+              <button
+                type="button"
+                onClick={() => setShowSelfieModal(true)}
+                className="px-4 py-2.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-2 transition cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                Presensi Selfie
+              </button>
+            )}
+
+            <button
+              id="btn-download-rapor"
+              onClick={handleDownloadPDF}
+              className="px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl flex items-center gap-2 shadow-sm transition cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              Unduh Rapor PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -159,6 +280,114 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
             uas={gradeDetails.map(g => g.uas)}
             finalScores={gradeDetails.map(g => g.finalScore)}
           />
+        </div>
+      </div>
+
+      {/* TABEL RIWAYAT PRESENSI DENGAN BUKTI SELFIE & STEMPEL */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+        <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <Camera className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span>Riwayat Presensi & Log Validasi GPS Siswa</span>
+          </div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            Total {studentAttendanceRecords.length} Catatan Presensi
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] uppercase tracking-wider font-semibold text-slate-600 dark:text-slate-300">
+                <th className="py-3 px-4 w-12 text-center">No</th>
+                <th className="py-3 px-4">Tanggal</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4">Waktu Presensi</th>
+                <th className="py-3 px-4">Validasi GPS / Radius</th>
+                <th className="py-3 px-4 text-center">Bukti Selfie</th>
+                <th className="py-3 px-4">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+              {studentAttendanceRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-slate-500 font-medium">
+                    Belum ada riwayat presensi tercatat.
+                  </td>
+                </tr>
+              ) : (
+                studentAttendanceRecords.map((item, idx) => {
+                  let statusBadge = 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300';
+                  let statusLabel = 'Alpa (A)';
+                  if (item.status === 'H') {
+                    statusBadge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+                    statusLabel = 'Hadir (H)';
+                  } else if (item.status === 'I') {
+                    statusBadge = 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300';
+                    statusLabel = 'Izin (I)';
+                  } else if (item.status === 'S') {
+                    statusBadge = 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+                    statusLabel = 'Sakit (S)';
+                  }
+
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                      <td className="py-3 px-4 text-center text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
+                        {item.date}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[11px] ${statusBadge}`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">
+                        {item.timestamp || '07:15 WIB'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {item.distanceMeters !== undefined ? (
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                              item.isWithinRadius !== false
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            }`}
+                          >
+                            <MapPin className="w-3 h-3" />
+                            <span>{item.distanceMeters}m ({item.isWithinRadius !== false ? 'Radius Valid' : 'Luar Radius'})</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[11px]">Standar Kelas</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {item.photoUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProofAttendance(item)}
+                            className="p-1 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-lg transition inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold text-[11px] cursor-pointer"
+                            title="Lihat Bukti Foto"
+                          >
+                            <img
+                              src={item.photoUrl}
+                              alt="Bukti Selfie"
+                              className="w-7 h-7 rounded-md object-cover border border-slate-300 dark:border-slate-600 shrink-0"
+                            />
+                            <span>Lihat</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">-</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                        {item.note || '-'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -216,6 +445,28 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
           </table>
         </div>
       </div>
+
+      {/* STUDENT SELFIE ATTENDANCE MODAL */}
+      {showSelfieModal && (
+        <StudentSelfieAttendanceModal
+          currentUser={student}
+          onClose={() => setShowSelfieModal(false)}
+          onSuccess={() => {
+            setShowSelfieModal(false);
+          }}
+        />
+      )}
+
+      {/* ATTENDANCE PROOF VIEWER MODAL */}
+      {selectedProofAttendance && (
+        <AttendanceProofViewerModal
+          attendance={selectedProofAttendance}
+          studentName={student.nama}
+          classNameTitle={studentClass?.nama_kelas}
+          onClose={() => setSelectedProofAttendance(null)}
+        />
+      )}
     </div>
   );
 };
+

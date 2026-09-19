@@ -29,6 +29,13 @@ export interface AppSettings {
   runningTextSpeed?: number; // Kecepatan putaran detik (default: 28s)
   runningTextIncludeGreeting?: boolean; // Sertakan sapaan otomatis sesuai waktu
   runningTextItems?: RunningTextItem[]; // Daftar pesan running text yang dapat diedit admin
+  // Geofence & Realtime Attendance Settings
+  schoolLatitude?: number; // default: -6.2088
+  schoolLongitude?: number; // default: 106.8456
+  schoolRadiusMeters?: number; // default: 200m
+  schoolAddress?: string; // default: 'Kompleks Pendidikan Utama No. 1, Jakarta'
+  attendanceCutoffTime?: string; // default: '07:30'
+  antiCheatEnabled?: boolean; // default: true
 }
 
 export interface ClassEntity {
@@ -60,6 +67,17 @@ export interface Attendance {
   student_id: string; // FK -> users.id
   status: AttendanceStatus;
   note?: string;
+  // Realtime Selfie & Geolocation validation metadata
+  photoUrl?: string; // Base64 data URL dengan watermark stempel waktu & GPS
+  latitude?: number;
+  longitude?: number;
+  accuracy?: number; // Radius akurasi GPS dalam meter
+  address?: string; // Alamat / landmark
+  timestamp?: string; // Format: "07:15:22 WIB"
+  isWithinRadius?: boolean; // True jika dalam batas radius geofence sekolah
+  distanceMeters?: number; // Jarak kalkulasi meter ke titik pusat sekolah
+  deviceInfo?: string; // Informasi peramban / perangkat
+  verifiedBy?: 'self_scan_gps' | 'manual_teacher' | 'quick_qr' | 'admin';
 }
 
 export type GradeType = 'Tugas' | 'UTS' | 'UAS';
@@ -93,6 +111,52 @@ export interface SchoolAnnouncement {
   targetRole: 'all' | 'siswa' | 'guru' | 'wali_kelas' | 'orang_tua';
 }
 
+export type AcademicEventCategory = 'ujian' | 'libur' | 'kegiatan' | 'rapat' | 'rapor';
+
+export interface AcademicEvent {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string; // YYYY-MM-DD
+  endDate?: string;  // YYYY-MM-DD
+  category: AcademicEventCategory;
+  location?: string;
+  targetRole?: 'all' | 'siswa' | 'guru' | 'wali_kelas' | 'orang_tua';
+  isHoliday?: boolean;
+}
+
+export type ActivityActionType =
+  | 'login'
+  | 'logout'
+  | 'grade_input'
+  | 'grade_update'
+  | 'user_create'
+  | 'user_update'
+  | 'user_delete'
+  | 'attendance_input'
+  | 'announcement_create'
+  | 'announcement_delete'
+  | 'settings_update'
+  | 'export_pdf'
+  | 'export_data'
+  | 'import_data'
+  | 'bulk_action';
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string; // ISO string
+  userId: string;
+  userName: string;
+  userRole: UserRole;
+  actionType: ActivityActionType;
+  actionTitle: string;
+  details: string;
+  targetEntity?: string;
+  metadata?: Record<string, any>;
+  ipOrDevice?: string;
+  syncedToFirebase?: boolean;
+}
+
 export interface DatabaseSnapshot {
   users: Record<string, User>;
   classes: Record<string, ClassEntity>;
@@ -102,5 +166,7 @@ export interface DatabaseSnapshot {
   grades: Record<string, Grade>;
   parent_student_relations: Record<string, ParentStudentRelation>;
   announcements: Record<string, SchoolAnnouncement>;
+  academic_events?: Record<string, AcademicEvent>;
+  activity_logs?: Record<string, ActivityLog>;
   app_settings?: AppSettings;
 }

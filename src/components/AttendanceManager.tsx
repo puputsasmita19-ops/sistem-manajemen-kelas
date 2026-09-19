@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
-import { AttendanceStatus, ClassEntity, Subject, User } from '../types';
+import { AttendanceStatus, ClassEntity, Subject, User, Attendance } from '../types';
 import Swal from 'sweetalert2';
 import {
   CheckCircle2,
@@ -14,9 +14,16 @@ import {
   Users,
   QrCode,
   FileText,
-  Sparkles
+  Sparkles,
+  Camera,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Eye,
+  List
 } from 'lucide-react';
 import { QRScannerSection } from './QRScannerSection';
+import { AttendanceProofViewerModal } from './AttendanceProofViewerModal';
 
 interface AttendanceManagerProps {
   currentRole: string;
@@ -63,9 +70,20 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedMonth, setSelectedMonth] = useState<string>(todayStr.substring(0, 7)); // 'YYYY-MM'
   const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'table' | 'selfie_gallery'>('table');
+  const [selectedProofAttendance, setSelectedProofAttendance] = useState<{
+    attendance: Attendance;
+    studentName: string;
+  } | null>(null);
 
   const [studentRows, setStudentRows] = useState<
-    { studentId: string; nama: string; no_wa: string; status: AttendanceStatus }[]
+    {
+      studentId: string;
+      nama: string;
+      no_wa: string;
+      status: AttendanceStatus;
+      attendanceRec?: Attendance | null;
+    }[]
   >([]);
 
   const selectedClassObj = dbService.getClassById(selectedClassId);
@@ -74,7 +92,14 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   const loadData = () => {
     if (!selectedClassId) return;
     const records = dbService.getAttendanceByClassAndDate(selectedClassId, selectedDate, selectedSubjectId);
-    setStudentRows(records);
+    const enriched = records.map(r => {
+      const fullRec = dbService.getStudentTodayAttendance(r.studentId, selectedDate);
+      return {
+        ...r,
+        attendanceRec: fullRec
+      };
+    });
+    setStudentRows(enriched);
   };
 
   useEffect(() => {
@@ -167,6 +192,34 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
           </div>
 
           <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+            {/* Toggle View Mode: Tabel vs Galeri Selfie */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Tabel</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('selfie_gallery')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'selfie_gallery'
+                    ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-300 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Foto Selfie ({studentRows.filter(r => r.attendanceRec?.photoUrl).length})</span>
+              </button>
+            </div>
+
             {/* Toggle Mode QR Scanner */}
             <button
               id="btn-toggle-qr-scanner"
@@ -354,93 +407,239 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
         </div>
       </div>
 
-      {/* Attendance Multi-Input Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
-        <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-            Daftar Siswa Kelas & Status Kehadiran
+      {/* Attendance Multi-Input Table or Gallery */}
+      {viewMode === 'table' ? (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+          <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Daftar Siswa Kelas & Status Kehadiran
+            </div>
+            <div className="text-xs text-slate-600 dark:text-slate-300">
+              Format: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Hadir</span>, <span className="font-semibold text-blue-600 dark:text-blue-400">Izin</span>, <span className="font-semibold text-amber-600 dark:text-amber-400">Sakit</span>, <span className="font-semibold text-rose-600 dark:text-rose-400">Alpa</span>
+            </div>
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-300">
-            Format: <span className="font-semibold text-emerald-600 dark:text-emerald-400">Hadir</span>, <span className="font-semibold text-blue-600 dark:text-blue-400">Izin</span>, <span className="font-semibold text-amber-600 dark:text-amber-400">Sakit</span>, <span className="font-semibold text-rose-600 dark:text-rose-400">Alpa</span>
-          </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] uppercase tracking-wider font-semibold text-slate-600 dark:text-slate-300">
-                <th className="py-3 px-4 w-12 text-center">No</th>
-                <th className="py-3 px-4">Nama Siswa</th>
-                <th className="py-3 px-4 hidden sm:table-cell">Kontak / WhatsApp</th>
-                <th className="py-3 px-4 text-center">Status Kehadiran</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-              {studentRows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
-                    Tidak ada siswa terdaftar pada kelas ini.
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] uppercase tracking-wider font-semibold text-slate-600 dark:text-slate-300">
+                  <th className="py-3 px-4 w-12 text-center">No</th>
+                  <th className="py-3 px-4">Nama Siswa</th>
+                  <th className="py-3 px-4">Waktu & GPS</th>
+                  <th className="py-3 px-4 text-center">Selfie</th>
+                  <th className="py-3 px-4 text-center">Status Kehadiran</th>
                 </tr>
-              ) : (
-                studentRows.map((row, index) => (
-                  <tr key={row.studentId} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                    <td className="py-3 px-4 text-center text-slate-700 dark:text-slate-200 font-mono text-xs font-bold">
-                      {index + 1}
-                    </td>
-                    <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
-                      <div>{row.nama}</div>
-                      <div className="text-xs text-slate-600 dark:text-slate-300 sm:hidden">{row.no_wa}</div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 text-xs hidden sm:table-cell">
-                      {row.no_wa || '-'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-center gap-1 sm:gap-2">
-                        {(['H', 'I', 'S', 'A'] as AttendanceStatus[]).map(st => {
-                          const isSelected = row.status === st;
-                          let activeClass = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600';
-                          if (isSelected) {
-                            if (st === 'H') activeClass = 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-700';
-                            if (st === 'I') activeClass = 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 dark:ring-blue-700';
-                            if (st === 'S') activeClass = 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-300 dark:ring-amber-700';
-                            if (st === 'A') activeClass = 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300 dark:ring-rose-700';
-                          }
-
-                          return (
-                            <button
-                              key={st}
-                              type="button"
-                              onClick={() => handleStatusChange(row.studentId, st)}
-                              className={`w-9 h-9 sm:w-10 sm:h-8 rounded-lg text-xs font-bold transition flex items-center justify-center ${activeClass}`}
-                              title={`Tandai ${st}`}
-                            >
-                              {st}
-                            </button>
-                          );
-                        })}
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
+                {studentRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
+                      Tidak ada siswa terdaftar pada kelas ini.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  studentRows.map((row, index) => (
+                    <tr key={row.studentId} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                      <td className="py-3 px-4 text-center text-slate-700 dark:text-slate-200 font-mono text-xs font-bold">
+                        {index + 1}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
+                        <div>{row.nama}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-300 sm:hidden">{row.no_wa}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {row.attendanceRec ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1 text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                              <Clock className="w-3.5 h-3.5 text-blue-500" />
+                              <span>{row.attendanceRec.timestamp || '07:15 WIB'}</span>
+                            </div>
+                            {row.attendanceRec.distanceMeters !== undefined && (
+                              <span
+                                className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  row.attendanceRec.isWithinRadius !== false
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                                }`}
+                              >
+                                <MapPin className="w-3 h-3" />
+                                <span>{row.attendanceRec.distanceMeters}m ({row.attendanceRec.isWithinRadius !== false ? 'Dalam Radius' : 'Luar Radius'})</span>
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-mono">Presensi Manual</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {row.attendanceRec?.photoUrl ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedProofAttendance({
+                                attendance: row.attendanceRec!,
+                                studentName: row.nama
+                              })
+                            }
+                            className="inline-flex items-center gap-1.5 p-1 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-lg transition text-blue-600 dark:text-blue-400 font-bold text-xs cursor-pointer"
+                            title="Klik untuk melihat bukti foto selfie"
+                          >
+                            <img
+                              src={row.attendanceRec.photoUrl}
+                              alt="Selfie"
+                              className="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-slate-600 shrink-0"
+                            />
+                            <span className="text-[11px]">Lihat</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-center gap-1 sm:gap-2">
+                          {(['H', 'I', 'S', 'A'] as AttendanceStatus[]).map(st => {
+                            const isSelected = row.status === st;
+                            let activeClass = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600';
+                            if (isSelected) {
+                              if (st === 'H') activeClass = 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-700';
+                              if (st === 'I') activeClass = 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 dark:ring-blue-700';
+                              if (st === 'S') activeClass = 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-300 dark:ring-amber-700';
+                              if (st === 'A') activeClass = 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-300 dark:ring-rose-700';
+                            }
 
-        <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
-          <div>
-            💡 <span className="font-medium">Relasi NoSQL:</span> Nilai status disimpan dalam path <code className="font-mono bg-slate-200 dark:bg-slate-700 dark:text-slate-200 px-1 py-0.5 rounded">/attendance/&#123;pushId&#125;</code> dengan foreign key <code className="font-mono">student_id</code>, <code className="font-mono">class_id</code>, dan <code className="font-mono">subject_id</code>.
+                            return (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => handleStatusChange(row.studentId, st)}
+                                className={`w-9 h-9 sm:w-10 sm:h-8 rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${activeClass}`}
+                                title={`Tandai ${st}`}
+                              >
+                                {st}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-          <button
-            onClick={handleSave}
-            className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center justify-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Simpan Perubahan
-          </button>
+
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
+            <div>
+              💡 <span className="font-medium">Relasi NoSQL:</span> Nilai status disimpan dalam path <code className="font-mono bg-slate-200 dark:bg-slate-700 dark:text-slate-200 px-1 py-0.5 rounded">/attendance/&#123;pushId&#125;</code> dengan foreign key <code className="font-mono">student_id</code>, <code className="font-mono">class_id</code>, dan <code className="font-mono">subject_id</code>.
+            </div>
+            <button
+              onClick={handleSave}
+              className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              Simpan Perubahan
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Realtime Selfie Gallery View */
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                Galeri Foto Selfie Berstempel Realtime Siswa ({selectedDate})
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Foto dilengkapi stempel waktu detik, koordinat GPS, dan watermark integritas data anti-manipulasi.
+              </p>
+            </div>
+          </div>
+
+          {studentRows.filter(r => r.attendanceRec?.photoUrl).length === 0 ? (
+            <div className="p-12 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+              <Camera className="w-10 h-10 text-slate-400 mx-auto mb-2 opacity-50" />
+              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Belum Ada Presensi Selfie Hari Ini</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                Siswa yang melakukan presensi mandiri dengan selfie dan validasi GPS akan langsung tampil di galeri ini secara realtime.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {studentRows
+                .filter(r => r.attendanceRec?.photoUrl)
+                .map(row => {
+                  const rec = row.attendanceRec!;
+                  return (
+                    <div
+                      key={row.studentId}
+                      onClick={() =>
+                        setSelectedProofAttendance({
+                          attendance: rec,
+                          studentName: row.nama
+                        })
+                      }
+                      className="group bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:shadow-lg transition cursor-pointer flex flex-col"
+                    >
+                      <div className="relative aspect-4/3 bg-black overflow-hidden">
+                        <img
+                          src={rec.photoUrl}
+                          alt={`Selfie ${row.nama}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md ${
+                              rec.isWithinRadius !== false
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-amber-500 text-white'
+                            }`}
+                          >
+                            {rec.isWithinRadius !== false ? '✓ Dalam Radius' : '⚠️ Luar Radius'}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-2 left-2 bg-slate-950/80 backdrop-blur-xs px-2 py-0.5 rounded-md text-[10px] font-mono text-yellow-300 font-bold">
+                          ⏰ {rec.timestamp || '07:15 WIB'}
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 flex flex-col justify-between flex-1 space-y-2">
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 dark:text-white truncate">
+                            {row.nama}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1 font-mono">
+                            <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
+                            <span>{rec.distanceMeters || 0}m • GPS: {rec.latitude?.toFixed(4)}, {rec.longitude?.toFixed(4)}</span>
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            Status: Hadir (H)
+                          </span>
+                          <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition">
+                            <Eye className="w-3 h-3" /> Detail
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PROOF VIEWER MODAL */}
+      {selectedProofAttendance && (
+        <AttendanceProofViewerModal
+          attendance={selectedProofAttendance.attendance}
+          studentName={selectedProofAttendance.studentName}
+          classNameTitle={selectedClassObj?.nama_kelas}
+          onClose={() => setSelectedProofAttendance(null)}
+        />
+      )}
     </div>
   );
 };

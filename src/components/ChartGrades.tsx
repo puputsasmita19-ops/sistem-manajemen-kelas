@@ -12,8 +12,14 @@ import {
   LineChart as LineChartIcon,
   Award,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  PieChart
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Swal from 'sweetalert2';
 
 Chart.register(...registerables);
 
@@ -39,12 +45,14 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
   const dbService = DatabaseService.getInstance();
   const subjects = dbService.getAllSubjects();
   const students = dbService.getClassStudents(classId);
+  const appSettings = dbService.getAppSettings();
   const { isDark } = useTheme();
 
   // Filter States
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   const [selectedComponent, setSelectedComponent] = useState<'all' | 'Tugas' | 'UTS' | 'UAS' | 'Final'>('all');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'area'>('bar');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
@@ -257,6 +265,188 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     };
   }, [chartData, selectedComponent, chartType, isDark]);
 
+  const exportVisualAnalysisPDF = () => {
+    if (!canvasRef.current) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Grafik Belum Siap',
+        text: 'Silakan tunggu beberapa saat hingga grafik Chart.js selesai dirender.',
+        confirmButtonColor: '#2563eb'
+      });
+      return;
+    }
+
+    setIsExportingPDF(true);
+
+    try {
+      const canvas = canvasRef.current;
+      const chartImgData = canvas.toDataURL('image/png', 1.0);
+
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const today = new Date().toLocaleDateString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const currentSubjectName =
+        selectedSubjectId === 'all'
+          ? 'Semua Mata Pelajaran (Rata-rata Komprehensif)'
+          : subjects.find((s) => s.id === selectedSubjectId)?.nama_mapel || 'Mata Pelajaran';
+
+      // 1. Header Banner
+      doc.setFillColor(30, 58, 138); // Indigo / Blue 900
+      doc.rect(0, 0, 297, 24, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(
+        `${appSettings.appName.toUpperCase()} — LAPORAN ANALISIS PERFORMA KELAS (CHART.JS)`,
+        14,
+        11
+      );
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        `${appSettings.appDescription || 'Sistem Informasi Manajemen Kelas'} • Tanggal Terbit: ${today}`,
+        14,
+        18
+      );
+
+      // 2. Metadata Info Strip
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Mata Pelajaran: ${currentSubjectName}`, 14, 32);
+      doc.text(
+        `Fokus Penilaian: ${
+          selectedComponent === 'all'
+            ? 'Semua Komponen (Tugas 30%, UTS 30%, UAS 40%)'
+            : selectedComponent
+        }`,
+        150,
+        32
+      );
+
+      // 3. KPI Statistics Cards in PDF
+      const stats = chartData.stats;
+      doc.setFillColor(239, 246, 255); // Blue-50
+      doc.roundedRect(14, 36, 62, 16, 2, 2, 'F');
+      doc.setTextColor(30, 58, 138);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RATA-RATA KELAS', 18, 41);
+      doc.setFontSize(12);
+      doc.text(`${stats.avgScore} / 100`, 18, 48);
+
+      doc.setFillColor(236, 253, 245); // Emerald-50
+      doc.roundedRect(82, 36, 62, 16, 2, 2, 'F');
+      doc.setTextColor(6, 78, 59);
+      doc.setFontSize(8);
+      doc.text('NILAI TERTINGGI', 86, 41);
+      doc.setFontSize(12);
+      doc.text(`${stats.maxScore}`, 86, 48);
+
+      doc.setFillColor(254, 242, 242); // Rose-50
+      doc.roundedRect(150, 36, 62, 16, 2, 2, 'F');
+      doc.setTextColor(153, 27, 27);
+      doc.setFontSize(8);
+      doc.text('NILAI TERENDAH', 154, 41);
+      doc.setFontSize(12);
+      doc.text(`${stats.minScore}`, 154, 48);
+
+      doc.setFillColor(250, 245, 255); // Purple-50
+      doc.roundedRect(218, 36, 65, 16, 2, 2, 'F');
+      doc.setTextColor(88, 28, 135);
+      doc.setFontSize(8);
+      doc.text('KETUNTASAN BELAJAR (≥75)', 222, 41);
+      doc.setFontSize(12);
+      doc.text(`${stats.passingRate}%`, 222, 48);
+
+      // 4. Render Embedded High-Res Chart.js Image
+      doc.addImage(chartImgData, 'PNG', 14, 56, 175, 95);
+
+      // 5. Render Breakdown AutoTable to the right of the chart
+      const tableData = chartData.labels.map((name, idx) => {
+        const t = chartData.tugas[idx] ?? 0;
+        const u = chartData.uts[idx] ?? 0;
+        const a = chartData.uas[idx] ?? 0;
+        const finalS = chartData.finalScores[idx] ?? 0;
+        let pred = 'D';
+        if (finalS >= 88) pred = 'A';
+        else if (finalS >= 78) pred = 'B';
+        else if (finalS >= 68) pred = 'C';
+        const status = finalS >= 75 ? 'Tuntas' : 'Remedial';
+
+        return [name, t.toString(), u.toString(), a.toString(), finalS.toString(), pred, status];
+      });
+
+      autoTable(doc, {
+        head: [['Nama', 'Tugas', 'UTS', 'UAS', 'Akhir', 'Pred', 'Status']],
+        body: tableData,
+        startY: 56,
+        margin: { left: 195, right: 14 },
+        tableWidth: 88,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 24 },
+          1: { halign: 'center', cellWidth: 10 },
+          2: { halign: 'center', cellWidth: 10 },
+          3: { halign: 'center', cellWidth: 10 },
+          4: { halign: 'center', fontStyle: 'bold', cellWidth: 11 },
+          5: { halign: 'center', fontStyle: 'bold', cellWidth: 9 },
+          6: { halign: 'center', cellWidth: 14 }
+        },
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.8
+        }
+      });
+
+      // 6. Signature Footer Block
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Mengetahui & Mengesahkan,', 220, 168);
+      doc.text('Guru Pengampu / Wali Kelas', 220, 173);
+      doc.text('( .................................................... )', 220, 192);
+
+      const fileName = `Analisis_Grafik_Nilai_${currentSubjectName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+      doc.save(fileName);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'PDF Analisis Visual Berhasil Diunduh!',
+        text: 'Laporan diagram grafik performa kelas Chart.js dan tabel capaian telah disimpan.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (err: any) {
+      console.error('Export Visual PDF error:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Mengekspor PDF',
+        text: err.message || 'Terjadi kesalahan teknis saat membuat dokumen PDF visual.'
+      });
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header & Interactive Filters */}
@@ -271,8 +461,23 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
           </p>
         </div>
 
-        {/* Filter Controls Bar */}
+        {/* Filter Controls Bar & PDF Export */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* PDF Export Button for Visual Chart */}
+          <button
+            onClick={exportVisualAnalysisPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Ekspor Diagram Grafis Chart.js dan Analisis Performa ke Dokumen PDF"
+          >
+            {isExportingPDF ? (
+              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span>{isExportingPDF ? 'Membuat PDF...' : 'Ekspor PDF Analisis'}</span>
+          </button>
+
           {/* Filter Mapel */}
           <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs shadow-xs">
             <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />

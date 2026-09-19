@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { User, UserRole, ClassEntity } from '../types';
 import { AppSettingsManager } from './AppSettingsManager';
+import { BulkUserAccountManager } from './BulkUserAccountManager';
+import { MultiRoleExportImportModal } from './MultiRoleExportImportModal';
 import Swal from 'sweetalert2';
 import {
   UserPlus,
@@ -22,16 +24,19 @@ import {
   FileText,
   X,
   Settings,
-  User as UserIcon
+  User as UserIcon,
+  KeyRound,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
   const dbService = DatabaseService.getInstance();
   const classes = dbService.getAllClasses();
-  const [activeAdminView, setActiveAdminView] = useState<'users' | 'settings'>(() => {
+  const [activeAdminView, setActiveAdminView] = useState<'users' | 'bulk_credentials' | 'settings'>(() => {
     try {
       const saved = localStorage.getItem('SIMAK_USER_ADMIN_VIEW');
-      if (saved === 'users' || saved === 'settings') return saved;
+      if (saved === 'users' || saved === 'bulk_credentials' || saved === 'settings') return saved;
     } catch (e) {}
     return 'users';
   });
@@ -69,13 +74,9 @@ export const UserManagement: React.FC = () => {
     password_hash: 'pass123'
   });
 
-  // Modal State for CSV Bulk Import
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importTargetClassId, setImportTargetClassId] = useState<string>(classes[0]?.id || '');
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreviewRows, setImportPreviewRows] = useState<{ nama: string; email: string; no_wa: string }[]>([]);
-  const [importError, setImportError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Modal State for Multi-Role Export / Import
+  const [isMultiRoleModalOpen, setIsMultiRoleModalOpen] = useState(false);
+  const [multiRoleModalTab, setMultiRoleModalTab] = useState<'export' | 'import'>('export');
 
   const reload = () => {
     setUsers(dbService.getAllUsers());
@@ -201,93 +202,14 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  // CSV File Handler
-  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processFile(file);
+  const handleOpenExportModal = () => {
+    setMultiRoleModalTab('export');
+    setIsMultiRoleModalOpen(true);
   };
 
-  const handleDropFile = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    processFile(file);
-  };
-
-  const processFile = (file: File) => {
-    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
-      setImportError('File harus berformat CSV (.csv)');
-      return;
-    }
-    setImportFile(file);
-    setImportError(null);
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-
-      const lines = text.split(/\r\n|\n/).filter(l => l.trim().length > 0);
-      if (lines.length <= 1) {
-        setImportError('File CSV tidak memiliki baris data.');
-        setImportPreviewRows([]);
-        return;
-      }
-
-      // Preview top 5 rows
-      const previews: { nama: string; email: string; no_wa: string }[] = [];
-      for (let i = 1; i < Math.min(lines.length, 6); i++) {
-        const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-        if (cols[0] && cols[1]) {
-          previews.push({
-            nama: cols[0],
-            email: cols[1],
-            no_wa: cols[2] || '-'
-          });
-        }
-      }
-      setImportPreviewRows(previews);
-    };
-    reader.readAsText(file);
-  };
-
-  const handleExecuteImport = () => {
-    if (!importFile) {
-      setImportError('Silakan pilih file CSV terlebih dahulu.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-
-      const result = dbService.importStudentsFromCSV(text, importTargetClassId);
-
-      if (result.success) {
-        setIsImportModalOpen(false);
-        setImportFile(null);
-        setImportPreviewRows([]);
-        reload();
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Impor Massal Siswa Berhasil!',
-          html: `
-            <div class="text-left text-sm space-y-1 mt-2">
-              <p>✅ Siswa Baru Dibuat: <strong>${result.createdCount}</strong> siswa</p>
-              <p>🏫 Siswa Didaftarkan ke Kelas: <strong>${result.enrolledCount}</strong> siswa</p>
-              ${result.errorMessages.length > 0 ? `<p class="text-amber-600 font-semibold mt-2">Catatan (${result.errorMessages.length} baris diabaikan):</p><ul class="list-disc pl-5 text-xs text-slate-500">${result.errorMessages.slice(0, 3).map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
-            </div>
-          `,
-          confirmButtonColor: '#7c3aed'
-        });
-      } else {
-        setImportError(result.errorMessages[0] || 'Gagal memproses data CSV.');
-      }
-    };
-    reader.readAsText(importFile);
+  const handleOpenImportModal = () => {
+    setMultiRoleModalTab('import');
+    setIsMultiRoleModalOpen(true);
   };
 
   const renderRoleBadge = (role: UserRole) => {
@@ -310,7 +232,7 @@ export const UserManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Admin Sub-navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3 flex-wrap">
         <button
           type="button"
           onClick={() => setActiveAdminView('users')}
@@ -323,6 +245,23 @@ export const UserManagement: React.FC = () => {
           <Shield className="w-4 h-4" />
           <span>Kelola Pengguna (Akun & Role)</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveAdminView('bulk_credentials')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminView === 'bulk_credentials'
+              ? 'bg-purple-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>Pengaturan Massal Username & Password</span>
+          <span className="px-1.5 py-0.2 bg-purple-500/30 text-[10px] rounded-md font-bold uppercase">
+            Baru
+          </span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveAdminView('settings')}
@@ -339,11 +278,13 @@ export const UserManagement: React.FC = () => {
 
       {activeAdminView === 'settings' ? (
         <AppSettingsManager />
+      ) : activeAdminView === 'bulk_credentials' ? (
+        <BulkUserAccountManager onUpdateSuccess={reload} />
       ) : (
         <>
           {/* Header & Controls */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
               <div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                   <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -355,38 +296,50 @@ export const UserManagement: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {/* Export CSV Button */}
+                {/* Export Multi-Role CSV Button */}
                 <button
                   id="btn-export-users-csv"
                   type="button"
-                  onClick={() => dbService.exportUsersToCSV()}
-                  className="px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-1.5 transition shadow-xs"
-                  title="Ekspor Seluruh Daftar Akun Pengguna ke Format CSV Spreadsheet"
+                  onClick={handleOpenExportModal}
+                  className="px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  title="Ekspor Data Pengguna (Semua Role & Kelas)"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Ekspor CSV</span>
+                  <span>Ekspor Data (Semua Role)</span>
                 </button>
 
-                {/* Bulk Import CSV Button */}
+                {/* Bulk Import Multi-Role CSV Button */}
                 <button
-                  id="btn-bulk-import-students-csv"
+                  id="btn-bulk-import-multi-role"
                   type="button"
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="px-3 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-center gap-1.5 transition shadow-xs"
-                  title="Impor Massal Siswa Baru Melalui Berkas CSV"
+                  onClick={handleOpenImportModal}
+                  className="px-3 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  title="Impor Massal Pengguna Semua Role Akses (CSV)"
                 >
                   <UploadCloud className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Impor Siswa (CSV)</span>
+                  <span>Impor Massal (Semua Role)</span>
+                </button>
+
+                {/* Bulk Password Shortcut Button */}
+                <button
+                  id="btn-switch-bulk-credentials"
+                  type="button"
+                  onClick={() => setActiveAdminView('bulk_credentials')}
+                  className="px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  title="Atur Username & Password Massal"
+                >
+                  <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Atur Password Massal</span>
                 </button>
 
                 {/* Add User Button */}
                 <button
                   id="btn-add-user"
                   onClick={handleOpenAdd}
-                  className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded-lg flex items-center gap-2 shadow-sm transition"
+                  className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded-lg flex items-center gap-2 shadow-sm transition cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4" />
-                  Tambah Pengguna
+                  <span>Tambah Pengguna</span>
                 </button>
               </div>
             </div>
@@ -486,14 +439,14 @@ export const UserManagement: React.FC = () => {
                           <div className="flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleOpenEdit(user)}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-lg transition"
+                              className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-lg transition cursor-pointer"
                               title="Edit Pengguna"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(user)}
-                              className="p-1.5 text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
+                              className="p-1.5 text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition cursor-pointer"
                               title="Hapus Pengguna"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -510,160 +463,15 @@ export const UserManagement: React.FC = () => {
         </>
       )}
 
-      {/* MODAL: BULK IMPORT SISWA (CSV) */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <UploadCloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Impor Massal Data Siswa (CSV)
-              </h3>
-              <button
-                onClick={() => {
-                  setIsImportModalOpen(false);
-                  setImportFile(null);
-                  setImportPreviewRows([]);
-                  setImportError(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 py-4">
-              {/* Target Class Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Pilih Rombongan Belajar (Kelas Tujuan)
-                </label>
-                <select
-                  value={importTargetClassId}
-                  onChange={e => setImportTargetClassId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                >
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.nama_kelas} ({c.tahun_ajaran})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 font-medium">
-                  Siswa yang diimpor akan langsung otomatis didaftarkan ke anggota kelas ini pada tabel relasi <code className="font-mono text-[10px] bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded">class_members</code>.
-                </p>
-              </div>
-
-              {/* Download Template Banner */}
-              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3.5 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                    <FileSpreadsheet className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    Format Berkas CSV Standar
-                  </div>
-                  <div className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">
-                    Kolom: <code>Nama Lengkap, Email, No_WhatsApp</code>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => dbService.downloadSampleStudentCSV()}
-                  className="px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-slate-700 rounded-lg border border-indigo-300 dark:border-indigo-700 flex items-center gap-1 transition shadow-2xs"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Unduh Template
-                </button>
-              </div>
-
-              {/* Drag & Drop File Upload Area */}
-              <div
-                onDragOver={e => e.preventDefault()}
-                onDrop={handleDropFile}
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-xl p-6 text-center cursor-pointer bg-slate-50 dark:bg-slate-900/50 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleCSVFileChange}
-                  className="hidden"
-                />
-                <UploadCloud className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
-                <div className="text-sm font-bold text-slate-900 dark:text-white">
-                  {importFile ? importFile.name : 'Klik untuk memilih berkas CSV atau seret ke sini'}
-                </div>
-                <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
-                  {importFile ? `${(importFile.size / 1024).toFixed(1)} KB` : 'Mendukung format .csv dengan pemisah koma (,)'}
-                </div>
-              </div>
-
-              {importError && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{importError}</span>
-                </div>
-              )}
-
-              {/* Preview Table */}
-              {importPreviewRows.length > 0 && (
-                <div>
-                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
-                    <span>Pratinjau Data (Maksimal 5 Baris Pertama):</span>
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle className="w-3.5 h-3.5" /> Terdeteksi {importPreviewRows.length} baris
-                    </span>
-                  </div>
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden max-h-36 overflow-y-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold">
-                        <tr>
-                          <th className="py-1.5 px-3">Nama</th>
-                          <th className="py-1.5 px-3">Email</th>
-                          <th className="py-1.5 px-3">WhatsApp</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                        {importPreviewRows.map((r, i) => (
-                          <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                            <td className="py-1.5 px-3 font-medium text-slate-900 dark:text-slate-100">{r.nama}</td>
-                            <td className="py-1.5 px-3 text-slate-700 dark:text-slate-300">{r.email}</td>
-                            <td className="py-1.5 px-3 text-slate-700 dark:text-slate-300">{r.no_wa}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsImportModalOpen(false);
-                  setImportFile(null);
-                  setImportPreviewRows([]);
-                  setImportError(null);
-                }}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleExecuteImport}
-                disabled={!importFile}
-                className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition flex items-center gap-1.5"
-              >
-                <CheckCircle className="w-4 h-4" />
-                <span>Mulai Impor Siswa</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL: MULTI-ROLE EXPORT & IMPORT */}
+      <MultiRoleExportImportModal
+        isOpen={isMultiRoleModalOpen}
+        initialTab={multiRoleModalTab}
+        onClose={() => setIsMultiRoleModalOpen(false)}
+        onSuccess={() => {
+          reload();
+        }}
+      />
 
       {/* MODAL: ADD / EDIT SINGLE USER */}
       {isModalOpen && (
@@ -771,13 +579,13 @@ export const UserManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded-lg shadow-sm transition"
+                  className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded-lg shadow-sm transition cursor-pointer"
                 >
                   {editingUserId ? 'Simpan Perubahan' : 'Tambah Pengguna'}
                 </button>

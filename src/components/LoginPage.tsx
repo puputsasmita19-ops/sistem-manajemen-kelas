@@ -377,6 +377,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
         setSelectedRole(user.role);
       }
 
+      // Record Activity Log
+      dbService.logActivity(
+        'login',
+        'Autentikasi Pengguna Berhasil',
+        `Pengguna ${user.nama} (@${user.username}) berhasil login sebagai ${getRoleLabel(user.role)}.`,
+        `user_${user.id}`,
+        undefined,
+        { id: user.id, nama: user.nama, role: user.role }
+      );
+
       setIsLoading(false);
       Swal.fire({
         icon: 'success',

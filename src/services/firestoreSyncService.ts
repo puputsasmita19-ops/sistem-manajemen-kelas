@@ -183,6 +183,20 @@ export class FirestoreSyncService {
         });
       }
 
+      // 9. Activity Logs
+      const logsSnap = await getDocs(collection(firestore, 'logs'));
+      if (!logsSnap.empty) {
+        if (!current.activity_logs) {
+          (current as any).activity_logs = {};
+        }
+        logsSnap.forEach(d => {
+          const lg = d.data();
+          if (lg && lg.id && current.activity_logs) {
+            current.activity_logs[lg.id] = lg as any;
+          }
+        });
+      }
+
       // Simpan pembaruan ke local storage
       localStorage.setItem('SIMAK_FIREBASE_RTDB_SIMULATION', JSON.stringify(current));
     } catch (e) {
@@ -220,13 +234,48 @@ export class FirestoreSyncService {
           if (!raw.announcements) raw.announcements = {};
           if (change.type === 'added' || change.type === 'modified') {
             const item = change.doc.data();
-            if (item.id) raw.announcements[item.id] = item as any;
+            if (item.id) {
+              raw.announcements[item.id] = item as any;
+              // Broadcast realtime event
+              dbService.notifyAnnouncementUpdate(item as any);
+            }
           } else if (change.type === 'removed') {
             delete raw.announcements[change.doc.id];
           }
         });
       }, (err) => console.warn('Announcements realtime listener warning:', err));
       this.activeSubscriptions.push(unsubAnn);
+
+      // Listener Grades Realtime
+      const unsubGrades = onSnapshot(collection(firestore, 'grades'), (snap) => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const dbService = DatabaseService.getInstance();
+            const raw = dbService.getRawSnapshot();
+            const gradeData = change.doc.data() as any;
+            if (gradeData && gradeData.id) {
+              raw.grades[gradeData.id] = gradeData;
+            }
+          }
+        });
+      }, (err) => console.warn('Grades realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubGrades);
+
+      // Listener Activity Logs Realtime
+      const unsubLogs = onSnapshot(collection(firestore, 'logs'), (snap) => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const dbService = DatabaseService.getInstance();
+            const raw = dbService.getRawSnapshot();
+            if (!raw.activity_logs) raw.activity_logs = {};
+            const logData = change.doc.data() as any;
+            if (logData && logData.id) {
+              raw.activity_logs[logData.id] = logData;
+            }
+          }
+        });
+      }, (err) => console.warn('Logs realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubLogs);
     } catch (err) {
       console.warn('Realtime listeners start error:', err);
     }
@@ -258,9 +307,9 @@ export class FirestoreSyncService {
     });
 
     // 3. Subjects
-    Object.values(snapshot.subjects).forEach(subj => {
-      const ref = doc(firestore, 'subjects', subj.id);
-      batch.set(ref, subj, { merge: true });
+    Object.values(snapshot.subjects).forEach(sub => {
+      const ref = doc(firestore, 'subjects', sub.id);
+      batch.set(ref, sub, { merge: true });
       count++;
     });
 
@@ -301,7 +350,16 @@ export class FirestoreSyncService {
       count++;
     }
 
-    // 9. Google Drive Student Photos
+    // 9. Activity Logs
+    if (snapshot.activity_logs) {
+      Object.values(snapshot.activity_logs).forEach(lg => {
+        const ref = doc(firestore, 'logs', lg.id);
+        batch.set(ref, lg, { merge: true });
+        count++;
+      });
+    }
+
+    // 10. Google Drive Student Photos
     const photos = driveService.getAllPhotoRecords();
     photos.forEach(photo => {
       const ref = doc(firestore, 'student_photos', photo.id);
