@@ -48,7 +48,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Code2
+  Code2,
+  LayoutGrid,
+  MoreHorizontal,
+  X
 } from 'lucide-react';
 
 const SESSION_STORAGE_KEY = 'SIMAK_ACTIVE_USER_SESSION';
@@ -61,6 +64,7 @@ export default function App() {
 
   // App Identity & Branding State
   const [appSettings, setAppSettings] = useState<AppSettings>(() => dbService.getAppSettings());
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
   // Subscribe to changes in AppSettings
   useEffect(() => {
@@ -662,7 +666,7 @@ export default function App() {
       </div>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
         {/* Tab Content Views with Smooth Fade-in Transition */}
         <AnimatePresence mode="wait">
           <motion.div
@@ -742,7 +746,7 @@ export default function App() {
       </main>
 
       {/* FOOTER: Nama Pembuat (Dapat diedit di menu admin) */}
-      <footer className="mt-8 py-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+      <footer className="mt-8 py-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 mb-14 md:mb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Code2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
@@ -758,17 +762,295 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Floating Back to Top Button */}
+      {/* FLOATING BACK TO TOP BUTTON (RESPONSIF & BEBAS TABRAKAN) */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 p-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center group cursor-pointer"
+          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center group cursor-pointer"
           title="Kembali ke atas"
           aria-label="Kembali ke atas"
         >
-          <ArrowUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+          <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-y-0.5 transition-transform" />
         </button>
       )}
+
+      {/* ===================================================================== */}
+      {/* MOBILE BOTTOM NAVIGATION DOCK (KHUSUS SMARTPHONE & TOUCH DEVICE)      */}
+      {/* ===================================================================== */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 shadow-xl transition-colors">
+        <div className="flex items-center justify-around gap-1 max-w-lg mx-auto">
+          {/* Dasbor Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+              activeTab === 'dashboard'
+                ? 'text-blue-600 dark:text-blue-400 font-bold'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'dashboard' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] leading-tight mt-0.5">Dasbor</span>
+          </button>
+
+          {/* Presensi Tab */}
+          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('attendance')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+                activeTab === 'attendance'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${activeTab === 'attendance' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+                <CalendarCheck2 className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] leading-tight mt-0.5">Presensi</span>
+            </button>
+          )}
+
+          {/* Nilai & Rapor Tab */}
+          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('grades')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+                activeTab === 'grades'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${activeTab === 'grades' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+                <Award className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] leading-tight mt-0.5">Nilai</span>
+            </button>
+          )}
+
+          {/* Menu Wali Kelas (18 Fitur) */}
+          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('homeroom')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+                activeTab === 'homeroom'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className={`relative p-1 rounded-lg ${activeTab === 'homeroom' ? 'bg-indigo-50 dark:bg-indigo-950/60' : ''}`}>
+                <School className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 px-1 py-0.2 rounded-full bg-indigo-600 text-white text-[8px] font-black leading-none">
+                  18
+                </span>
+              </div>
+              <span className="text-[10px] leading-tight mt-0.5">Wali Kelas</span>
+            </button>
+          )}
+
+          {/* Portal Siswa / Orang Tua */}
+          {(currentUser.role === 'siswa' || currentUser.role === 'orang_tua') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('student_portal')}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+                activeTab === 'student_portal'
+                  ? 'text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${activeTab === 'student_portal' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] leading-tight mt-0.5">Portal</span>
+            </button>
+          )}
+
+          {/* Menu Lainnya (Khusus Admin untuk membuka tool drawer) */}
+          {currentUser.role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => setIsMobileMoreOpen(true)}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
+                ['users', 'app_settings', 'running_text', 'drive_photos', 'architecture'].includes(activeTab)
+                  ? 'text-blue-600 dark:text-blue-400 font-bold'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${['users', 'app_settings', 'running_text', 'drive_photos', 'architecture'].includes(activeTab) ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
+                <LayoutGrid className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] leading-tight mt-0.5">Lainnya</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* MOBILE MORE MENU DRAWER / BOTTOM SHEET                                */}
+      {/* ===================================================================== */}
+      <AnimatePresence>
+        {isMobileMoreOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMoreOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs cursor-pointer"
+            />
+
+            {/* Sheet Container */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+              className="relative bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 p-5 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto"
+            >
+              {/* Sheet Drag Handle & Title */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <LayoutGrid className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Menu & Pengaturan Admin</h3>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Pilih menu konfigurasi aplikasi</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMoreOpen(false)}
+                  className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Grid of Secondary Admin Modules */}
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                {/* 1. Pengguna */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('users');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
+                    activeTab === 'users'
+                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Pengguna</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Kelola akun & hak akses</div>
+                  </div>
+                </button>
+
+                {/* 2. Identitas & Logo */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('app_settings');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
+                    activeTab === 'app_settings'
+                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Identitas & Logo</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Nama sekolah & branding</div>
+                  </div>
+                </button>
+
+                {/* 3. Running Text Login */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('running_text');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
+                    activeTab === 'running_text'
+                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                    <Megaphone className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Running Text</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Siaran teks halaman login</div>
+                  </div>
+                </button>
+
+                {/* 4. Foto Drive */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('drive_photos');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
+                    activeTab === 'drive_photos'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                    <HardDrive className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Foto Drive</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Integrasi foto Google Drive</div>
+                  </div>
+                </button>
+
+                {/* 5. Skema & Keamanan */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('architecture');
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer col-span-2 ${
+                    activeTab === 'architecture'
+                      ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                      <Database className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Skema & Keamanan Firestore</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Struktur koleksi & security rules</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

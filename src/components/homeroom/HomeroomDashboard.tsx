@@ -19,11 +19,14 @@ import {
   Trophy,
   Home,
   ChevronRight,
+  ChevronLeft,
   Search,
   School,
   Printer,
   Newspaper,
-  RotateCcw
+  RotateCcw,
+  LayoutGrid,
+  Filter
 } from 'lucide-react';
 import { HomeroomService } from '../../services/homeroomService';
 import { HomeroomDataPackage } from '../../types/homeroom';
@@ -271,6 +274,18 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
     return 'schedule';
   });
   const [menuSearch, setMenuSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'pills' | 'grid'>('pills');
+
+  // Categories list
+  const categories = [
+    { id: 'all', label: 'Semua (18)' },
+    { id: 'Akademik & KBM', label: 'Akademik (2)' },
+    { id: 'Ketertiban & Budaya', label: 'Ketertiban (5)' },
+    { id: 'Data & Profil', label: 'Data & Profil (4)' },
+    { id: 'Sarana & Keuangan', label: 'Sarana (2)' },
+    { id: 'Bimbingan & Karakter', label: 'Bimbingan (5)' }
+  ];
 
   // Save classId and activeMenu when changed
   useEffect(() => {
@@ -314,7 +329,18 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
   };
   const currentClassName = classNamesMap[classId] || classId;
 
-  const activeMenuItem = ALL_MENUS.find(m => m.id === activeMenu) || ALL_MENUS[0];
+  const activeIndex = ALL_MENUS.findIndex(m => m.id === activeMenu);
+  const activeMenuItem = ALL_MENUS[activeIndex] || ALL_MENUS[0];
+
+  const handlePrevMenu = () => {
+    const prevIdx = activeIndex > 0 ? activeIndex - 1 : ALL_MENUS.length - 1;
+    setActiveMenu(ALL_MENUS[prevIdx].id);
+  };
+
+  const handleNextMenu = () => {
+    const nextIdx = activeIndex < ALL_MENUS.length - 1 ? activeIndex + 1 : 0;
+    setActiveMenu(ALL_MENUS[nextIdx].id);
+  };
 
   const handleResetClassData = () => {
     Swal.fire({
@@ -341,46 +367,48 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
     });
   };
 
-  const filteredMenus = ALL_MENUS.filter(
-    m =>
+  const filteredMenus = ALL_MENUS.filter(m => {
+    const matchesSearch =
       !menuSearch ||
       m.title.toLowerCase().includes(menuSearch.toLowerCase()) ||
       m.num.toString() === menuSearch.trim() ||
-      m.category.toLowerCase().includes(menuSearch.toLowerCase())
-  );
+      m.category.toLowerCase().includes(menuSearch.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Top Banner / Class Switcher */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-3xl shadow-sm border border-slate-800">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400">
-              <School className="w-6 h-6" />
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <School className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
                   ADMINISTRASI WALI KELAS
                 </span>
-                <span className="text-xs text-slate-400 font-mono">18 Fitur Terintegrasi</span>
+                <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">18 Fitur Terintegrasi</span>
               </div>
-              <h2 className="text-xl font-black text-white mt-0.5">
+              <h2 className="text-base sm:text-xl font-black text-white mt-0.5">
                 Ruang Wali Kelas: {currentClassName}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 Wali Kelas: <strong className="text-slate-200">Budi Santoso, S.Pd</strong> • NIP: 198503152010011008
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-slate-300 font-bold whitespace-nowrap">Pilih Kelas Binaan:</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <label className="text-xs text-slate-300 font-bold whitespace-nowrap hidden sm:inline">Kelas:</label>
               <select
                 value={classId}
                 onChange={e => setClassId(e.target.value)}
-                className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full sm:w-auto px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white outline-none focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="class_10_ipa1">Kelas X-IPA-1 (Binaan Utama)</option>
                 <option value="class_10_ipa2">Kelas X-IPA-2</option>
@@ -394,20 +422,51 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
               className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl text-[11px] font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset Default</span>
+              <span>Reset Data</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* 18 Menu Quick Selector Carousel / Grid */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-700/60">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              DAFTAR 18 MENU WALI KELAS:
-            </span>
-            <span className="text-xs text-slate-400">({ALL_MENUS.length} Modul Lengkap)</span>
+      <div className="bg-white dark:bg-slate-800 p-3.5 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
+        {/* Filter bar & Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100 dark:border-slate-700/60">
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                18 Menu Administrasi:
+              </span>
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold font-mono">
+                [#{activeMenuItem.num}] {activeMenuItem.title}
+              </span>
+            </div>
+
+            {/* View Mode Switcher */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setViewMode('pills')}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                  viewMode === 'pills'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                }`}
+              >
+                Pills
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                }`}
+              >
+                Grid
+              </button>
+            </div>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -416,41 +475,139 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
               type="text"
               value={menuSearch}
               onChange={e => setMenuSearch(e.target.value)}
-              placeholder="Cari menu 1-18 atau nama fitur..."
+              placeholder="Cari menu 1-18 atau nama..."
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
             />
           </div>
         </div>
 
-        {/* Horizontal Scrolling or Compact Pills for all 18 menus */}
-        <div className="flex flex-wrap gap-2 pt-1 max-h-48 overflow-y-auto pr-1">
-          {filteredMenus.map(m => {
-            const Icon = m.icon;
-            const isActive = activeMenu === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setActiveMenu(m.id)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer border ${
-                  isActive
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs shadow-indigo-500/25'
-                    : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+        {/* Category Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition cursor-pointer border ${
+                selectedCategory === cat.id
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                  : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Display: Pills Mode */}
+        {viewMode === 'pills' && (
+          <div className="flex flex-wrap gap-1.5 pt-1 max-h-48 overflow-y-auto pr-1">
+            {filteredMenus.map(m => {
+              const Icon = m.icon;
+              const isActive = activeMenu === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setActiveMenu(m.id)}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                    isActive
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs shadow-indigo-500/25'
+                      : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  {m.num}
-                </span>
-                <Icon className="w-3.5 h-3.5" />
-                <span className="whitespace-nowrap">{m.title}</span>
-              </button>
-            );
-          })}
+                  <span
+                    className={`w-4 h-4 rounded flex items-center justify-center text-[9px] font-black shrink-0 ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {m.num}
+                  </span>
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{m.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Display: Grid / Bento Cards Mode (Proportional & Touch-friendly) */}
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 max-h-64 overflow-y-auto pr-1">
+            {filteredMenus.map(m => {
+              const Icon = m.icon;
+              const isActive = activeMenu === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setActiveMenu(m.id)}
+                  className={`p-2.5 rounded-2xl text-left border flex flex-col justify-between gap-2 transition cursor-pointer ${
+                    isActive
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 dark:border-indigo-600 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                        isActive ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {m.num}
+                    </span>
+                    <div className={`p-1.5 rounded-xl ${m.color} shrink-0`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`text-xs font-bold leading-tight ${isActive ? 'text-indigo-900 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-200'}`}>
+                      {m.title}
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {m.category}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Sub-Module Navigation Header Bar */}
+      <div className="bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={handlePrevMenu}
+          className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Sebelumnya</span>
+        </button>
+
+        <div className="flex items-center gap-2 overflow-hidden">
+          <select
+            value={activeMenu}
+            onChange={e => setActiveMenu(e.target.value as HomeroomMenuId)}
+            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500 truncate max-w-[200px] sm:max-w-xs cursor-pointer"
+          >
+            {ALL_MENUS.map(m => (
+              <option key={m.id} value={m.id}>
+                #{m.num} - {m.title} ({m.category})
+              </option>
+            ))}
+          </select>
         </div>
+
+        <button
+          type="button"
+          onClick={handleNextMenu}
+          className="px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
+        >
+          <span className="hidden sm:inline">Selanjutnya</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Active Sub-module Container */}

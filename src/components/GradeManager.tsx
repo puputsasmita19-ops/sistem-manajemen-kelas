@@ -390,13 +390,13 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {/* PDF Export Button for Class Grade Data */}
             <button
               id="btn-export-pdf-grades"
               onClick={exportClassLedgerPDF}
               disabled={isExporting || rows.length === 0}
-              className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-[0.98] rounded-xl flex items-center gap-2 shadow-xs shadow-rose-500/20 transition cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 shadow-xs shadow-rose-500/20 transition cursor-pointer disabled:opacity-50 flex-1 sm:flex-initial"
               title="Ekspor Data Nilai Kelas Ini ke File PDF (jsPDF)"
             >
               {isExporting ? (
@@ -404,17 +404,17 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
               ) : (
                 <FileText className="w-4 h-4" />
               )}
-              <span>{isExporting ? 'Membuat PDF...' : 'Ekspor PDF Nilai Kelas'}</span>
+              <span>{isExporting ? 'Membuat PDF...' : 'Ekspor PDF Nilai'}</span>
             </button>
 
             {/* Save All Button */}
             <button
               id="btn-save-all-grades"
               onClick={handleSaveAll}
-              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl flex items-center gap-2 shadow-sm transition cursor-pointer"
+              className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl flex items-center justify-center gap-2 shadow-sm transition cursor-pointer flex-1 sm:flex-initial"
             >
               <Save className="w-4 h-4" />
-              Simpan Semua Nilai
+              <span>Simpan Semua Nilai</span>
             </button>
           </div>
         </div>

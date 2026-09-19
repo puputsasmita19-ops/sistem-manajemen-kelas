@@ -166,39 +166,39 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
             {/* Toggle Mode QR Scanner */}
             <button
               id="btn-toggle-qr-scanner"
               type="button"
               onClick={() => setShowQRScanner(!showQRScanner)}
-              className={`px-3.5 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition shadow-xs ${
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer flex-1 sm:flex-initial ${
                 showQRScanner
                   ? 'bg-amber-600 text-white hover:bg-amber-700'
                   : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
               <QrCode className="w-4 h-4" />
-              <span>{showQRScanner ? 'Tutup Scanner QR' : 'Buka Scanner QR'}</span>
+              <span>{showQRScanner ? 'Tutup Scanner' : 'Scanner QR'}</span>
             </button>
 
             {/* Monthly Report PDF Trigger */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600 flex-1 sm:flex-initial">
               <input
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none px-1.5 cursor-pointer"
+                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none px-1.5 cursor-pointer w-full sm:w-auto"
                 title="Pilih Bulan Rekapitulasi"
               />
               <button
                 id="btn-export-monthly-pdf"
                 onClick={handleExportMonthlyReport}
-                className="px-3.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black rounded-md flex items-center gap-1.5 transition shadow-xs"
+                className="px-2.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black rounded-lg flex items-center gap-1 transition shadow-xs whitespace-nowrap cursor-pointer"
                 title="Cetak Laporan Bulanan Resmi Wali Kelas"
               >
                 <FileText className="w-3.5 h-3.5 text-amber-400" />
-                <span>Cetak Laporan Bulanan (PDF)</span>
+                <span>Rekap Bulanan</span>
               </button>
             </div>
 
@@ -206,29 +206,30 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
             <button
               id="btn-export-attendance-csv"
               onClick={() => dbService.exportAttendanceLogsToCSV(selectedClassId, selectedMonth)}
-              className="px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-1.5 transition shadow-xs"
+              className="px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer flex-1 sm:flex-initial"
               title="Ekspor Seluruh Log Presensi ke CSV Spreadsheet"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Ekspor Log CSV</span>
+              <span>CSV Log</span>
             </button>
 
             <button
               id="btn-export-attendance-pdf"
               onClick={handleExportPDF}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg flex items-center gap-2 transition"
+              className="px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer flex-1 sm:flex-initial"
               title="Ekspor rekap harian hari ini"
             >
               <Download className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-              PDF Harian
+              <span>PDF Harian</span>
             </button>
+
             <button
               id="btn-save-attendance"
               onClick={handleSave}
-              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 shadow-sm transition"
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer w-full sm:w-auto"
             >
               <Save className="w-4 h-4" />
-              Simpan Presensi
+              <span>Simpan Presensi</span>
             </button>
           </div>
         </div>
