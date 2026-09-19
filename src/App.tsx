@@ -71,7 +71,7 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  // Authentication State
+  // Authentication State - Defaults to null (Login Page) so any new visitor lands on the login page first
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem(SESSION_STORAGE_KEY);
     if (saved) {
@@ -81,8 +81,7 @@ export default function App() {
         return null;
       }
     }
-    // Default to admin so user immediately sees functional dashboard or can logout
-    return allUsers.find(u => u.role === 'admin') || allUsers[0];
+    return null;
   });
 
   // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
@@ -200,7 +199,16 @@ export default function App() {
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+    } catch (e) {}
+
+    // Direct user to role-appropriate initial screen
+    if (user.role === 'siswa' || user.role === 'orang_tua') {
+      setActiveTab('student_portal');
+    } else {
+      setActiveTab('dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -214,7 +222,11 @@ export default function App() {
       confirmButtonColor: '#EF4444'
     }).then(res => {
       if (res.isConfirmed) {
-        localStorage.removeItem(SESSION_STORAGE_KEY);
+        try {
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+          localStorage.removeItem(LAST_ACTIVE_TAB_KEY);
+        } catch (e) {}
+        window.history.replaceState(null, '', window.location.pathname);
         setCurrentUser(null);
         Swal.fire({
           toast: true,
