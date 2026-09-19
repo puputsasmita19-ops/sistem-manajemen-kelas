@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2';
+import { DatabaseService } from './databaseService';
 
 export interface LocationIntegrityReport {
   isValid: boolean;
@@ -8,7 +9,7 @@ export interface LocationIntegrityReport {
   isWithinRadius: boolean;
 }
 
-class AntiCheatSecurityService {
+export class AntiCheatSecurityService {
   private static instance: AntiCheatSecurityService;
   private isInitialized = false;
   private lastWarningTime = 0;
@@ -21,6 +22,60 @@ class AntiCheatSecurityService {
       AntiCheatSecurityService.instance = new AntiCheatSecurityService();
     }
     return AntiCheatSecurityService.instance;
+  }
+
+  /**
+   * Mengecek apakah pop-up peringatan keamanan anti-cheat diizinkan oleh Admin
+   */
+  public isPopupsEnabled(): boolean {
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      return settings.antiCheatSecurityPopupsEnabled !== false;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /**
+   * Mengecek apakah sistem proteksi anti-cheat browser aktif secara umum
+   */
+  public isAntiCheatEnabled(): boolean {
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      return settings.antiCheatEnabled !== false;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /**
+   * Menguji coba pop-up peringatan dari role Admin
+   */
+  public triggerTestPopup(forceShow = false): void {
+    if (!forceShow && !this.isPopupsEnabled()) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Mode Hening Aktif (Silent)',
+        text: 'Pop-up peringatan keamanan anti-cheat saat ini dinonaktifkan oleh Admin. Sistem tetap menjaga integritas secara hening tanpa memunculkan toast.',
+        confirmButtonColor: '#2563EB'
+      });
+      return;
+    }
+
+    Swal.fire({
+      toast: true,
+      position: 'top',
+      icon: 'warning',
+      title: '🛡️ Proteksi Keamanan Presensi Aktif',
+      text: 'Ini adalah contoh pop-up peringatan sistem keamanan anti-cheat dan anti-rekayasa lokasi presensi.',
+      showConfirmButton: false,
+      timer: 3500,
+      background: '#0F172A',
+      color: '#F8FAFC',
+      customClass: {
+        popup: 'border border-amber-500/40 rounded-2xl shadow-xl'
+      }
+    });
   }
 
   /**
@@ -69,6 +124,11 @@ class AntiCheatSecurityService {
   }
 
   private showSecurityToast(reason: string): void {
+    // Jika switch pop up dimatikan oleh admin, jangan tampilkan popup/toast apapun!
+    if (!this.isPopupsEnabled()) {
+      return;
+    }
+
     const now = Date.now();
     // Throttle pesan toast agar tidak spam (jeda 3 detik)
     if (now - this.lastWarningTime < 3000) return;
@@ -91,6 +151,13 @@ class AntiCheatSecurityService {
   }
 
   private handleContextMenu = (e: MouseEvent) => {
+    // Cek setelan global admin
+    if (!this.isAntiCheatEnabled()) return;
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      if (settings.antiCheatBlockRightClick === false) return;
+    } catch (err) {}
+
     // Izinkan di input form biasa jika diperlukan, tetapi blokir di area kartu / presensi
     if (this.isInputElement(e.target)) {
       return; // Izinkan klik kanan dasar di kotak teks
@@ -101,6 +168,13 @@ class AntiCheatSecurityService {
   };
 
   private handleKeyDown = (e: KeyboardEvent) => {
+    // Cek setelan global admin
+    if (!this.isAntiCheatEnabled()) return;
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      if (settings.antiCheatBlockDevTools === false) return;
+    } catch (err) {}
+
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const modifier = isMac ? e.metaKey : e.ctrlKey;
 
@@ -137,6 +211,13 @@ class AntiCheatSecurityService {
   };
 
   private handleCopyCutPaste = (e: ClipboardEvent) => {
+    // Cek setelan global admin
+    if (!this.isAntiCheatEnabled()) return;
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      if (settings.antiCheatBlockCopyPaste === false) return;
+    } catch (err) {}
+
     if (this.isInputElement(e.target)) {
       return; // Izinkan copy paste dalam input nama/catatan
     }
@@ -146,12 +227,19 @@ class AntiCheatSecurityService {
   };
 
   private handleDragStart = (e: DragEvent) => {
+    if (!this.isAntiCheatEnabled()) return;
     if (this.isInputElement(e.target)) return;
     e.preventDefault();
   };
 
   private touchTimer: any = null;
   private handleTouchStart = (e: TouchEvent) => {
+    if (!this.isAntiCheatEnabled()) return;
+    try {
+      const settings = DatabaseService.getInstance().getAppSettings();
+      if (settings.antiCheatBlockRightClick === false) return;
+    } catch (err) {}
+
     if (this.isInputElement(e.target)) return;
 
     // Jika user menekan agak lama (> 450ms), cegah menu copy-paste / context menu mobile

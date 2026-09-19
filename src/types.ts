@@ -35,7 +35,11 @@ export interface AppSettings {
   schoolRadiusMeters?: number; // default: 200m
   schoolAddress?: string; // default: 'Kompleks Pendidikan Utama No. 1, Jakarta'
   attendanceCutoffTime?: string; // default: '07:30'
-  antiCheatEnabled?: boolean; // default: true
+  antiCheatEnabled?: boolean; // default: true (sistem keamanan anti cheat & rekayasa aktif)
+  antiCheatSecurityPopupsEnabled?: boolean; // default: true (switch on/off pop-up peringatan keamanan anti cheat dan anti rekayasa)
+  antiCheatBlockDevTools?: boolean; // default: true (blokir F12, Inspect Element)
+  antiCheatBlockRightClick?: boolean; // default: true (blokir menu klik kanan & long press)
+  antiCheatBlockCopyPaste?: boolean; // default: true (blokir penyalinan teks antarmuka)
 }
 
 export interface ClassEntity {

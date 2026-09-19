@@ -552,30 +552,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
       <main className="relative z-10 w-full max-w-[460px] px-2 sm:px-0">
         <div className="absolute -inset-1.5 bg-gradient-to-b from-white/50 via-blue-200/25 to-indigo-300/35 dark:from-blue-600/10 dark:via-indigo-500/10 dark:to-transparent rounded-[36px] blur-xl pointer-events-none -z-10" />
 
-        <div className="relative w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[32px] p-6 sm:p-7 shadow-[0_20px_50px_-10px_rgba(20,70,120,0.18),0_0_0_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] border border-white/90 dark:border-slate-800 transition-all">
+        <div className="relative w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[28px] sm:rounded-[32px] p-4 sm:p-7 shadow-[0_20px_50px_-10px_rgba(20,70,120,0.18),0_0_0_1px_rgba(255,255,255,0.95)_inset] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] border border-white/90 dark:border-slate-800 transition-all">
           
           {/* 1) LOGO & JUDUL BESAR APLIKASI */}
           <div className="flex flex-col items-center justify-center mb-2">
             <AppLogo settings={appSettings} size="lg" className="shadow-md shadow-blue-500/15 transition-transform hover:scale-105" />
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase mt-2">
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase mt-1.5 sm:mt-2">
               {appSettings.appName || 'SIMAK'}
             </h1>
-            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 text-center">
               Sistem Manajemen Kelas & Administrasi
             </p>
           </div>
 
-          {/* 2) TANGGAL & JAM REALTIME */}
-          <div className="flex items-center justify-center mb-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs shadow-2xs">
-              <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>{clock.dateFormatted}</span>
+          {/* 2) TANGGAL & JAM REALTIME (Proporsional & Selalu Lurus di Smartphone) */}
+          <div className="flex items-center justify-center mb-2.5 px-1">
+            <div
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-0.5 rounded-full bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-xs shadow-2xs whitespace-nowrap max-w-full overflow-hidden shrink-0"
+              title={`Waktu & Tanggal Realtime: ${clock.dateFormatted} • ${clock.timeFormatted}`}
+            >
+              <div className="flex items-center gap-1 sm:gap-1.5 font-medium text-slate-700 dark:text-slate-300 shrink-0">
+                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="hidden sm:inline">{clock.dateFormatted}</span>
+                <span className="inline sm:hidden">{clock.dateFormattedShort}</span>
               </div>
-              <span className="text-slate-300 dark:text-slate-600">•</span>
-              <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900 dark:text-slate-100">
-                <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>{clock.timeFormatted}</span>
+              <span className="text-slate-300 dark:text-slate-600 shrink-0 select-none">•</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
+                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="hidden sm:inline">{clock.timeFormatted}</span>
+                <span className="inline sm:hidden">{clock.timeFormattedShort}</span>
               </div>
             </div>
           </div>

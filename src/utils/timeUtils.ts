@@ -3,8 +3,11 @@ import { useState, useEffect } from 'react';
 export interface RealtimeClockData {
   time: Date;
   dateFormatted: string;
+  dateFormattedShort: string;
   timeFormatted: string;
+  timeFormattedShort: string;
   dayName: string;
+  dayNameShort: string;
   greeting: string;
   greetingDescription: string;
   period: 'pagi' | 'siang' | 'sore' | 'malam';
@@ -56,26 +59,37 @@ export function useRealtimeClock(): RealtimeClockData {
   }, []);
 
   const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const daysShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
+  const monthsShort = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+  ];
 
   const dayName = days[time.getDay()];
+  const dayNameShort = daysShort[time.getDay()];
   const dateFormatted = `${dayName}, ${time.getDate()} ${months[time.getMonth()]} ${time.getFullYear()}`;
+  const dateFormattedShort = `${dayNameShort}, ${time.getDate()} ${monthsShort[time.getMonth()]} ${time.getFullYear()}`;
   
   const hoursStr = String(time.getHours()).padStart(2, '0');
   const minutesStr = String(time.getMinutes()).padStart(2, '0');
   const secondsStr = String(time.getSeconds()).padStart(2, '0');
   const timeFormatted = `${hoursStr}:${minutesStr}:${secondsStr} WIB`;
+  const timeFormattedShort = `${hoursStr}:${minutesStr} WIB`;
 
   const { greeting, greetingDescription, period } = getGreeting(time);
 
   return {
     time,
     dateFormatted,
+    dateFormattedShort,
     timeFormatted,
+    timeFormattedShort,
     dayName,
+    dayNameShort,
     greeting,
     greetingDescription,
     period

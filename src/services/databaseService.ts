@@ -181,7 +181,11 @@ export class DatabaseService {
         schoolRadiusMeters: 200,
         schoolAddress: "Kompleks Pendidikan Utama No. 1, Jakarta",
         attendanceCutoffTime: "07:30",
-        antiCheatEnabled: true
+        antiCheatEnabled: true,
+        antiCheatSecurityPopupsEnabled: true,
+        antiCheatBlockDevTools: true,
+        antiCheatBlockRightClick: true,
+        antiCheatBlockCopyPaste: true
       };
       this.persist();
     } else {
@@ -217,6 +221,18 @@ export class DatabaseService {
       }
       if (this.db.app_settings.antiCheatEnabled === undefined) {
         this.db.app_settings.antiCheatEnabled = true;
+      }
+      if (this.db.app_settings.antiCheatSecurityPopupsEnabled === undefined) {
+        this.db.app_settings.antiCheatSecurityPopupsEnabled = true;
+      }
+      if (this.db.app_settings.antiCheatBlockDevTools === undefined) {
+        this.db.app_settings.antiCheatBlockDevTools = true;
+      }
+      if (this.db.app_settings.antiCheatBlockRightClick === undefined) {
+        this.db.app_settings.antiCheatBlockRightClick = true;
+      }
+      if (this.db.app_settings.antiCheatBlockCopyPaste === undefined) {
+        this.db.app_settings.antiCheatBlockCopyPaste = true;
       }
     }
     return this.db.app_settings;
