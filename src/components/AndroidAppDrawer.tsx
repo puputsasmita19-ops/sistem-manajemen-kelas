@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   TrendingUp,
@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Search,
   X,
+  ArrowLeft,
   ChevronRight,
   ShieldCheck,
   Sparkles,
@@ -31,6 +32,7 @@ import {
 import { User, AppSettings, UserRole } from '../types';
 import { TourService } from '../services/tourService';
 import { realtimeNotificationService } from '../services/realtimeNotificationService';
+import { navigationBackService } from '../services/navigationBackService';
 
 interface AndroidAppDrawerProps {
   isOpen: boolean;
@@ -237,6 +239,16 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
     onClose();
   };
 
+  // Intercept tombol kembali perangkat ketika drawer menu sedang terbuka
+  useEffect(() => {
+    if (!isOpen) return;
+    const unregister = navigationBackService.registerHandler('android_app_drawer', () => {
+      onClose();
+      return true;
+    });
+    return () => unregister();
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -285,11 +297,14 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                 </div>
 
                 <button
+                  type="button"
+                  id="btn-close-drawer-kembali"
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                  aria-label="Tutup Menu"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xs"
+                  aria-label="Kembali ke Aplikasi (Tutup Menu)"
                 >
-                  <X className="w-4 h-4" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
                 </button>
               </div>
 
@@ -459,6 +474,17 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                   <span>Reset Database Demo</span>
                 </button>
               )}
+
+              {/* Kembali ke Aplikasi (Batal) Button */}
+              <button
+                type="button"
+                id="btn-drawer-batal-kembali"
+                onClick={onClose}
+                className="w-full mt-2.5 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 transition cursor-pointer active:scale-99"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali ke Aplikasi (Batal)</span>
+              </button>
             </div>
           </motion.div>
         </div>

@@ -15,8 +15,10 @@ import {
   ChevronRight,
   Info,
   CheckCircle2,
-  Tag
+  Tag,
+  ArrowLeft
 } from 'lucide-react';
+import { navigationBackService } from '../services/navigationBackService';
 
 interface AnnouncementBannerProps {
   currentUserRole: UserRole;
@@ -77,6 +79,26 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     }, 8000);
     return () => clearInterval(interval);
   }, [announcements.length]);
+
+  // Intercept tombol kembali saat modal detail pengumuman aktif
+  useEffect(() => {
+    if (!selectedAnnouncement) return;
+    const unregister = navigationBackService.registerHandler('announcement_detail_modal', () => {
+      setSelectedAnnouncement(null);
+      return true;
+    });
+    return () => unregister();
+  }, [selectedAnnouncement]);
+
+  // Intercept tombol kembali saat modal buat pengumuman baru aktif
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const unregister = navigationBackService.registerHandler('announcement_create_modal', () => {
+      setIsModalOpen(false);
+      return true;
+    });
+    return () => unregister();
+  }, [isModalOpen]);
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -430,10 +452,14 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                 )}
               </div>
               <button
+                type="button"
+                id="btn-tutup-detail-pengumuman"
                 onClick={() => setSelectedAnnouncement(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-slate-600"
+                title="Tutup & Kembali"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
               </button>
             </div>
 
@@ -469,10 +495,13 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                 </button>
               )}
               <button
+                type="button"
+                id="btn-footer-kembali-detail-pengumuman"
                 onClick={() => setSelectedAnnouncement(null)}
-                className="ml-auto px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition"
+                className="ml-auto px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
               >
-                Tutup
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
               </button>
             </div>
           </div>
@@ -491,10 +520,13 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                 </h3>
               </div>
               <button
+                type="button"
+                id="btn-batal-buat-pengumuman-header"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-slate-600"
               >
-                <X className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4" />
+                <span>Batal</span>
               </button>
             </div>
 

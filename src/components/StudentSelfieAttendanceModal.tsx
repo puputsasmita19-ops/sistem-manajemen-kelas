@@ -19,8 +19,10 @@ import {
   Info,
   Maximize2,
   RotateCcw,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
+import { navigationBackService } from '../services/navigationBackService';
 
 interface StudentSelfieAttendanceModalProps {
   currentUser: User;
@@ -35,6 +37,15 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
 }) => {
   const dbService = DatabaseService.getInstance();
   const appSettings = dbService.getAppSettings();
+
+  // Intercept tombol kembali perangkat Android untuk membatalkan/menutup modal kamera
+  useEffect(() => {
+    const unregister = navigationBackService.registerHandler('student_selfie_camera_modal', () => {
+      onClose();
+      return true;
+    });
+    return () => unregister();
+  }, [onClose]);
 
   // School Geofence Settings
   const schoolLat = appSettings.schoolLatitude ?? -6.2088;
@@ -519,10 +530,13 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
 
           <button
             type="button"
+            id="btn-close-selfie-modal-header"
             onClick={onClose}
-            className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-white bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold transition cursor-pointer border border-white/20 shadow-xs"
+            title="Kembali ke Portal Siswa (Batal Presensi)"
           >
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Kembali / Batal</span>
           </button>
         </div>
 
@@ -676,25 +690,37 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
 
               {/* Action 1-Tap Big Button */}
               <div className="space-y-2">
-                <button
-                  type="button"
-                  id="btn-scan-presensi-kilat"
-                  onClick={handleQuickScanKilat}
-                  disabled={isSubmitting || !cameraActive}
-                  className="w-full py-3.5 sm:py-4 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 text-white rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition transform active:scale-98 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                      <span>Menyimpan & Menstempel Bukti...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-5 h-5 text-amber-300" />
-                      <span>TAP DISINI UNTUK SCAN PRESENSI KILAT</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                  <button
+                    type="button"
+                    id="btn-batal-scan-kilat"
+                    onClick={onClose}
+                    className="w-full sm:w-auto py-3.5 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border border-slate-200 dark:border-slate-700 active:scale-98 shrink-0"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Batal / Kembali</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-scan-presensi-kilat"
+                    onClick={handleQuickScanKilat}
+                    disabled={isSubmitting || !cameraActive}
+                    className="w-full sm:flex-1 py-3.5 sm:py-4 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 disabled:opacity-50 text-white rounded-2xl font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition transform active:scale-98 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        <span>Menyimpan & Menstempel Bukti...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5 text-amber-300" />
+                        <span>TAP DISINI UNTUK SCAN PRESENSI KILAT</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
                 <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
                   Foto selfie akan otomatis dibubuhi stempel waktu detik, koordinat GPS, dan nama resmi Anda sebagai bukti otentik.
@@ -778,6 +804,28 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
                   </span>
                 </div>
               )}
+
+              {/* Tab 2 Bottom Action Bar with Kembali & Camera Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  id="btn-batal-peta-geofence"
+                  onClick={onClose}
+                  className="w-full sm:w-auto py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700 active:scale-98 shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Batal / Kembali</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('scan_kilat')}
+                  className="w-full sm:flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Buka Kamera Presensi Kilat</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -804,15 +852,27 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={handleQuickScanKilat}
-                disabled={isSubmitting || !cameraActive}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Camera className="w-4 h-4" />
-                <span>Ambil Foto Selfie & Simpan Presensi</span>
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  id="btn-batal-selfie-manual"
+                  onClick={onClose}
+                  className="w-full sm:w-auto py-3 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700 active:scale-98 shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Batal / Kembali</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleQuickScanKilat}
+                  disabled={isSubmitting || !cameraActive}
+                  className="w-full sm:flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Ambil Foto Selfie & Simpan Presensi</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -879,10 +939,12 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
 
                 <button
                   type="button"
+                  id="btn-tutup-kembali-portal"
                   onClick={onClose}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5"
                 >
-                  Tutup
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Portal</span>
                 </button>
               </div>
             </div>

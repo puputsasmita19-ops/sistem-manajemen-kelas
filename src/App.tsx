@@ -24,8 +24,10 @@ import { ActivityLogViewer } from './components/ActivityLogViewer';
 import { AndroidTopBar } from './components/AndroidTopBar';
 import { AndroidBottomNav } from './components/AndroidBottomNav';
 import { AndroidAppDrawer } from './components/AndroidAppDrawer';
+import { ExitAppConfirmModal } from './components/ExitAppConfirmModal';
 import { useTheme } from './utils/useTheme';
 import { realtimeNotificationService } from './services/realtimeNotificationService';
+import { navigationBackService } from './services/navigationBackService';
 import { antiCheatSecurityService } from './services/antiCheatSecurityService';
 import { TourService } from './services/tourService';
 import { useRealtimeClock } from './utils/timeUtils';
@@ -62,7 +64,8 @@ import {
   MoreHorizontal,
   X,
   History,
-  HelpCircle
+  HelpCircle,
+  ArrowLeft
 } from 'lucide-react';
 
 const SESSION_STORAGE_KEY = 'SIMAK_ACTIVE_USER_SESSION';
@@ -134,6 +137,7 @@ export default function App() {
   }, [currentUser?.id]);
 
   // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
@@ -149,6 +153,30 @@ export default function App() {
     }
     return currentUser?.role === 'siswa' || currentUser?.role === 'orang_tua' ? 'student_portal' : 'dashboard';
   });
+
+  // Inisialisasi Android Back Navigation & Exit Prevention Handler
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Pasang guard history dan listener popstate
+    const cleanup = navigationBackService.initialize({
+      onConfirmExit: () => {
+        setShowExitConfirmModal(true);
+      },
+      onNavigateHome: () => {
+        const defaultHomeTab = currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard';
+        if (activeTab !== defaultHomeTab) {
+          setActiveTab(defaultHomeTab);
+          return true;
+        }
+        return false;
+      }
+    });
+
+    return () => {
+      cleanup();
+    };
+  }, [currentUser, activeTab]);
 
   // When user is not logged in, enforce '#login' in the URL hash
   useEffect(() => {
@@ -175,6 +203,19 @@ export default function App() {
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab, currentUser]);
+
+  // Intercept tombol kembali perangkat Android saat berada di sub-menu (agar kembali ke Beranda sebelum keluar aplikasi)
+  useEffect(() => {
+    if (!currentUser) return;
+    const defaultHomeTab = currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard';
+    if (activeTab !== defaultHomeTab) {
+      const unregister = navigationBackService.registerHandler('app_sub_menu_tab', () => {
+        setActiveTab(defaultHomeTab);
+        return true;
+      });
+      return () => unregister();
+    }
   }, [activeTab, currentUser]);
 
   // Navigation scroll container & overflow state
@@ -783,6 +824,24 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
+        {/* Mobile Sub-view Back Navigation Bar */}
+        {activeTab !== (currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard') && (
+          <div className="md:hidden mb-4 flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <button
+              type="button"
+              id="btn-mobile-subview-kembali"
+              onClick={() => setActiveTab(currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 rounded-xl text-xs font-bold transition cursor-pointer border border-blue-200 dark:border-blue-800 active:scale-98"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali ke Beranda</span>
+            </button>
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 capitalize pr-1">
+              Menu {activeTab.replace(/_/g, ' ')}
+            </span>
+          </div>
+        )}
+
         {/* Tab Content Views with Ultra-Fast Responsive Transition */}
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
@@ -928,6 +987,19 @@ export default function App() {
         remainingTimeFormatted={remainingTimeFormatted}
         isDarkMode={isDark}
         onToggleTheme={toggleTheme}
+      />
+
+      {/* ===================================================================== */}
+      {/* MODAL KONFIRMASI KELUAR APLIKASI (CEGAH TIDAK SENGAJA KELUAR)         */}
+      {/* ===================================================================== */}
+      <ExitAppConfirmModal
+        isOpen={showExitConfirmModal}
+        onStayInApp={() => setShowExitConfirmModal(false)}
+        onConfirmExit={() => {
+          setShowExitConfirmModal(false);
+          handleLogout();
+        }}
+        appName={appSettings.appName}
       />
     </div>
   );

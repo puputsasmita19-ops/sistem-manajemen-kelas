@@ -17,8 +17,10 @@ import {
   Printer,
   Volume2,
   VolumeX,
-  ShieldCheck
+  ShieldCheck,
+  ArrowLeft
 } from 'lucide-react';
+import { navigationBackService } from '../services/navigationBackService';
 
 interface ScannedLog {
   studentId: string;
@@ -42,6 +44,15 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
   onAttendanceMarked,
   onClose
 }) => {
+  // Intercept tombol kembali perangkat Android untuk membatalkan/menutup scanner
+  useEffect(() => {
+    if (!onClose) return;
+    const unregister = navigationBackService.registerHandler('qr_scanner_section', () => {
+      onClose();
+      return true;
+    });
+    return () => unregister();
+  }, [onClose]);
   const [activeSubTab, setActiveSubTab] = useState<'camera' | 'upload' | 'simulate' | 'cards'>('camera');
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -333,10 +344,14 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
 
           {onClose && (
             <button
+              type="button"
+              id="btn-close-qr-scanner-header"
               onClick={onClose}
-              className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-slate-600"
+              title="Tutup Pemindai QR & Kembali"
             >
-              <X className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali / Batal</span>
             </button>
           )}
         </div>
@@ -440,6 +455,30 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                   </button>
                 </div>
               )}
+
+              {/* Camera Action Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 w-full">
+                {onClose && (
+                  <button
+                    type="button"
+                    id="btn-batal-kamera-qr"
+                    onClick={onClose}
+                    className="w-full sm:w-auto py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Batal / Tutup Kamera</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={cameraActive ? stopCamera : startCamera}
+                  className="w-full sm:w-auto py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${cameraActive ? 'text-emerald-400' : 'text-amber-400'}`} />
+                  <span>{cameraActive ? 'Jeda Kamera' : 'Aktifkan Kamera'}</span>
+                </button>
+              </div>
             </div>
           )}
 
