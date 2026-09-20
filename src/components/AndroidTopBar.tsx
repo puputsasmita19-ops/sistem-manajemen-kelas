@@ -75,17 +75,31 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <AppLogo settings={appSettings} size="sm" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none truncate max-w-[110px] sm:max-w-[160px]">
-              {appSettings.appName}
-            </h1>
+            <div className="flex items-center gap-1.5 leading-none">
+              <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none shrink-0">
+                {appSettings.appName}
+              </h1>
+              <span className="text-[10px] text-slate-300 dark:text-slate-600 shrink-0">•</span>
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 shrink-0 bg-blue-50 dark:bg-blue-950/60 px-1 py-0.5 rounded">
+                {currentUser.role === 'wali_kelas'
+                  ? 'Wali Kelas'
+                  : currentUser.role === 'admin'
+                  ? 'Admin'
+                  : currentUser.role === 'guru'
+                  ? 'Guru'
+                  : currentUser.role === 'siswa'
+                  ? 'Siswa'
+                  : 'Wali Murid'}
+              </span>
+            </div>
             <div className="flex items-center gap-1 mt-0.5 min-w-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block shrink-0" />
               <RunningText
                 text={userStatusRunningText}
                 forceRunning={true}
-                maxWidthClass="max-w-[115px] xs:max-w-[145px] sm:max-w-[190px]"
-                className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold"
-                speed={10}
+                maxWidthClass="w-full max-w-[150px] xs:max-w-[185px] sm:max-w-[230px]"
+                className="text-[10.5px] text-slate-700 dark:text-slate-200 font-medium"
+                speed={11}
               />
             </div>
           </div>

@@ -70,6 +70,53 @@ import {
 const SESSION_STORAGE_KEY = 'SIMAK_ACTIVE_USER_SESSION';
 const LAST_ACTIVE_TAB_KEY = 'SIMAK_LAST_ACTIVE_TAB';
 
+// Mapping tab yang valid dan diizinkan untuk setiap peran pengguna
+const VALID_ROLE_TABS: Record<UserRole, string[]> = {
+  admin: [
+    'dashboard',
+    'attendance',
+    'grades',
+    'homeroom',
+    'users',
+    'app_settings',
+    'running_text',
+    'drive_photos',
+    'architecture',
+    'activity_logs'
+  ],
+  wali_kelas: ['dashboard', 'attendance', 'grades', 'homeroom'],
+  guru: ['dashboard', 'attendance', 'grades'],
+  siswa: ['student_portal', 'dashboard'],
+  orang_tua: ['student_portal', 'dashboard']
+};
+
+export const isTabAllowedForRole = (tab: string | null | undefined, role: UserRole): boolean => {
+  if (!tab || tab === 'login') return false;
+  const allowed = VALID_ROLE_TABS[role];
+  return allowed ? allowed.includes(tab) : false;
+};
+
+export const getDefaultTabForRole = (role: UserRole): string => {
+  return role === 'siswa' || role === 'orang_tua' ? 'student_portal' : 'dashboard';
+};
+
+export const resolveValidTab = (requestedTab: string | null | undefined, user: User | null): string => {
+  if (!user) return 'login';
+  // 1. Cek tab yang diminta (misal dari hash URL) jika diizinkan untuk role ini
+  if (requestedTab && requestedTab !== 'login' && isTabAllowedForRole(requestedTab, user.role)) {
+    return requestedTab;
+  }
+  // 2. Cek tab terakhir yang tersimpan di localStorage jika valid untuk role ini
+  try {
+    const savedTab = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
+    if (savedTab && savedTab !== 'login' && isTabAllowedForRole(savedTab, user.role)) {
+      return savedTab;
+    }
+  } catch (e) {}
+  // 3. Fallback ke tab default untuk role terkait
+  return getDefaultTabForRole(user.role);
+};
+
 export default function App() {
   const dbService = DatabaseService.getInstance();
   const allUsers = dbService.getAllUsers();
@@ -139,17 +186,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
-      if (hash) {
-        return hash;
-      }
-      const savedTab = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
-      if (savedTab) {
-        return savedTab;
-      }
+      return resolveValidTab(hash, currentUser);
     } catch (e) {
-      // Ignore localStorage errors
+      return currentUser ? getDefaultTabForRole(currentUser.role) : 'login';
     }
-    return currentUser?.role === 'siswa' || currentUser?.role === 'orang_tua' ? 'student_portal' : 'dashboard';
   });
 
   // Inisialisasi Android Back Navigation & Exit Prevention Handler di semua kondisi
@@ -172,23 +212,29 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) {
       if (window.location.hash !== '#login') {
-        window.history.replaceState(null, '', '#login');
+        window.history.replaceState({ app: 'simak-root' }, '', '#login');
       }
     }
   }, [currentUser]);
 
-  // Listen to browser hash changes (e.g. direct links)
+  // Listen to browser hash changes (e.g. direct links / browser history)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
       if (!currentUser) {
         if (hash !== 'login') {
-          window.history.replaceState(null, '', '#login');
+          window.history.replaceState({ app: 'simak-root' }, '', '#login');
         }
         return;
       }
-      if (hash && hash !== 'login' && hash !== activeTab) {
-        setActiveTab(hash);
+      if (hash && hash !== 'login' && isTabAllowedForRole(hash, currentUser.role)) {
+        if (hash !== activeTab) {
+          setActiveTab(hash);
+        }
+      } else if (hash === 'login' || !isTabAllowedForRole(hash, currentUser.role)) {
+        // Logged-in user should not be on #login or invalid hash, normalize hash back to activeTab
+        const currentState = window.history.state || { app: 'simak-guard' };
+        window.history.replaceState(currentState, '', `#${activeTab}`);
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -226,16 +272,17 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) {
       if (window.location.hash !== '#login') {
-        window.history.replaceState(null, '', '#login');
+        window.history.replaceState({ app: 'simak-root' }, '', '#login');
       }
       return;
     }
 
-    if (activeTab) {
+    if (activeTab && isTabAllowedForRole(activeTab, currentUser.role)) {
       try {
         localStorage.setItem(LAST_ACTIVE_TAB_KEY, activeTab);
         if (window.location.hash.replace(/^#\/?/, '').trim() !== activeTab) {
-          window.history.replaceState(null, '', `#${activeTab}`);
+          const currentState = window.history.state || { app: 'simak-guard' };
+          window.history.replaceState(currentState, '', `#${activeTab}`);
         }
       } catch (e) {
         // Ignore
@@ -252,22 +299,12 @@ export default function App() {
     }
   }, [activeTab, currentUser]);
 
-  // Ensure active tab is accessible for currentUser role; fallback to 'dashboard' if not allowed
+  // Ensure active tab is accessible for currentUser role; fallback immediately if not allowed
   useEffect(() => {
     if (!currentUser) return;
-    const role = currentUser.role;
-    const isTeacherOrAdmin = role === 'admin' || role === 'wali_kelas' || role === 'guru';
-    const isAdmin = role === 'admin';
-    const isStudentOrParent = role === 'siswa' || role === 'orang_tua';
-
-    if ((activeTab === 'attendance' || activeTab === 'grades') && !isTeacherOrAdmin) {
-      setActiveTab('dashboard');
-    } else if (activeTab === 'homeroom' && !(role === 'admin' || role === 'wali_kelas')) {
-      setActiveTab('dashboard');
-    } else if ((activeTab === 'users' || activeTab === 'app_settings' || activeTab === 'architecture' || activeTab === 'drive_photos' || activeTab === 'running_text' || activeTab === 'activity_logs') && !isAdmin) {
-      setActiveTab('dashboard');
-    } else if (activeTab === 'student_portal' && !isStudentOrParent) {
-      setActiveTab('dashboard');
+    if (!isTabAllowedForRole(activeTab, currentUser.role)) {
+      const validTab = resolveValidTab(null, currentUser);
+      setActiveTab(validTab);
     }
   }, [currentUser, activeTab]);
 
@@ -292,12 +329,16 @@ export default function App() {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
     } catch (e) {}
 
-    // Direct user to role-appropriate initial screen
-    if (user.role === 'siswa' || user.role === 'orang_tua') {
-      setActiveTab('student_portal');
-    } else {
-      setActiveTab('dashboard');
-    }
+    // Check if there was a saved tab in localStorage that is valid for this user
+    let targetTab = getDefaultTabForRole(user.role);
+    try {
+      const saved = localStorage.getItem(LAST_ACTIVE_TAB_KEY);
+      if (saved && isTabAllowedForRole(saved, user.role)) {
+        targetTab = saved;
+      }
+    } catch (e) {}
+
+    setActiveTab(targetTab);
   };
 
   const performDirectLogout = useCallback(() => {
@@ -305,8 +346,9 @@ export default function App() {
       localStorage.removeItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(LAST_ACTIVE_TAB_KEY);
     } catch (e) {}
-    window.history.replaceState(null, '', '#login');
+    window.history.replaceState({ app: 'simak-root' }, '', '#login');
     setCurrentUser(null);
+    setActiveTab('login');
   }, []);
 
   // Fitur Auto-Logout bila aplikasi tidak digunakan selama 15 menit
@@ -881,6 +923,36 @@ export default function App() {
             {activeTab === 'activity_logs' && currentUser.role === 'admin' && (
               <ActivityLogViewer currentUserRole={currentUser.role} />
             )}
+
+            {/* FALLBACK VIEW IF NO TAB MATCHES (PREVENT BLANK WHITE SCREEN) */}
+            {!isTabAllowedForRole(activeTab, currentUser.role) && (
+              currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? (
+                <StudentPortal currentUser={currentUser} />
+              ) : currentUser.role === 'wali_kelas' ? (
+                <HomeroomDashboard
+                  currentClassId="class_10_ipa1"
+                  userRole={currentUser.role}
+                  studentList={students.map(s => ({ id: s.id, nama: s.nama }))}
+                />
+              ) : (
+                <DashboardOverview
+                  currentUser={currentUser}
+                  clock={clock}
+                  students={students}
+                  classes={classes}
+                  subjects={subjects}
+                  attendanceRate={attendanceRate}
+                  hCount={hCount}
+                  iCount={iCount}
+                  sCount={sCount}
+                  aCount={aCount}
+                  onNavigateTab={(tab) => {
+                    setActiveTab(tab);
+                    scrollToTop();
+                  }}
+                />
+              )
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -954,7 +1026,7 @@ export default function App() {
         onStayInApp={() => setShowExitConfirmModal(false)}
         onConfirmExit={() => {
           setShowExitConfirmModal(false);
-          handleLogout();
+          performDirectLogout();
         }}
         appName={appSettings.appName}
       />

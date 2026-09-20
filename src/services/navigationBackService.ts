@@ -51,22 +51,11 @@ class NavigationBackService {
     this.isInitialized = true;
 
     // Pasang guard state di history agar tombol kembali peramban selalu memicu popstate di aplikasi
-    try {
-      if (!window.history.state || window.history.state.app !== 'simak-guard') {
-        window.history.replaceState({ app: 'simak-root' }, '', window.location.href);
-        window.history.pushState({ app: 'simak-guard' }, '', window.location.href);
-      }
-    } catch (e) {
-      console.warn('History API initial state error:', e);
-    }
+    this.ensureGuard();
 
     const handlePopState = (event: PopStateEvent) => {
-      // Re-push guard state segera agar pengguna tidak terlempar keluar dari aplikasi
-      try {
-        window.history.pushState({ app: 'simak-guard' }, '', window.location.href);
-      } catch (e) {
-        // Ignore
-      }
+      // Re-push guard state segera secara sinkron agar peramban tidak keluar dari aplikasi
+      this.ensureGuard();
 
       // 1. Cek apakah ada SweetAlert2 yang sedang terbuka
       const swalContainer = document.querySelector('.swal2-container');
@@ -82,7 +71,7 @@ class NavigationBackService {
         }
       }
 
-      // 2. Cek apakah ada modal, drawer, atau kamera di handler stack
+      // 2. Cek apakah ada modal, drawer, atau kamera di handler stack (LIFO)
       if (this.handlerStack.length > 0) {
         const topEntry = this.handlerStack.pop();
         if (topEntry) {
@@ -112,6 +101,22 @@ class NavigationBackService {
   }
 
   /**
+   * Pastikan ada history guard aktif di peramban
+   */
+  public ensureGuard(): void {
+    try {
+      if (!window.history.state || window.history.state.app !== 'simak-guard') {
+        window.history.replaceState({ app: 'simak-root' }, '', window.location.href);
+        window.history.pushState({ app: 'simak-guard' }, '', window.location.href);
+      } else {
+        window.history.pushState({ app: 'simak-guard' }, '', window.location.href);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  /**
    * Daftarkan handler saat modal, drawer, kamera, atau menu dibuka
    * Mengembalikan fungsi unregister untuk dipanggil saat komponen ditutup/unmount
    */
@@ -119,13 +124,7 @@ class NavigationBackService {
     // Hapus id lama jika sudah ada agar urutan tetap di puncak stack (LIFO)
     this.handlerStack = this.handlerStack.filter(entry => entry.id !== id);
     this.handlerStack.push({ id, handler });
-
-    // Pastikan ada guard di history
-    try {
-      window.history.pushState({ app: 'simak-modal', id }, '', window.location.href);
-    } catch (e) {
-      // Ignore
-    }
+    this.ensureGuard();
 
     return () => {
       this.unregisterHandler(id);
