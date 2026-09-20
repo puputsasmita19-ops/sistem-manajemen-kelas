@@ -454,7 +454,8 @@ export default function App() {
                   </div>
                 </div>
 
-                <FirebaseStatusBadge />
+                {/* Firebase Sync Status Badge (Hanya ditampilkan untuk Administrator) */}
+                {currentUser.role === 'admin' && <FirebaseStatusBadge currentUser={currentUser} />}
                 <OfflineIndicator />
 
                 {/* Auto-Logout Timer Indicator (15 min idle) */}

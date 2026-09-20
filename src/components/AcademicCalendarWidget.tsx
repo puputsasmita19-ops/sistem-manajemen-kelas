@@ -294,13 +294,15 @@ export const AcademicCalendarWidget: React.FC<AcademicCalendarWidgetProps> = ({
             <CalendarIcon className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                 Kalender Akademik & Agenda Sekolah
               </h3>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                <CheckCircle2 className="w-2.5 h-2.5" /> Tersinkronisasi Firebase
-              </span>
+              {currentUserRole === 'admin' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  <CheckCircle2 className="w-2.5 h-2.5" /> Tersinkronisasi Firebase
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Jadwal ujian semester, hari libur nasional, rapat guru, dan kegiatan kesiswaan

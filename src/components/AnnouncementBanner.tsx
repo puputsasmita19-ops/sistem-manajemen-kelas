@@ -149,31 +149,33 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
       {currentAnn && (
         <div
           onClick={() => setSelectedAnnouncement(currentAnn)}
-          className={`cursor-pointer rounded-2xl p-4 transition shadow-xs border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group relative overflow-hidden ${
+          className={`cursor-pointer rounded-2xl p-3.5 sm:p-4 transition shadow-xs border group relative overflow-hidden ${
             currentAnn.priority === 'high'
-              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-100 hover:bg-amber-100/80 dark:hover:bg-amber-950/60'
-              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-950 dark:text-blue-100 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
+              ? 'bg-amber-50/95 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-100 hover:bg-amber-100/80 dark:hover:bg-amber-950/60'
+              : 'bg-blue-50/95 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 text-blue-950 dark:text-blue-100 hover:bg-blue-100/80 dark:hover:bg-blue-950/60'
           }`}
         >
-          <div className="flex items-start sm:items-center gap-3 min-w-0">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
-                currentAnn.priority === 'high'
-                  ? 'bg-amber-500 text-white animate-pulse'
-                  : 'bg-blue-600 text-white'
-              }`}
-            >
-              {currentAnn.priority === 'high' ? (
-                <AlertTriangle className="w-5 h-5" />
-              ) : (
-                <Megaphone className="w-5 h-5" />
-              )}
-            </div>
+          {/* SMARTPHONE / MOBILE-OPTIMIZED LAYOUT (md:hidden) */}
+          <div className="md:hidden flex flex-col gap-2.5 w-full">
+            {/* Top Row: Icon + Category + Date + Counter */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-2xs ${
+                    currentAnn.priority === 'high'
+                      ? 'bg-amber-500 text-white animate-pulse'
+                      : 'bg-blue-600 text-white'
+                  }`}
+                >
+                  {currentAnn.priority === 'high' ? (
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  ) : (
+                    <Megaphone className="w-3.5 h-3.5" />
+                  )}
+                </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 ${
                     currentAnn.category === 'Penting'
                       ? 'bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
                       : currentAnn.category === 'Akademik'
@@ -186,82 +188,222 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                   {currentAnn.category}
                 </span>
 
-                <span className="text-xs font-bold truncate text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                  {currentAnn.title}
-                </span>
-
-                <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium hidden md:inline flex items-center gap-1">
-                  • {currentAnn.date} {currentAnn.time}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                  {currentAnn.date}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-700 dark:text-slate-200 truncate mt-0.5 max-w-3xl font-medium">
+              {/* Counter / Pagination for multi announcements */}
+              {announcements.length > 1 && (
+                <div
+                  className="flex items-center gap-1 shrink-0 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-800/80 px-2 py-0.5 rounded-full border border-black/5 dark:border-white/10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx((prev) => (prev - 1 + announcements.length) % announcements.length)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 px-0.5 cursor-pointer"
+                    title="Pengumuman Sebelumnya"
+                  >
+                    ‹
+                  </button>
+                  <span>{activeIdx + 1}/{announcements.length}</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx((prev) => (prev + 1) % announcements.length)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 px-0.5 cursor-pointer"
+                    title="Pengumuman Berikutnya"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Middle: Title & Content Preview (Proporsional & Rapi) */}
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                {currentAnn.title}
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-normal leading-relaxed line-clamp-2">
                 {currentAnn.content}
               </p>
             </div>
+
+            {/* Bottom: Action Bar with Clean Spacing & Touch Targets */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-black/5 dark:border-white/10 mt-0.5">
+              {/* Left Action: Notif */}
+              <button
+                type="button"
+                id="btn-browser-push-notif-mobile"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await realtimeNotificationService.requestBrowserNotificationPermission();
+                }}
+                className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200 text-[11px] font-bold rounded-lg border border-amber-500/20 flex items-center gap-1 transition cursor-pointer"
+                title="Aktifkan Notifikasi Peramban"
+              >
+                <Bell className="w-3 h-3" />
+                <span>Notif</span>
+              </button>
+
+              {/* Right Actions: Detail & Create */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="px-2.5 py-1 bg-white/90 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 rounded-lg border border-black/5 dark:border-white/10 flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                >
+                  <span>Detail</span>
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+
+                {canManage && (
+                  <>
+                    {currentUserRole === 'admin' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNewPriority('high');
+                          setNewCategory('Penting');
+                          setIsModalOpen(true);
+                        }}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-[11px] font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition cursor-pointer"
+                        title="Siarkan pengumuman darurat"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>Mendesak</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewPriority('normal');
+                        setIsModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-[11px] font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition cursor-pointer"
+                      title="Buat pengumuman baru"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Buat</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-            {announcements.length > 1 && (
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                {activeIdx + 1} dari {announcements.length}
-              </span>
-            )}
+          {/* TABLET / DESKTOP-OPTIMIZED LAYOUT (hidden md:flex) */}
+          <div className="hidden md:flex items-center justify-between gap-4 w-full">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+                  currentAnn.priority === 'high'
+                    ? 'bg-amber-500 text-white animate-pulse'
+                    : 'bg-blue-600 text-white'
+                }`}
+              >
+                {currentAnn.priority === 'high' ? (
+                  <AlertTriangle className="w-5 h-5" />
+                ) : (
+                  <Megaphone className="w-5 h-5" />
+                )}
+              </div>
 
-            <button
-              type="button"
-              id="btn-browser-push-notif"
-              onClick={async (e) => {
-                e.stopPropagation();
-                await realtimeNotificationService.requestBrowserNotificationPermission();
-              }}
-              className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-500/20 flex items-center gap-1.5 transition cursor-pointer"
-              title="Aktifkan Notifikasi Peramban (Browser Push Notification) untuk Pengumuman & Nilai Baru"
-            >
-              <Bell className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Push Notif</span>
-            </button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                      currentAnn.category === 'Penting'
+                        ? 'bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+                        : currentAnn.category === 'Akademik'
+                        ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                        : currentAnn.category === 'Kegiatan'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                    }`}
+                  >
+                    {currentAnn.category}
+                  </span>
 
-            <button
-              type="button"
-              className="px-3 py-1 bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 rounded-lg border border-black/5 dark:border-white/10 flex items-center gap-1 transition"
-            >
-              <span>Detail</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+                  <span className="text-xs font-bold truncate text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                    {currentAnn.title}
+                  </span>
 
-            {canManage && (
-              <div className="flex items-center gap-1.5">
-                {currentUserRole === 'admin' && (
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1">
+                    • {currentAnn.date} {currentAnn.time}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-700 dark:text-slate-200 truncate mt-0.5 max-w-3xl font-medium">
+                  {currentAnn.content}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {announcements.length > 1 && (
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                  {activeIdx + 1} dari {announcements.length}
+                </span>
+              )}
+
+              <button
+                type="button"
+                id="btn-browser-push-notif"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await realtimeNotificationService.requestBrowserNotificationPermission();
+                }}
+                className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-500/20 flex items-center gap-1.5 transition cursor-pointer"
+                title="Aktifkan Notifikasi Peramban (Browser Push Notification) untuk Pengumuman & Nilai Baru"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                <span>Push Notif</span>
+              </button>
+
+              <button
+                type="button"
+                className="px-3 py-1 bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 rounded-lg border border-black/5 dark:border-white/10 flex items-center gap-1 transition cursor-pointer"
+              >
+                <span>Detail</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+
+              {canManage && (
+                <div className="flex items-center gap-1.5">
+                  {currentUserRole === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNewPriority('high');
+                        setNewCategory('Penting');
+                        setIsModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition cursor-pointer"
+                      title="Siarkan pengumuman darurat/mendesak yang muncul saat pengguna login"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Push Mendesak</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setNewPriority('high');
-                      setNewCategory('Penting');
+                      setNewPriority('normal');
                       setIsModalOpen(true);
                     }}
-                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition"
-                    title="Siarkan pengumuman darurat/mendesak yang muncul saat pengguna login"
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition cursor-pointer"
                   >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Push Mendesak</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Buat Baru</span>
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setNewPriority('normal');
-                    setIsModalOpen(true);
-                  }}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white rounded-lg flex items-center gap-1 shadow-xs transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Buat Baru</span>
-                </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

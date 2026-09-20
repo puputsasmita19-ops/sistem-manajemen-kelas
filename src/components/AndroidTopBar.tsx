@@ -3,7 +3,9 @@ import { AppSettings, User } from '../types';
 import { AppLogo } from './AppLogo';
 import { FirebaseStatusBadge } from './FirebaseStatusBadge';
 import { OfflineIndicator } from './OfflineIndicator';
-import { Clock, Menu, Bell, ShieldCheck, HelpCircle } from 'lucide-react';
+import { RunningText } from './RunningText';
+import { DatabaseService } from '../services/databaseService';
+import { Clock, Menu, Bell } from 'lucide-react';
 import { realtimeNotificationService } from '../services/realtimeNotificationService';
 
 interface AndroidTopBarProps {
@@ -26,32 +28,73 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
   onOpenDrawer,
   onOpenTour
 }) => {
+  // Data kontekstual berdasarkan role pengguna aktif
+  const dbService = DatabaseService.getInstance();
+  
+  const assignedClass = currentUser.role === 'wali_kelas'
+    ? dbService.getHomeroomClass(currentUser.id)
+    : null;
+
+  const teacherSubjects = currentUser.role === 'guru'
+    ? dbService.getSubjectsByTeacher(currentUser.id)
+    : [];
+
+  const studentClass = currentUser.role === 'siswa'
+    ? dbService.getStudentClass(currentUser.id)
+    : null;
+
+  const parentChildren = currentUser.role === 'orang_tua'
+    ? dbService.getChildrenOfParent(currentUser.id)
+    : [];
+
+  // Teks status berjalan (running text) untuk setiap role
+  const userStatusRunningText = (() => {
+    switch (currentUser.role) {
+      case 'admin':
+        return `Administrator Sistem • ${currentUser.nama}`;
+      case 'wali_kelas':
+        return `${assignedClass ? `Wali Kelas ${assignedClass.nama_kelas}` : 'Wali Kelas'} • ${currentUser.nama}`;
+      case 'guru':
+        return `${teacherSubjects.length > 0 ? `Guru ${teacherSubjects.map(s => s.nama_mapel).join(', ')}` : 'Guru Mata Pelajaran'} • ${currentUser.nama}`;
+      case 'siswa':
+        return `Siswa ${studentClass ? studentClass.nama_kelas : ''} • ${currentUser.nama}${currentUser.nis ? ` (NIS: ${currentUser.nis})` : ''}`;
+      case 'orang_tua':
+        return `Wali Murid ${parentChildren.length > 0 ? `dari ${parentChildren.map(c => c.nama).join(', ')}` : ''} • ${currentUser.nama}`;
+      default:
+        return `${currentUser.nama}`;
+    }
+  })();
+
   return (
     <header
       id="android-top-app-bar"
       className="md:hidden sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 py-2 shadow-2xs transition-colors"
     >
       <div className="flex items-center justify-between gap-2">
-        {/* Left: App Logo & School Name */}
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Left: App Logo & School Name with Running Text Status */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <AppLogo settings={appSettings} size="sm" />
-          <div className="min-w-0">
-            <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none truncate max-w-[140px] sm:max-w-[200px]">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none truncate max-w-[110px] sm:max-w-[160px]">
               {appSettings.appName}
             </h1>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                {currentUser.role === 'admin' ? 'Admin' : currentUser.role === 'wali_kelas' ? 'Wali Kelas' : currentUser.role === 'guru' ? 'Guru' : currentUser.role === 'siswa' ? 'Siswa' : 'Wali Murid'}
-              </span>
+            <div className="flex items-center gap-1 mt-0.5 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block shrink-0" />
+              <RunningText
+                text={userStatusRunningText}
+                forceRunning={true}
+                maxWidthClass="max-w-[115px] xs:max-w-[145px] sm:max-w-[190px]"
+                className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold"
+                speed={10}
+              />
             </div>
           </div>
         </div>
 
         {/* Right: Quick Action Android Chips */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Realtime Status Indicator */}
-          <FirebaseStatusBadge />
+          {/* Realtime Status Indicator (Hanya tampil untuk role admin) */}
+          {currentUser.role === 'admin' && <FirebaseStatusBadge currentUser={currentUser} />}
           <OfflineIndicator />
 
           {/* Auto-Logout Timer Chip */}

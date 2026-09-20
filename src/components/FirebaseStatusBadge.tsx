@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FirestoreSyncService, SyncStatus } from '../services/firestoreSyncService';
 import { GoogleDriveService } from '../services/googleDriveService';
 import { DatabaseService } from '../services/databaseService';
+import { User } from '../types';
 import {
   Database,
   CloudCheck,
@@ -16,7 +17,16 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-export const FirebaseStatusBadge: React.FC = () => {
+interface FirebaseStatusBadgeProps {
+  currentUser?: User | null;
+}
+
+export const FirebaseStatusBadge: React.FC<FirebaseStatusBadgeProps> = ({ currentUser }) => {
+  // Hanya role admin yang diizinkan melihat status & kontrol sinkronisasi Firebase
+  if (currentUser && currentUser.role !== 'admin') {
+    return null;
+  }
+
   const syncService = FirestoreSyncService.getInstance();
   const driveService = GoogleDriveService.getInstance();
   const dbService = DatabaseService.getInstance();

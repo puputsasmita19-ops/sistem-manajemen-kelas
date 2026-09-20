@@ -6,6 +6,7 @@ interface RunningTextProps {
   maxWidthClass?: string;
   className?: string;
   speed?: number; // seconds per cycle
+  forceRunning?: boolean;
 }
 
 export const RunningText: React.FC<RunningTextProps> = ({
@@ -13,9 +14,10 @@ export const RunningText: React.FC<RunningTextProps> = ({
   maxLength = 14,
   maxWidthClass = 'max-w-[120px] sm:max-w-[150px] md:max-w-[180px]',
   className = '',
-  speed
+  speed,
+  forceRunning = false
 }) => {
-  const isLong = text.length > maxLength;
+  const isLong = forceRunning || text.length > maxLength;
 
   if (!isLong) {
     return (
