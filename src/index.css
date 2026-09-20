@@ -97,4 +97,100 @@ body {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* SweetAlert2 Theme Integration for Light and Dark Modes */
+.swal2-container {
+  z-index: 99999 !important;
+}
+
+.swal2-popup {
+  font-family: inherit !important;
+  border-radius: 1.25rem !important;
+}
+
+/* Light Mode Defaults */
+.swal2-popup {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.swal2-title {
+  color: #0f172a !important;
+}
+
+.swal2-html-container {
+  color: #334155 !important;
+}
+
+/* Dark Mode SweetAlert2 overrides */
+.dark .swal2-popup {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .swal2-title {
+  color: #f8fafc !important;
+}
+
+.dark .swal2-html-container {
+  color: #e2e8f0 !important;
+}
+
+.dark .swal2-html-container strong,
+.dark .swal2-html-container b {
+  color: #ffffff !important;
+}
+
+.dark .swal2-html-container p {
+  color: #cbd5e1 !important;
+}
+
+.dark .swal2-footer {
+  border-top: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .swal2-input,
+.dark .swal2-textarea,
+.dark .swal2-select {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+
+.dark .swal2-input:focus,
+.dark .swal2-textarea:focus,
+.dark .swal2-select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Toast Dark Mode */
+.dark .swal2-toast {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .swal2-toast .swal2-title {
+  color: #f8fafc !important;
+}
+
+.dark .swal2-toast .swal2-html-container {
+  color: #e2e8f0 !important;
+}
+
+/* Ensure placeholder visibility across light and dark modes */
+::placeholder {
+  opacity: 0.6;
+}
+
+.dark ::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.7;
+}
+
+
 

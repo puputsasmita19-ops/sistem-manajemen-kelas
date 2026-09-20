@@ -1,4 +1,5 @@
 import { INITIAL_HOMEROOM_DATA, HomeroomClassData } from '../mockHomeroomData';
+import { realtimeNotificationService } from './realtimeNotificationService';
 import {
   LessonScheduleItem,
   PiketScheduleItem,
@@ -111,6 +112,7 @@ export class HomeroomService {
     const key = this.getStorageKey(classId);
     localStorage.removeItem(key);
     delete this.cache[classId];
+    realtimeNotificationService.notifyActionWarning('Data Administrasi Direset', 'Data administrasi kelas telah dipulihkan ke format awal.');
     return this.getClassHomeroomData(classId);
   }
 
@@ -132,6 +134,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.lessonSchedules = schedules;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Jadwal Pelajaran Disimpan', 'Jadwal pelajaran mingguan kelas berhasil disimpan.');
   }
 
   public addLessonSchedule(classId: string, item: Omit<LessonScheduleItem, 'id' | 'class_id'>): void {
@@ -143,12 +146,14 @@ export class HomeroomService {
     };
     data.lessonSchedules.push(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Jadwal Ditambahkan', `${item.subjectName} (${item.day}) berhasil dimasukkan ke jadwal.`);
   }
 
   public deleteLessonSchedule(classId: string, id: string): void {
     const data = this.getClassHomeroomData(classId);
     data.lessonSchedules = data.lessonSchedules.filter(s => s.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Jadwal Dihapus', 'Jadwal mata pelajaran telah dihapus.');
   }
 
   // 2) Piket Schedule
@@ -156,6 +161,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.piketSchedules = schedules;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Jadwal Piket Disimpan', 'Daftar pembagian regu piket kelas berhasil disimpan.');
   }
 
   // 3) Class Agreement
@@ -163,6 +169,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.classAgreement = agreement;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Kesepakatan Kelas Disimpan', 'Piagam norma dan kesepakatan kelas berhasil diperbarui.');
   }
 
   // 4) Seating Layout
@@ -170,6 +177,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.seatingLayout = layout;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Denah Tempat Duduk Disimpan', 'Posisi dan denah duduk siswa di kelas berhasil diperbarui.');
   }
 
   // 5 & 6) Student Identities
@@ -177,6 +185,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.studentIdentities = list;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Buku Induk Disimpan', 'Daftar profil dan identitas siswa berhasil diperbarui.');
   }
 
   public saveStudentIdentity(classId: string, item: StudentIdentityItem): void {
@@ -188,6 +197,7 @@ export class HomeroomService {
       data.studentIdentities.push(item);
     }
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Identitas Siswa Disimpan', `Data buku induk untuk ${item.fullName || 'Siswa'} berhasil disimpan.`);
   }
 
   // 7) Class Structure
@@ -195,6 +205,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.classStructure = structure;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Struktur Organisasi Disimpan', 'Bagan kepengurusan kelas berhasil diperbarui.');
   }
 
   // 8) Inventories
@@ -207,6 +218,7 @@ export class HomeroomService {
     };
     data.inventories.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Inventaris Ditambahkan', `Barang "${item.itemName}" berhasil dicatat dalam inventaris kelas.`);
   }
 
   public updateInventoryItem(classId: string, item: ClassInventoryItem): void {
@@ -215,6 +227,7 @@ export class HomeroomService {
     if (idx >= 0) {
       data.inventories[idx] = item;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Inventaris Diperbarui', `Data inventaris "${item.itemName}" berhasil disimpan.`);
     }
   }
 
@@ -222,6 +235,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.inventories = data.inventories.filter(i => i.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Inventaris Dihapus', 'Data barang inventaris telah dihapus.');
   }
 
   // 9) Guidance Logs
@@ -234,6 +248,7 @@ export class HomeroomService {
     };
     data.guidanceLogs.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Konseling Dicatat', `Catatan bimbingan untuk ${item.studentName} berhasil disimpan.`);
   }
 
   public updateGuidanceLog(classId: string, item: ClassGuidanceItem): void {
@@ -242,6 +257,7 @@ export class HomeroomService {
     if (idx >= 0) {
       data.guidanceLogs[idx] = item;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Konseling Diperbarui', `Status bimbingan untuk ${item.studentName} berhasil diperbarui.`);
     }
   }
 
@@ -249,6 +265,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.guidanceLogs = data.guidanceLogs.filter(g => g.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Konseling Dihapus', 'Catatan bimbingan siswa telah dihapus.');
   }
 
   // 10) Piket Attendance
@@ -261,12 +278,14 @@ export class HomeroomService {
     };
     data.piketAttendanceLogs.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Presensi Piket Disimpan', `Laporan piket regu ${item.day} berhasil disimpan.`);
   }
 
   public deletePiketAttendance(classId: string, id: string): void {
     const data = this.getClassHomeroomData(classId);
     data.piketAttendanceLogs = data.piketAttendanceLogs.filter(p => p.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Laporan Piket Dihapus', 'Catatan pelaksanaan piket telah dihapus.');
   }
 
   // 11) Attitude Assessment
@@ -279,6 +298,7 @@ export class HomeroomService {
       data.attitudeAssessments.push(item);
     }
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Penilaian Sikap Disimpan', `Catatan jurnal sikap ${item.studentName} berhasil disimpan.`);
   }
 
   public saveAttitudeAssessment(classId: string, item: AttitudeAssessmentItem): void {
@@ -289,6 +309,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.attitudeAssessments = data.attitudeAssessments.filter(a => a.id !== id && a.studentId !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Penilaian Sikap Dihapus', 'Catatan observasi sikap telah dihapus.');
   }
 
   // 12) Class Treasury / Administrasi Keuangan
@@ -309,6 +330,10 @@ export class HomeroomService {
     };
     data.treasuryTransactions.unshift(newTrs);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess(
+      'Transaksi Kas Dicatat',
+      `${item.type} Rp ${item.amount.toLocaleString('id-ID')} (${item.description}) berhasil dicatat.`
+    );
   }
 
   public deleteTreasuryTransaction(classId: string, id: string): void {
@@ -323,6 +348,7 @@ export class HomeroomService {
       t.balanceAfter = Math.max(0, runningBalance);
     }
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Transaksi Dihapus', 'Catatan kas kelas telah dihapus dan saldo disesuaikan.');
   }
 
   // 13) Class Journals
@@ -335,12 +361,14 @@ export class HomeroomService {
     };
     data.classJournals.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Agenda Kelas Dicatat', `Jurnal KBM ${item.subjectName || 'Mata Pelajaran'} (${item.date}) berhasil disimpan.`);
   }
 
   public deleteClassJournal(classId: string, id: string): void {
     const data = this.getClassHomeroomData(classId);
     data.classJournals = data.classJournals.filter(j => j.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Agenda Dihapus', 'Catatan agenda kegiatan kelas telah dihapus.');
   }
 
   // 14) Mutations
@@ -353,12 +381,14 @@ export class HomeroomService {
     };
     data.studentMutations.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Mutasi Siswa Dicatat', `Data siswa ${item.type.toLowerCase()} (${item.studentName}) berhasil dicatat.`);
   }
 
   public deleteStudentMutation(classId: string, id: string): void {
     const data = this.getClassHomeroomData(classId);
     data.studentMutations = data.studentMutations.filter(m => m.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Mutasi Dihapus', 'Catatan mutasi siswa telah dihapus.');
   }
 
   // 15) Student Cases
@@ -371,6 +401,7 @@ export class HomeroomService {
     };
     data.studentCases.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Kasus Siswa Dicatat', `Catatan kasus siswa untuk ${item.studentName} berhasil disimpan.`);
   }
 
   public updateStudentCase(classId: string, item: StudentCaseItem): void {
@@ -379,6 +410,7 @@ export class HomeroomService {
     if (idx >= 0) {
       data.studentCases[idx] = item;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Kasus Siswa Diperbarui', `Status tindak lanjut kasus ${item.studentName} berhasil disimpan.`);
     }
   }
 
@@ -386,6 +418,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.studentCases = data.studentCases.filter(c => c.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Kasus Siswa Dihapus', 'Catatan kasus khusus siswa telah dihapus.');
   }
 
   // 16) Achievements
@@ -398,12 +431,14 @@ export class HomeroomService {
     };
     data.studentAchievements.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Prestasi Siswa Dicatat', `Prestasi "${item.achievementTitle}" (${item.studentName}) berhasil disimpan.`);
   }
 
   public deleteStudentAchievement(classId: string, id: string): void {
     const data = this.getClassHomeroomData(classId);
     data.studentAchievements = data.studentAchievements.filter(a => a.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Prestasi Dihapus', 'Catatan piagam prestasi siswa telah dihapus.');
   }
 
   // 17) Home Visits
@@ -416,6 +451,7 @@ export class HomeroomService {
     };
     data.homeVisits.unshift(newItem);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Home Visit Dicatat', `Laporan kunjungan rumah untuk ${item.studentName} berhasil disimpan.`);
   }
 
   public updateHomeVisit(classId: string, item: HomeVisitItem): void {
@@ -424,6 +460,7 @@ export class HomeroomService {
     if (idx >= 0) {
       data.homeVisits[idx] = item;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Home Visit Diperbarui', `Laporan evaluasi home visit ${item.studentName} berhasil diperbarui.`);
     }
   }
 
@@ -431,6 +468,7 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.homeVisits = data.homeVisits.filter(h => h.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Home Visit Dihapus', 'Catatan kunjungan rumah telah dihapus.');
   }
 
   // 18) Bulletin Board / Mading Kelas & Dokumentasi Administrasi
@@ -457,6 +495,7 @@ export class HomeroomService {
       }
     }
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Mading Diterbitkan', `Postingan "${item.title}" berhasil dipublikasikan di mading kelas.`);
   }
 
   public updateBulletinBoardItem(classId: string, item: ClassBulletinBoardItem): void {
@@ -466,6 +505,7 @@ export class HomeroomService {
     if (idx >= 0) {
       data.classBulletinBoard[idx] = item;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Mading Diperbarui', `Perubahan postingan "${item.title}" berhasil disimpan.`);
     }
   }
 
@@ -474,6 +514,7 @@ export class HomeroomService {
     if (!data.classBulletinBoard) return;
     data.classBulletinBoard = data.classBulletinBoard.filter(b => b.id !== id);
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionInfo('Mading Dihapus', 'Kiriman mading kelas telah dihapus.');
   }
 
   public toggleLikeBulletinBoardItem(classId: string, id: string): void {
@@ -483,6 +524,7 @@ export class HomeroomService {
     if (item) {
       item.likesCount = (item.likesCount || 0) + 1;
       this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess('Apresiasi Diterima', 'Terima kasih atas apresiasi suka Anda pada postingan mading ini.');
     }
   }
 
@@ -490,10 +532,12 @@ export class HomeroomService {
     const data = this.getClassHomeroomData(classId);
     data.classBulletinBoard = items;
     this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess('Mading Diperbarui', 'Data mading kelas berhasil disinkronkan.');
   }
 
   public resetClassData(classId: string): void {
     delete this.cache[classId];
     localStorage.removeItem(this.getStorageKey(classId));
+    realtimeNotificationService.notifyActionWarning('Cache Dihapus', 'Data memori lokal kelas telah dibersihkan.');
   }
 }

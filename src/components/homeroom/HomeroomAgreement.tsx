@@ -169,7 +169,7 @@ export const HomeroomAgreement: React.FC<HomeroomAgreementProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {(safeAgreement.rules || []).map((rule, idx) => {
           const catStyle = categoryColors[rule.category] || {
-            bg: 'bg-slate-100 text-slate-700',
+            bg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200',
             text: ''
           };
 

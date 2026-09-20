@@ -414,27 +414,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
       icon: 'info',
       title: 'Bantuan Akses & Lupa Kata Sandi',
       html: `
-        <div class="text-left text-xs text-slate-700 space-y-3">
+        <div class="text-left text-xs text-slate-700 dark:text-slate-300 space-y-3">
           <p class="leading-relaxed">
-            Jika Anda lupa username atau kata sandi akun <strong>${appSettings.appName}</strong>, silakan hubungi kontak Administrator Sistem atau staf Tata Usaha Sekolah berikut:
+            Jika Anda lupa username atau kata sandi akun <strong class="text-slate-900 dark:text-white">${appSettings.appName}</strong>, silakan hubungi kontak Administrator Sistem atau staf Tata Usaha Sekolah berikut:
           </p>
 
-          <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-            <div class="flex items-center justify-between py-1 border-b border-slate-200">
-              <span class="text-slate-500 font-medium">Administrator:</span>
-              <strong class="text-slate-900">${adminName}</strong>
+          <div class="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Administrator:</span>
+              <strong class="text-slate-900 dark:text-white">${adminName}</strong>
             </div>
-            <div class="flex items-center justify-between py-1 border-b border-slate-200">
-              <span class="text-slate-500 font-medium">Unit / Ruang:</span>
-              <span class="text-slate-800 font-semibold">Tata Usaha & IT Sekolah</span>
+            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Unit / Ruang:</span>
+              <span class="text-slate-800 dark:text-slate-200 font-semibold">Tata Usaha & IT Sekolah</span>
             </div>
-            <div class="flex items-center justify-between py-1 border-b border-slate-200">
-              <span class="text-slate-500 font-medium">Jam Layanan:</span>
-              <span class="text-slate-800 font-medium">Senin – Jumat (07.30 – 15.00 WIB)</span>
+            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Jam Layanan:</span>
+              <span class="text-slate-800 dark:text-slate-200 font-medium">Senin – Jumat (07.30 – 15.00 WIB)</span>
             </div>
             <div class="flex items-center justify-between py-1">
-              <span class="text-slate-500 font-medium">Nomor WhatsApp:</span>
-              <strong class="text-emerald-600 font-mono text-sm">${adminPhone}</strong>
+              <span class="text-slate-500 dark:text-slate-400 font-medium">Nomor WhatsApp:</span>
+              <strong class="text-emerald-600 dark:text-emerald-400 font-mono text-sm">${adminPhone}</strong>
             </div>
           </div>
 
@@ -447,7 +447,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
             <span>💬 Hubungi Admin via WhatsApp (${adminPhone})</span>
           </a>
 
-          <div class="p-2.5 bg-blue-50 rounded-xl border border-blue-200 text-[11px] text-blue-800 flex items-start gap-2">
+          <div class="p-2.5 bg-blue-50 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 text-[11px] text-blue-800 dark:text-blue-300 flex items-start gap-2">
             <span class="font-bold">Tips Default:</span>
             <span>Anda dapat memilih peran di atas dan mengklik tombol "Default" untuk memulihkan kredensial bawaan.</span>
           </div>

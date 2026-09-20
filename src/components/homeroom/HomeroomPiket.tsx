@@ -114,9 +114,9 @@ export const HomeroomPiket: React.FC<HomeroomPiketProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {piketSchedules.map((item) => {
           const style = dayBadges[item.day] || {
-            bg: 'bg-slate-50',
-            text: 'text-slate-700',
-            border: 'border-slate-200'
+            bg: 'bg-slate-50 dark:bg-slate-900/60',
+            text: 'text-slate-700 dark:text-slate-200',
+            border: 'border-slate-200 dark:border-slate-700'
           };
 
           return (

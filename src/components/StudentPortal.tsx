@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DatabaseService } from '../services/databaseService';
+import { realtimeNotificationService } from '../services/realtimeNotificationService';
 import { User, Attendance } from '../types';
 import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
@@ -59,6 +60,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
   const studentAttendanceRecords = dbService.getStudentAttendanceSummary(targetStudentId).records;
 
   const handleDownloadPDF = () => {
+    realtimeNotificationService.notifyActionSuccess(
+      'Mengunduh Rapor Siswa',
+      `File rapor digital ${student.nama} sedang disiapkan dan diunduh ke perangkat Anda.`
+    );
     dbService.exportStudentReportPDF(targetStudentId);
   };
 

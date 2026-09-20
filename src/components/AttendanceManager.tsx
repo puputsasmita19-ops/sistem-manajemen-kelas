@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
+import { realtimeNotificationService } from '../services/realtimeNotificationService';
 import { AttendanceStatus, ClassEntity, Subject, User, Attendance } from '../types';
 import Swal from 'sweetalert2';
 import {
@@ -164,10 +165,18 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   };
 
   const handleExportPDF = () => {
+    realtimeNotificationService.notifyActionSuccess(
+      'Mengunduh Rekap Harian',
+      `Dokumen PDF presensi tanggal ${selectedDate} sedang diproses untuk diunduh.`
+    );
     dbService.exportAttendancePDF(selectedClassId, selectedDate, selectedSubjectId);
   };
 
   const handleExportMonthlyReport = () => {
+    realtimeNotificationService.notifyActionSuccess(
+      'Mengunduh Rekap Bulanan',
+      `Laporan bulanan presensi format resmi (${selectedMonth}) sedang disiapkan.`
+    );
     dbService.exportMonthlyAttendanceReportPDF(selectedClassId, selectedMonth);
   };
 
@@ -180,6 +189,11 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
       status: r.studentId === studentId ? ('H' as AttendanceStatus) : r.status
     }));
     dbService.saveBulkAttendance(selectedClassId, selectedSubjectId, selectedDate, updated);
+    realtimeNotificationService.notifyActionSuccess(
+      'Presensi QR Sukses',
+      `${nama} berhasil tercatat Hadir (H).`,
+      true
+    );
   };
 
   // Quick stats
@@ -967,7 +981,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                     filteredRangeRecords.map((rec, idx) => {
                       const subjectName = subjects.find(s => s.id === rec.subject_id)?.nama_mapel || 'Mata Pelajaran';
                       let statusBadge = (
-                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700">
+                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
                           {rec.status}
                         </span>
                       );

@@ -115,7 +115,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
       case 'Dirujuk ke Guru BK':
         return 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
     }
   };
 

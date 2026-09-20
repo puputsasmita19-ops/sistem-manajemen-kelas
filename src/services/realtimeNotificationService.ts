@@ -409,6 +409,83 @@ class RealtimeNotificationService {
       });
     }
   }
+
+  /**
+   * Tampilkan notifikasi toast aksi sukses yang responsif & adaptif tema
+   */
+  public notifyActionSuccess(title: string, message?: string, playSound = false): void {
+    if (playSound) this.playNotificationChime();
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: `<span class="text-xs font-bold">${title}</span>`,
+      html: message ? `<span class="text-[11px] leading-tight block mt-0.5 opacity-90">${message}</span>` : undefined,
+      showConfirmButton: false,
+      timer: 2600,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'rounded-2xl border border-emerald-500/20 shadow-lg'
+      }
+    });
+  }
+
+  /**
+   * Tampilkan notifikasi toast aksi info / progres
+   */
+  public notifyActionInfo(title: string, message?: string): void {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'info',
+      title: `<span class="text-xs font-bold">${title}</span>`,
+      html: message ? `<span class="text-[11px] leading-tight block mt-0.5 opacity-90">${message}</span>` : undefined,
+      showConfirmButton: false,
+      timer: 2800,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'rounded-2xl border border-blue-500/20 shadow-lg'
+      }
+    });
+  }
+
+  /**
+   * Tampilkan notifikasi toast peringatan
+   */
+  public notifyActionWarning(title: string, message?: string): void {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'warning',
+      title: `<span class="text-xs font-bold">${title}</span>`,
+      html: message ? `<span class="text-[11px] leading-tight block mt-0.5 opacity-90">${message}</span>` : undefined,
+      showConfirmButton: false,
+      timer: 3200,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'rounded-2xl border border-amber-500/20 shadow-lg'
+      }
+    });
+  }
+
+  /**
+   * Tampilkan notifikasi toast aksi gagal / kesalahan
+   */
+  public notifyActionError(title: string, message?: string): void {
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'error',
+      title: `<span class="text-xs font-bold">${title}</span>`,
+      html: message ? `<span class="text-[11px] leading-tight block mt-0.5 opacity-90">${message}</span>` : undefined,
+      showConfirmButton: false,
+      timer: 3500,
+      timerProgressBar: true,
+      customClass: {
+        popup: 'rounded-2xl border border-rose-500/20 shadow-lg'
+      }
+    });
+  }
 }
 
 export const realtimeNotificationService = RealtimeNotificationService.getInstance();
