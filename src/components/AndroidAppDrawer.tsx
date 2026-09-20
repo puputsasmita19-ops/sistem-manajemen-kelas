@@ -33,6 +33,7 @@ import { User, AppSettings, UserRole } from '../types';
 import { TourService } from '../services/tourService';
 import { realtimeNotificationService } from '../services/realtimeNotificationService';
 import { navigationBackService } from '../services/navigationBackService';
+import { useTheme } from '../utils/useTheme';
 
 interface AndroidAppDrawerProps {
   isOpen: boolean;
@@ -44,8 +45,8 @@ interface AndroidAppDrawerProps {
   onLogout: () => void;
   onResetData: () => void;
   remainingTimeFormatted: string;
-  isDarkMode: boolean;
-  onToggleTheme: () => void;
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
 }
 
 interface DrawerFeatureItem {
@@ -76,6 +77,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'akademik' | 'manajemen' | 'sistem'>('all');
+
+  const { isDark: localIsDark, toggleTheme: localToggleTheme } = useTheme();
+  const effectiveIsDark = isDarkMode !== undefined ? isDarkMode : localIsDark;
+  const handleToggleTheme = onToggleTheme || localToggleTheme;
 
   const allFeatures: DrawerFeatureItem[] = useMemo(() => [
     // 1. KATEGORI AKADEMIK & PEMBELAJARAN
@@ -407,12 +412,12 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
               <div className="grid grid-cols-4 gap-2">
                 {/* 1. Dark Mode Toggle */}
                 <button
-                  onClick={onToggleTheme}
+                  onClick={handleToggleTheme}
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition cursor-pointer"
                   title="Ganti Tema Gelap / Terang"
                 >
-                  {isDarkMode ? <Sun className="w-4 h-4 text-amber-500 mb-1" /> : <Moon className="w-4 h-4 text-slate-700 mb-1" />}
-                  <span className="text-[10px] font-semibold">{isDarkMode ? 'Terang' : 'Gelap'}</span>
+                  {effectiveIsDark ? <Sun className="w-4 h-4 text-amber-500 mb-1" /> : <Moon className="w-4 h-4 text-slate-700 mb-1" />}
+                  <span className="text-[10px] font-semibold">{effectiveIsDark ? 'Terang' : 'Gelap'}</span>
                 </button>
 
                 {/* 2. Push Notification Prompt */}

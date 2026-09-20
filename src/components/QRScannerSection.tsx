@@ -348,10 +348,10 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
               id="btn-close-qr-scanner-header"
               onClick={onClose}
               className="flex items-center gap-1.5 px-3 py-1.5 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition cursor-pointer border border-slate-200 dark:border-slate-600"
-              title="Tutup Pemindai QR & Kembali"
+              title="Batal Pemindaian QR"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Kembali / Batal</span>
+              <span>Batal</span>
             </button>
           )}
         </div>

@@ -39,7 +39,7 @@ class NavigationBackService {
    */
   public initialize(config: {
     onConfirmExit: () => void;
-    onNavigateHome: () => boolean;
+    onNavigateHome?: () => boolean;
   }): () => void {
     this.onConfirmExitRequest = config.onConfirmExit;
     this.onNavigateHomeRequest = config.onNavigateHome;
@@ -97,15 +97,7 @@ class NavigationBackService {
         }
       }
 
-      // 3. Jika tidak ada modal aktif, coba kembali ke halaman utama (Dashboard / Portal)
-      if (this.onNavigateHomeRequest) {
-        const navigatedHome = this.onNavigateHomeRequest();
-        if (navigatedHome) {
-          return;
-        }
-      }
-
-      // 4. Jika sudah di halaman utama dan tidak ada menu terbuka, munculkan dialog Ingin Keluar Aplikasi
+      // 3. DI SEMUA KONDISI: Terapkan pencegahan keluar pada smartphone di halaman manapun yang sedang diakses
       if (this.onConfirmExitRequest) {
         this.onConfirmExitRequest();
       }

@@ -25,7 +25,6 @@ import { AndroidTopBar } from './components/AndroidTopBar';
 import { AndroidBottomNav } from './components/AndroidBottomNav';
 import { AndroidAppDrawer } from './components/AndroidAppDrawer';
 import { ExitAppConfirmModal } from './components/ExitAppConfirmModal';
-import { useTheme } from './utils/useTheme';
 import { realtimeNotificationService } from './services/realtimeNotificationService';
 import { navigationBackService } from './services/navigationBackService';
 import { antiCheatSecurityService } from './services/antiCheatSecurityService';
@@ -79,7 +78,6 @@ export default function App() {
   // App Identity & Branding State
   const [appSettings, setAppSettings] = useState<AppSettings>(() => dbService.getAppSettings());
   const [isAndroidDrawerOpen, setIsAndroidDrawerOpen] = useState(false);
-  const { isDark, toggleTheme } = useTheme();
 
   // Authentication State - Defaults to null (Login Page) so any new visitor lands on the login page first
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -154,7 +152,7 @@ export default function App() {
     return currentUser?.role === 'siswa' || currentUser?.role === 'orang_tua' ? 'student_portal' : 'dashboard';
   });
 
-  // Inisialisasi Android Back Navigation & Exit Prevention Handler
+  // Inisialisasi Android Back Navigation & Exit Prevention Handler di semua kondisi
   useEffect(() => {
     if (!currentUser) return;
 
@@ -162,21 +160,13 @@ export default function App() {
     const cleanup = navigationBackService.initialize({
       onConfirmExit: () => {
         setShowExitConfirmModal(true);
-      },
-      onNavigateHome: () => {
-        const defaultHomeTab = currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard';
-        if (activeTab !== defaultHomeTab) {
-          setActiveTab(defaultHomeTab);
-          return true;
-        }
-        return false;
       }
     });
 
     return () => {
       cleanup();
     };
-  }, [currentUser, activeTab]);
+  }, [currentUser]);
 
   // When user is not logged in, enforce '#login' in the URL hash
   useEffect(() => {
@@ -187,7 +177,7 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Listen to browser hash changes (e.g. forward/back buttons or direct links)
+  // Listen to browser hash changes (e.g. direct links)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
@@ -203,19 +193,6 @@ export default function App() {
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [activeTab, currentUser]);
-
-  // Intercept tombol kembali perangkat Android saat berada di sub-menu (agar kembali ke Beranda sebelum keluar aplikasi)
-  useEffect(() => {
-    if (!currentUser) return;
-    const defaultHomeTab = currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard';
-    if (activeTab !== defaultHomeTab) {
-      const unregister = navigationBackService.registerHandler('app_sub_menu_tab', () => {
-        setActiveTab(defaultHomeTab);
-        return true;
-      });
-      return () => unregister();
-    }
   }, [activeTab, currentUser]);
 
   // Navigation scroll container & overflow state
@@ -824,24 +801,6 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8">
-        {/* Mobile Sub-view Back Navigation Bar */}
-        {activeTab !== (currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard') && (
-          <div className="md:hidden mb-4 flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-            <button
-              type="button"
-              id="btn-mobile-subview-kembali"
-              onClick={() => setActiveTab(currentUser.role === 'siswa' || currentUser.role === 'orang_tua' ? 'student_portal' : 'dashboard')}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 rounded-xl text-xs font-bold transition cursor-pointer border border-blue-200 dark:border-blue-800 active:scale-98"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Kembali ke Beranda</span>
-            </button>
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 capitalize pr-1">
-              Menu {activeTab.replace(/_/g, ' ')}
-            </span>
-          </div>
-        )}
-
         {/* Tab Content Views with Ultra-Fast Responsive Transition */}
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
@@ -985,8 +944,6 @@ export default function App() {
         onLogout={handleLogout}
         onResetData={handleResetData}
         remainingTimeFormatted={remainingTimeFormatted}
-        isDarkMode={isDark}
-        onToggleTheme={toggleTheme}
       />
 
       {/* ===================================================================== */}

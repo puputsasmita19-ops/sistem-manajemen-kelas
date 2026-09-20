@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { LogOut, ShieldCheck, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { LogOut, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { navigationBackService } from '../services/navigationBackService';
 
@@ -59,7 +59,7 @@ export const ExitAppConfirmModal: React.FC<ExitAppConfirmModalProps> = ({
                   </h3>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Anda menekan tombol kembali di halaman utama <strong className="text-slate-900 dark:text-white">{appName}</strong>.
+                  Anda menekan tombol kembali di aplikasi <strong className="text-slate-900 dark:text-white">{appName}</strong>.
                 </p>
               </div>
             </div>
@@ -72,21 +72,21 @@ export const ExitAppConfirmModal: React.FC<ExitAppConfirmModalProps> = ({
               </div>
               <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
                 <ShieldCheck className="w-4 h-4 shrink-0 text-blue-500" />
-                <span>Pilih "Batal / Tetap di Aplikasi" untuk melanjutkan penggunaan.</span>
+                <span>Pilih "Tetap di Aplikasi" untuk melanjutkan penggunaan.</span>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2">
-              {/* Primary Action: Stay In App (Batal keluar) */}
+              {/* Primary Action: Stay In App */}
               <button
                 type="button"
                 id="btn-stay-in-app"
                 onClick={onStayInApp}
                 className="w-full sm:flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Batal (Tetap di Aplikasi)</span>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Tetap di Aplikasi</span>
               </button>
 
               {/* Secondary Action: Confirm Exit */}
@@ -97,7 +97,7 @@ export const ExitAppConfirmModal: React.FC<ExitAppConfirmModalProps> = ({
                 className="w-full sm:w-auto py-3 px-4 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/40 text-slate-700 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 rounded-2xl font-bold text-xs border border-slate-200 dark:border-slate-700 transition active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Keluar Aplikasi</span>
+                <span>Keluar</span>
               </button>
             </div>
           </motion.div>

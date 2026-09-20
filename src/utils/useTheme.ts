@@ -24,20 +24,11 @@ function getInitialTheme(): ThemeMode {
 
 let globalTheme: ThemeMode = getInitialTheme();
 const listeners = new Set<(theme: ThemeMode) => void>();
-let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+let isInternalThemeUpdate = false;
 
-function applyThemeToDOM(theme: ThemeMode, withTransition: boolean = false) {
+function applyThemeToDOM(theme: ThemeMode) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-
-  // Trigger smooth transition class temporarily for 280ms on toggle
-  if (withTransition) {
-    root.classList.add('theme-transitioning');
-    if (transitionTimer) clearTimeout(transitionTimer);
-    transitionTimer = setTimeout(() => {
-      root.classList.remove('theme-transitioning');
-    }, 280);
-  }
 
   if (theme === 'dark') {
     root.classList.add('dark');
@@ -64,23 +55,29 @@ function applyThemeToDOM(theme: ThemeMode, withTransition: boolean = false) {
   }
 }
 
-// Initial application immediately on script load (without transition)
-applyThemeToDOM(globalTheme, false);
+// Initial application immediately on script load
+applyThemeToDOM(globalTheme);
 
 export function setGlobalTheme(newTheme: ThemeMode) {
+  if (globalTheme === newTheme) return;
   globalTheme = newTheme;
   try {
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
   } catch {
     // Ignore quota errors
   }
-  applyThemeToDOM(newTheme, true);
+  isInternalThemeUpdate = true;
+  applyThemeToDOM(newTheme);
   listeners.forEach((listener) => listener(newTheme));
+  setTimeout(() => {
+    isInternalThemeUpdate = false;
+  }, 50);
 }
 
-// Set up MutationObserver to sync if external scripts modify the class directly
+// Set up MutationObserver only to sync if external scripts modify the class directly
 if (typeof window !== 'undefined' && typeof MutationObserver !== 'undefined') {
   const observer = new MutationObserver(() => {
+    if (isInternalThemeUpdate) return;
     const isDarkNow = document.documentElement.classList.contains('dark');
     const currentMode = isDarkNow ? 'dark' : 'light';
     if (currentMode !== globalTheme) {
