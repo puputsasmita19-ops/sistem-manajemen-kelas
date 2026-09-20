@@ -27,7 +27,10 @@ import {
   User as UserIcon,
   KeyRound,
   Layers,
-  Sparkles
+  Sparkles,
+  CheckSquare,
+  Square,
+  Users
 } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
@@ -90,6 +93,112 @@ export const UserManagement: React.FC = () => {
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchSearch && matchRole;
   });
+
+  // Batch Action Selection State
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [batchTargetRole, setBatchTargetRole] = useState<UserRole>('siswa');
+
+  const handleToggleSelectUser = (userId: string) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleSelectAllVisible = () => {
+    const selectableUsers = filteredUsers.filter(u => u.role !== 'admin');
+    const allSelected = selectableUsers.length > 0 && selectableUsers.every(u => selectedUserIds.includes(u.id));
+    if (allSelected) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(selectableUsers.map(u => u.id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedUserIds([]);
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedUserIds.length === 0) return;
+
+    Swal.fire({
+      title: `⚠️ Hapus Massal ${selectedUserIds.length} Pengguna?`,
+      html: `
+        <div class="text-left text-xs space-y-2 text-slate-600 dark:text-slate-300">
+          <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-200">
+            <strong>PERINGATAN BATCH ACTION:</strong> Anda akan menghapus <strong>${selectedUserIds.length} akun pengguna</strong> sekaligus.
+            <br/>Akun Administrator Utama terlindungi otomatis dari penghapusan massal.
+          </div>
+          <p class="font-medium text-slate-700 dark:text-slate-200">
+            Ketik kata <strong class="text-rose-600 dark:text-rose-400 font-mono">HAPUS MASSAL</strong> untuk konfirmasi:
+          </p>
+        </div>
+      `,
+      icon: 'warning',
+      input: 'text',
+      inputPlaceholder: 'Ketik "HAPUS MASSAL" di sini...',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#64748B',
+      confirmButtonText: 'Ya, Hapus Semua Terpilih',
+      cancelButtonText: 'Batal',
+      inputValidator: (value) => {
+        if (value !== 'HAPUS MASSAL') {
+          return 'Ketik kata "HAPUS MASSAL" (huruf kapital) untuk konfirmasi!';
+        }
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        const res = dbService.batchDeleteUsers(selectedUserIds);
+        setSelectedUserIds([]);
+        reload();
+        Swal.fire({
+          icon: 'success',
+          title: 'Batch Action Selesai',
+          text: `Berhasil menghapus ${res.deletedCount} akun. ${res.skippedAdminCount > 0 ? `(${res.skippedAdminCount} akun admin terlindungi dilewati).` : ''}`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    });
+  };
+
+  const handleBatchChangeRole = (newRole: UserRole) => {
+    if (selectedUserIds.length === 0) return;
+
+    Swal.fire({
+      title: `Ubah Peran Massal?`,
+      html: `
+        <div class="text-left text-xs space-y-2 text-slate-600 dark:text-slate-300">
+          <p>
+            Anda akan mengubah peran <strong>${selectedUserIds.length} pengguna</strong> terpilih menjadi <strong class="text-purple-600 dark:text-purple-400 font-bold uppercase">${newRole}</strong>.
+          </p>
+          <div class="p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-800 dark:text-blue-200">
+            Perubahan hak akses akan segera berlaku pada login berikutnya untuk masing-masing akun.
+          </div>
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#7C3AED',
+      cancelButtonColor: '#64748B',
+      confirmButtonText: `Ya, Ubah Menjadi ${newRole.toUpperCase()}`,
+      cancelButtonText: 'Batal'
+    }).then(result => {
+      if (result.isConfirmed) {
+        const res = dbService.batchUpdateUserRole(selectedUserIds, newRole);
+        setSelectedUserIds([]);
+        reload();
+        Swal.fire({
+          icon: 'success',
+          title: 'Peran Berhasil Diperbarui',
+          text: `Berhasil memperbarui peran untuk ${res.updatedCount} akun.`,
+          timer: 1800,
+          showConfirmButton: false
+        });
+      }
+    });
+  };
 
   const handleOpenAdd = () => {
     setEditingUserId(null);
@@ -376,11 +485,82 @@ export const UserManagement: React.FC = () => {
             </div>
           </div>
 
+          {/* Batch Action Toolbar */}
+          {selectedUserIds.length > 0 && (
+            <div className="bg-purple-50 dark:bg-purple-950/60 border-2 border-purple-300 dark:border-purple-700 rounded-xl p-3.5 mt-4 shadow-md flex flex-wrap items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  {selectedUserIds.length}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-purple-900 dark:text-purple-100 flex items-center gap-1.5">
+                    <CheckSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span>{selectedUserIds.length} Siswa/Pengguna Terpilih</span>
+                  </div>
+                  <div className="text-[11px] text-purple-700 dark:text-purple-300">
+                    Eksekusi tindakan massal untuk semua akun yang dicentang
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Batch Change Role Dropdown & Button */}
+                <div className="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-purple-200 dark:border-purple-800 p-1 shadow-xs">
+                  <select
+                    value={batchTargetRole}
+                    onChange={e => setBatchTargetRole(e.target.value as UserRole)}
+                    className="text-xs bg-transparent text-slate-800 dark:text-slate-200 px-2 py-1 outline-none font-semibold cursor-pointer"
+                  >
+                    <option value="siswa">Peran: Siswa</option>
+                    <option value="guru">Peran: Guru Mapel</option>
+                    <option value="wali_kelas">Peran: Wali Kelas</option>
+                    <option value="orang_tua">Peran: Orang Tua</option>
+                    <option value="admin">Peran: Admin</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchChangeRole(batchTargetRole)}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    title="Ubah peran untuk semua siswa/pengguna yang dicentang"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>Terapkan Peran</span>
+                  </button>
+                </div>
+
+                {/* Batch Delete Button */}
+                <button
+                  type="button"
+                  onClick={handleBatchDelete}
+                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  title="Hapus permanen semua siswa/pengguna yang dicentang"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Massal ({selectedUserIds.length})</span>
+                </button>
+
+                {/* Cancel Selection */}
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* User Table */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition mt-4">
             <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                Daftar Akun Pengguna ({filteredUsers.length} Entri)
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                <span>Daftar Akun Pengguna ({filteredUsers.length} Entri)</span>
+                {selectedUserIds.length > 0 && (
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 rounded-full">
+                    {selectedUserIds.length} dipilih
+                  </span>
+                )}
               </div>
               <div className="text-xs font-mono text-slate-600 dark:text-slate-400">
                 Node Database: <span className="font-mono">users/&#123;id&#125;</span>
@@ -391,6 +571,18 @@ export const UserManagement: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] uppercase tracking-wider font-bold text-slate-700 dark:text-slate-200">
+                    <th className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredUsers.filter(u => u.role !== 'admin').length > 0 &&
+                          filteredUsers.filter(u => u.role !== 'admin').every(u => selectedUserIds.includes(u.id))
+                        }
+                        onChange={handleSelectAllVisible}
+                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
+                        title="Pilih semua yang dapat diubah"
+                      />
+                    </th>
                     <th className="py-3 px-4 w-12 text-center">No</th>
                     <th className="py-3 px-4">Nama Lengkap & Username</th>
                     <th className="py-3 px-4">Email & WhatsApp</th>
@@ -401,13 +593,32 @@ export const UserManagement: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
+                      <td colSpan={6} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
                         Tidak ada pengguna yang cocok dengan pencarian / filter.
                       </td>
                     </tr>
                   ) : (
                     filteredUsers.map((user, idx) => (
-                      <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                      <tr
+                        key={user.id}
+                        className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition ${
+                          selectedUserIds.includes(user.id) ? 'bg-purple-50/60 dark:bg-purple-950/30' : ''
+                        }`}
+                      >
+                        <td className="py-3 px-3 text-center">
+                          {user.role === 'admin' ? (
+                            <span title="Akun Administrator Utama dilindungi" className="cursor-not-allowed">
+                              <Shield className="w-3.5 h-3.5 text-slate-400 mx-auto opacity-40" />
+                            </span>
+                          ) : (
+                            <input
+                              type="checkbox"
+                              checked={selectedUserIds.includes(user.id)}
+                              onChange={() => handleToggleSelectUser(user.id)}
+                              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
+                            />
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-center text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
                           {idx + 1}
                         </td>

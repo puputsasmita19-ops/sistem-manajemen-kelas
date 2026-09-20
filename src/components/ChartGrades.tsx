@@ -53,6 +53,15 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
   const [selectedComponent, setSelectedComponent] = useState<'all' | 'Tugas' | 'UTS' | 'UAS' | 'Final'>('all');
   const [chartType, setChartType] = useState<'bar' | 'line' | 'area'>('bar');
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [realtimeVersion, setRealtimeVersion] = useState(0);
+
+  // Auto-refresh listener for real-time Firebase & local database updates
+  useEffect(() => {
+    const unsub = dbService.subscribeDataChange(() => {
+      setRealtimeVersion(v => v + 1);
+    });
+    return () => unsub();
+  }, []);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
@@ -111,7 +120,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
         passingRate
       }
     };
-  }, [selectedSubjectId, selectedComponent, students, propLabels, propTugas, propUts, propUas, propFinalScores]);
+  }, [selectedSubjectId, selectedComponent, students, propLabels, propTugas, propUts, propUas, propFinalScores, realtimeVersion]);
 
   // Render Chart.js
   useEffect(() => {

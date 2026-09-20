@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DatabaseService } from './services/databaseService';
 import { User, UserRole, AppSettings } from './types';
@@ -25,6 +25,7 @@ import { realtimeNotificationService } from './services/realtimeNotificationServ
 import { antiCheatSecurityService } from './services/antiCheatSecurityService';
 import { TourService } from './services/tourService';
 import { useRealtimeClock } from './utils/timeUtils';
+import { useIdleAutoLogout } from './utils/useIdleAutoLogout';
 import Swal from 'sweetalert2';
 import {
   School,
@@ -91,6 +92,15 @@ export default function App() {
     const unsub = dbService.subscribeAppSettings((updated) => {
       setAppSettings(updated);
       document.title = `${updated.appName} - Sistem Manajemen Sekolah`;
+    });
+    return () => unsub();
+  }, []);
+
+  // Real-time Database and Firebase Sync Auto-Refresh Listener for Dashboard & Charts
+  const [dataVersion, setDataVersion] = useState(0);
+  useEffect(() => {
+    const unsub = dbService.subscribeDataChange(() => {
+      setDataVersion(v => v + 1);
     });
     return () => unsub();
   }, []);
@@ -267,6 +277,23 @@ export default function App() {
     }
   };
 
+  const performDirectLogout = useCallback(() => {
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(LAST_ACTIVE_TAB_KEY);
+    } catch (e) {}
+    window.history.replaceState(null, '', '#login');
+    setCurrentUser(null);
+  }, []);
+
+  // Fitur Auto-Logout bila aplikasi tidak digunakan selama 15 menit
+  const { remainingTimeFormatted, resetTimer } = useIdleAutoLogout({
+    timeoutMinutes: 15,
+    warningSeconds: 60,
+    enabled: !!currentUser,
+    onLogout: performDirectLogout
+  });
+
   const handleLogout = () => {
     Swal.fire({
       title: 'Keluar dari Sistem?',
@@ -278,12 +305,7 @@ export default function App() {
       confirmButtonColor: '#EF4444'
     }).then(res => {
       if (res.isConfirmed) {
-        try {
-          localStorage.removeItem(SESSION_STORAGE_KEY);
-          localStorage.removeItem(LAST_ACTIVE_TAB_KEY);
-        } catch (e) {}
-        window.history.replaceState(null, '', '#login');
-        setCurrentUser(null);
+        performDirectLogout();
         Swal.fire({
           toast: true,
           position: 'top-end',
@@ -393,26 +415,35 @@ export default function App() {
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
               {/* Badges for Clock & Date (di sebelah Firestore), Firebase, WPA Offline & Network status */}
               <div className="flex items-center gap-1 sm:gap-1.5">
-                {/* Jam & Tanggal Realtime Bersebelahan dengan Icon Firestore */}
+                {/* Jam & Tanggal Realtime Bersebelahan dengan Icon Firestore (Tampil Proporsional di Smartphone & Desktop) */}
                 <div
-                  className="hidden md:flex items-center gap-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs"
+                  className="flex items-center gap-1 sm:gap-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs"
                   title={`Waktu & Tanggal Realtime: ${clock.timeFormatted} • ${clock.dateFormatted}`}
                 >
                   <div className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse shrink-0" />
+                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 animate-pulse shrink-0" />
                     <span className="font-mono font-bold text-slate-900 dark:text-amber-300">
                       {clock.timeFormatted}
                     </span>
                   </div>
-                  <span className="text-slate-300 dark:text-slate-600">•</span>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="whitespace-nowrap">{clock.dateFormatted}</span>
+                  <span className="hidden xs:inline text-slate-300 dark:text-slate-600">•</span>
+                  <div className="hidden xs:flex items-center gap-1">
+                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="whitespace-nowrap text-[10px] sm:text-xs">{clock.dateFormatted}</span>
                   </div>
                 </div>
 
                 <FirebaseStatusBadge />
                 <OfflineIndicator />
+
+                {/* Auto-Logout Timer Indicator (15 min idle - Tampil Proporsional) */}
+                <div
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 shadow-2xs cursor-help"
+                  title={`Proteksi Keamanan: Sesi akan logout otomatis setelah 15 menit tanpa aktivitas. Waktu tersisa: ${remainingTimeFormatted}. Gerakkan mouse atau sentuh layar untuk memperpanjang.`}
+                >
+                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
+                  <span className="font-mono text-[10px] sm:text-xs font-bold text-slate-800 dark:text-amber-300">{remainingTimeFormatted}</span>
+                </div>
               </div>
 
               {/* Divider */}

@@ -64,6 +64,82 @@ class RealtimeNotificationService {
   }
 
   /**
+   * Cek status izin Browser Push Notification
+   */
+  public getBrowserPermission(): NotificationPermission | 'unsupported' {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return 'unsupported';
+    }
+    return Notification.permission;
+  }
+
+  /**
+   * Meminta izin Browser Push Notification kepada pengguna
+   */
+  public async requestBrowserNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tidak Didukung',
+        text: 'Peramban ini belum mendukung Web Push Notifications.'
+      });
+      return 'unsupported';
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        this.sendBrowserNotification('🔔 Push Notification Aktif!', {
+          body: 'Notifikasi pengumuman guru dan unggahan nilai akademik akan langsung muncul di peramban Anda.'
+        });
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Notifikasi Browser Aktif!',
+          text: 'Anda akan menerima pemberitahuan langsung saat ada nilai atau pengumuman baru.',
+          timer: 3000,
+          showConfirmButton: false
+        });
+      } else if (permission === 'denied') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Notifikasi Diblokir',
+          text: 'Izin notifikasi diblokir oleh peramban. Silakan aktifkan di pengaturan peramban untuk menerima update real-time.'
+        });
+      }
+      return permission;
+    } catch (e: any) {
+      console.warn('Error requesting notification permission:', e);
+      return 'unsupported';
+    }
+  }
+
+  /**
+   * Mengirim Browser Push Notification native
+   */
+  public sendBrowserNotification(title: string, options?: NotificationOptions): void {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      const notif = new Notification(title, {
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        silent: false,
+        ...options
+      });
+
+      notif.onclick = () => {
+        window.focus();
+        notif.close();
+      };
+    } catch (e) {
+      console.warn('Native notification trigger failed:', e);
+    }
+  }
+
+  /**
    * Inisialisasi pemantauan real-time notifikasi pengumuman & nilai pada client side
    */
   public init(getCurrentUser: () => User | null): void {
@@ -87,6 +163,12 @@ class RealtimeNotificationService {
       }
 
       this.playNotificationChime();
+
+      // Trigger Native Browser Push Notification
+      this.sendBrowserNotification(`📢 Pengumuman Baru: ${ann.title}`, {
+        body: `${ann.content.slice(0, 140)}${ann.content.length > 140 ? '...' : ''}\nKategori: ${ann.category} • Oleh: ${ann.author}`,
+        tag: `ann_${ann.id}`
+      });
 
       // If urgent push notification, display full alert modal immediately
       if (ann.priority === 'high') {
@@ -150,14 +232,26 @@ class RealtimeNotificationService {
 
         let alertTitle = '📊 Pembaruan Nilai Akademik';
         let alertMessage = '';
+        let browserNotifTitle = `📝 Nilai Baru: ${info.subjectName}`;
+        let browserNotifBody = `Nilai ${info.scoreType} untuk ${info.studentName}: ${info.score} (Oleh: ${info.updatedBy})`;
 
         if (isForCurrentStudent) {
           alertMessage = `Nilai <strong>${info.subjectName} (${info.scoreType})</strong> Anda telah diperbarui menjadi <strong>${info.score}</strong>.`;
+          browserNotifTitle = `📝 Nilai Baru Anda: ${info.subjectName}`;
+          browserNotifBody = `Nilai ${info.scoreType} Anda telah diunggah dengan skor ${info.score} (${info.updatedBy}).`;
         } else if (isForParentChild) {
           alertMessage = `Nilai <strong>${info.subjectName} (${info.scoreType})</strong> ananda <strong>${info.studentName}</strong> telah diperbarui (Skor: ${info.score}).`;
+          browserNotifTitle = `📝 Nilai Ananda: ${info.subjectName}`;
+          browserNotifBody = `Nilai ${info.scoreType} ananda ${info.studentName} diunggah (Skor: ${info.score}).`;
         } else {
           alertMessage = `Nilai <strong>${info.subjectName}</strong> untuk <strong>${info.studentName}</strong> berhasil diperbarui (${info.scoreType}: ${info.score}).`;
         }
+
+        // Trigger Browser Push Notification
+        this.sendBrowserNotification(browserNotifTitle, {
+          body: browserNotifBody,
+          tag: `grade_${info.studentId}_${info.scoreType}_${Date.now()}`
+        });
 
         Swal.fire({
           title: `<div class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">

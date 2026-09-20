@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
-import { GradeType } from '../types';
+import { GradeType, Attendance } from '../types';
 import Swal from 'sweetalert2';
 import { Award, Save, BookOpen, Users, CheckCircle2, TrendingUp, Download, FileText, Printer, FileSpreadsheet, Maximize2, Minimize2, Sparkles, Check } from 'lucide-react';
 import { ChartGrades } from './ChartGrades';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface GradeManagerProps {
   currentRole: string;
@@ -271,7 +272,136 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
     }
   };
 
-  // Export Individual Student Report Card to PDF
+  // Export Grade & Attendance data to Excel (.xlsx) format
+  const exportGradeAndAttendanceExcel = () => {
+    try {
+      if (rows.length === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Data Belum Tersedia',
+          text: 'Tidak ada data nilai siswa untuk diekspor.'
+        });
+        return;
+      }
+
+      const selectedClass = classes.find(c => c.id === selectedClassId);
+      const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+      const allAttendance: Attendance[] = dbService.getAllAttendance().filter((a: Attendance) => a.class_id === selectedClassId);
+
+      // 1. Workbook Creation
+      const wb = XLSX.utils.book_new();
+
+      // 2. Sheet 1: Rekapitulasi Nilai
+      const gradeSheetData: any[][] = [
+        ['LAPORAN REKAPITULASI NILAI SISWA'],
+        [`Sekolah: ${appSettings.appName || 'SIMAK SEKOLAH'}`],
+        [`Kelas: ${selectedClass?.nama_kelas || '-'} | Mata Pelajaran: ${selectedSubject?.nama_mapel || '-'}`],
+        [`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`],
+        [],
+        ['No', 'Nama Siswa', 'Tugas (30%)', 'UTS (30%)', 'UAS (40%)', 'Nilai Akhir', 'Predikat', 'Status Kelulusan']
+      ];
+
+      rows.forEach((r, idx) => {
+        gradeSheetData.push([
+          idx + 1,
+          r.nama,
+          r.tugas,
+          r.uts,
+          r.uas,
+          r.finalScore,
+          r.predicate,
+          r.finalScore >= 68 ? 'TUNTAS' : 'REMEDIAL'
+        ]);
+      });
+
+      // Add summary rows at the bottom of Nilai
+      const avgScore = rows.length > 0 ? Math.round(rows.reduce((acc, r) => acc + r.finalScore, 0) / rows.length) : 0;
+      gradeSheetData.push([]);
+      gradeSheetData.push(['RATA-RATA KELAS', '', '', '', '', avgScore, '', avgScore >= 68 ? 'TUNTAS' : 'REMEDIAL']);
+
+      const wsGrades = XLSX.utils.aoa_to_sheet(gradeSheetData);
+      wsGrades['!cols'] = [
+        { wch: 6 },
+        { wch: 30 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 18 }
+      ];
+      XLSX.utils.book_append_sheet(wb, wsGrades, 'Rekap Nilai');
+
+      // 3. Sheet 2: Rekapitulasi Presensi Kehadiran
+      const attendanceSheetData: any[][] = [
+        ['LAPORAN REKAPITULASI PRESENSI KEHADIRAN SISWA'],
+        [`Sekolah: ${appSettings.appName || 'SIMAK SEKOLAH'}`],
+        [`Kelas: ${selectedClass?.nama_kelas || '-'}`],
+        [`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`],
+        [],
+        ['No', 'Nama Siswa', 'Hadir (H)', 'Izin (I)', 'Sakit (S)', 'Alpa (A)', 'Total Sesi', 'Persentase Hadir (%)', 'Keterangan Disiplin']
+      ];
+
+      rows.forEach((r, idx) => {
+        const studentAtt = allAttendance.filter(a => a.student_id === r.studentId);
+        const h = studentAtt.filter(a => a.status === 'H').length;
+        const i = studentAtt.filter(a => a.status === 'I').length;
+        const s = studentAtt.filter(a => a.status === 'S').length;
+        const a = studentAtt.filter(a => a.status === 'A').length;
+        const total = studentAtt.length;
+        const pct = total > 0 ? Math.round((h / total) * 100) : 100;
+        const statusDisiplin = pct >= 85 ? 'Sangat Baik' : pct >= 75 ? 'Cukup' : 'Perlu Pembinaan';
+
+        attendanceSheetData.push([
+          idx + 1,
+          r.nama,
+          h,
+          i,
+          s,
+          a,
+          total,
+          `${pct}%`,
+          statusDisiplin
+        ]);
+      });
+
+      const wsAttendance = XLSX.utils.aoa_to_sheet(attendanceSheetData);
+      wsAttendance['!cols'] = [
+        { wch: 6 },
+        { wch: 30 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 20 },
+        { wch: 20 }
+      ];
+      XLSX.utils.book_append_sheet(wb, wsAttendance, 'Rekap Presensi');
+
+      // 4. Download file
+      const fileName = `Rekap_Nilai_dan_Presensi_${selectedClass?.nama_kelas || 'Kelas'}_${selectedSubject?.nama_mapel || 'Mapel'}.xlsx`
+        .replace(/\s+/g, '_');
+      XLSX.writeFile(wb, fileName);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Excel Berhasil Diekspor!',
+        text: `File "${fileName}" berisi Rekap Nilai & Rekap Presensi berhasil diunduh.`,
+        timer: 2200,
+        showConfirmButton: false
+      });
+    } catch (err: any) {
+      console.error('Error exporting excel:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor Excel',
+        text: err.message || 'Terjadi kesalahan sistem saat mengekspor ke Excel.'
+      });
+    }
+  };
+
+  // Export Individual Student Report Card to PDF with Official School Letterhead (Kop Surat dari AppSettings)
   const exportIndividualStudentPDF = (student: StudentGradeRow) => {
     try {
       const doc = new jsPDF({
@@ -280,104 +410,426 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
         format: 'a4'
       });
 
-      const today = new Date().toLocaleDateString('id-ID', {
+      const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
+      const margin = 14;
+      const contentWidth = pageWidth - margin * 2; // 182mm
+
+      const todayFormatted = new Date().toLocaleDateString('id-ID', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
 
-      // Header
-      doc.setFillColor(37, 99, 235);
-      doc.rect(0, 0, 210, 26, 'F');
+      // -------------------------------------------------------------
+      // 1. KOP SURAT RESMI SEKOLAH (DARI AppSettings)
+      // -------------------------------------------------------------
+      let currentY = 13;
 
-      doc.setTextColor(255, 255, 255);
+      // Baris 1: Nama Lembaga / Sekolah (Uppercase, Bold)
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
-      doc.text(appSettings.appName.toUpperCase(), 14, 12);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text('LEMBAR HASIL EVALUASI CAPAIAN PEMBELAJARAN SISWA', 14, 19);
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42); // slate-900
+      const schoolTitle = (appSettings.appName || 'SIMAK SEKOLAH').toUpperCase();
+      doc.text(schoolTitle, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 5;
 
-      // Student Info
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BIODATA PESERTA DIDIK', 14, 36);
-
+      // Baris 2: Sub-judul / Satuan Pendidikan
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
-      doc.text(`Nama Siswa`, 14, 43);
-      doc.text(`: ${student.nama}`, 50, 43);
-      doc.text(`Kelas / Rombel`, 14, 49);
-      doc.text(`: ${selectedClass?.nama_kelas || '-'} (${selectedClass?.tahun_ajaran || '-'})`, 50, 49);
-      doc.text(`Mata Pelajaran`, 14, 55);
-      doc.text(`: ${selectedSubject?.nama_mapel || '-'}`, 50, 55);
-      doc.text(`Tanggal Cetak`, 14, 61);
-      doc.text(`: ${today}`, 50, 61);
+      doc.setTextColor(51, 65, 85); // slate-700
+      const subTitle = appSettings.appDescription || 'Sistem Manajemen Kelas & Administrasi Pendidikan Terpadu';
+      doc.text(subTitle, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4.5;
 
-      // Grade Breakdown Table
+      // Baris 3: Alamat Lengkap Sekolah (dari appSettings.schoolAddress)
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105); // slate-600
+      const addressText = appSettings.schoolAddress || 'Kompleks Pendidikan Utama No. 1, Jakarta';
+      doc.text(addressText, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4;
+
+      // Baris 4: Kontak / Telepon / WA (dari appSettings.adminPhone)
+      const contactText = `Layanan Informasi / WhatsApp: ${appSettings.adminPhone || '0812-3456-7890'} • Portal Akademik Resmi`;
+      doc.text(contactText, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4.5;
+
+      // Garis Ganda Kop Surat Resmi (Official Indonesian School Double Line Standard)
+      // Garis tebal pertama
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(1.1);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+      // Garis tipis kedua
+      currentY += 1.2;
+      doc.setLineWidth(0.3);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+      currentY += 6.5;
+
+      // -------------------------------------------------------------
+      // 2. JUDUL DOKUMEN LAPORAN NILAI
+      // -------------------------------------------------------------
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.setTextColor(30, 41, 59);
+      doc.text('LAPORAN CAPAIAN HASIL BELAJAR PESERTA DIDIK', pageWidth / 2, currentY, { align: 'center' });
+      currentY += 4.5;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Tahun Ajaran ${selectedClass?.tahun_ajaran || '2025/2026'} — Semester Ganjil`, pageWidth / 2, currentY, { align: 'center' });
+      currentY += 6;
+
+      // -------------------------------------------------------------
+      // 3. KOTAK BIODATA SISWA (CARD ELEGAN)
+      // -------------------------------------------------------------
+      doc.setFillColor(248, 250, 252); // slate-50
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.setLineWidth(0.4);
+      doc.roundedRect(margin, currentY, contentWidth, 23, 2, 2, 'FD');
+
+      doc.setFontSize(8.5);
+      const col1X = margin + 4;
+      const col1ValX = margin + 34;
+      const col2X = margin + 98;
+      const col2ValX = margin + 128;
+      let bioY = currentY + 5;
+
+      // Kolom 1
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(71, 85, 105);
+      doc.text('Nama Siswa', col1X, bioY);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${student.nama}`, col1ValX, bioY);
+
+      // Kolom 2
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text('Kelas / Rombel', col2X, bioY);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${selectedClass?.nama_kelas || '-'}`, col2ValX, bioY);
+
+      bioY += 5.5;
+      // Baris 2
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text('ID / NISN Siswa', col1X, bioY);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${student.studentId}`, col1ValX, bioY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text('Mata Pelajaran', col2X, bioY);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${selectedSubject?.nama_mapel || '-'}`, col2ValX, bioY);
+
+      bioY += 5.5;
+      // Baris 3
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text('Tanggal Terbit', col1X, bioY);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${todayFormatted}`, col1ValX, bioY);
+
+      const waliKelasUser = selectedClass ? dbService.getUserById(selectedClass.wali_kelas_id) : null;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      doc.text('Wali Kelas', col2X, bioY);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`: ${waliKelasUser?.nama || 'Wali Kelas'}`, col2ValX, bioY);
+
+      currentY += 27;
+
+      // -------------------------------------------------------------
+      // 4. TABEL RINCIAN EVALUASI NILAI
+      // -------------------------------------------------------------
+      const isLulus = student.finalScore >= 68;
       autoTable(doc, {
-        head: [['Komponen Penilaian', 'Bobot (%)', 'Skor Capaian', 'Predikat', 'Keterangan']],
+        head: [['No', 'Komponen Asesmen', 'Bobot', 'Nilai Capaian', 'Predikat', 'Keterangan Ketuntasan']],
         body: [
-          ['Tugas / Portofolio Harian', '30%', student.tugas.toString(), student.tugas >= 75 ? 'Tuntas' : 'Perlu Bimbingan', 'Penugasan mandiri & kelompok'],
-          ['Ujian Tengah Semester (UTS)', '30%', student.uts.toString(), student.uts >= 75 ? 'Tuntas' : 'Perlu Bimbingan', 'Evaluasi materi tengah semester'],
-          ['Ujian Akhir Semester (UAS)', '40%', student.uas.toString(), student.uas >= 75 ? 'Tuntas' : 'Perlu Bimbingan', 'Evaluasi komprehensif akhir semester'],
-          ['NILAI AKHIR KUMULATIF', '100%', student.finalScore.toString(), `Predikat ${student.predicate}`, student.finalScore >= 68 ? 'KOMPETEN / LULUS' : 'REMEDIAL']
+          ['1', 'Tugas & Portofolio Harian', '30%', student.tugas.toString(), student.tugas >= 75 ? 'Tuntas' : 'Perlu Pengayaan', 'Penugasan mandiri & keaktifan terstruktur'],
+          ['2', 'Ujian Tengah Semester (UTS)', '30%', student.uts.toString(), student.uts >= 75 ? 'Tuntas' : 'Perlu Pendampingan', 'Evaluasi sumatif materi tengah semester'],
+          ['3', 'Ujian Akhir Semester (UAS)', '40%', student.uas.toString(), student.uas >= 75 ? 'Tuntas' : 'Perlu Bimbingan', 'Evaluasi komprehensif capaian akhir semester'],
+          ['★', 'NILAI AKHIR KUMULATIF', '100%', student.finalScore.toString(), `Predikat ${student.predicate}`, isLulus ? 'TUNTAS (MEMENUHI KKM)' : 'REMEDIAL']
         ],
-        startY: 68,
+        startY: currentY,
         theme: 'grid',
         headStyles: {
-          fillColor: [37, 99, 235],
-          textColor: 255,
-          fontStyle: 'bold'
+          fillColor: [37, 99, 235], // Blue 600
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 8.5
+        },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 10, fontStyle: 'bold' },
+          1: { cellWidth: 55, fontStyle: 'bold' },
+          2: { halign: 'center', cellWidth: 18 },
+          3: { halign: 'center', cellWidth: 26, fontStyle: 'bold' },
+          4: { halign: 'center', cellWidth: 26 },
+          5: { cellWidth: 47, fontSize: 7.8 }
         },
         styles: {
-          fontSize: 9,
-          cellPadding: 3.5
+          fontSize: 8.5,
+          cellPadding: 3
+        },
+        didParseCell: function(data) {
+          if (data.row.index === 3) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = isLulus ? [236, 253, 245] : [255, 241, 242];
+            if (data.column.index === 3 || data.column.index === 5) {
+              data.cell.styles.textColor = isLulus ? [5, 150, 105] : [225, 29, 72];
+            }
+          }
         }
       });
 
-      // Notes & Signature
-      const finalY = ((doc as any).lastAutoTable?.finalY || 140) + 12;
+      let nextY = (doc as any).lastAutoTable?.finalY + 6;
+
+      // -------------------------------------------------------------
+      // 5. KOTAK REKAPITULASI CAPAIAN MAPEL LAIN (JIKA TERSEDIA)
+      // -------------------------------------------------------------
+      const fullReport = dbService.getStudentReport(student.studentId);
+      if (fullReport && fullReport.gradeDetails && fullReport.gradeDetails.length > 1) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Rangkuman Nilai Seluruh Mata Pelajaran Siswa:', margin, nextY);
+        nextY += 2.5;
+
+        const allMapelBody = fullReport.gradeDetails.map((g, idx) => [
+          (idx + 1).toString(),
+          g.subjectName,
+          g.tugas.toString(),
+          g.uts.toString(),
+          g.uas.toString(),
+          g.finalScore.toString(),
+          g.predicate
+        ]);
+
+        autoTable(doc, {
+          head: [['No', 'Mata Pelajaran', 'Tugas', 'UTS', 'UAS', 'Akhir', 'Predikat']],
+          body: allMapelBody,
+          startY: nextY,
+          theme: 'striped',
+          headStyles: {
+            fillColor: [71, 85, 105],
+            textColor: 255,
+            halign: 'center',
+            fontSize: 7.5
+          },
+          columnStyles: {
+            0: { halign: 'center', cellWidth: 10 },
+            1: { cellWidth: 70 },
+            2: { halign: 'center', cellWidth: 20 },
+            3: { halign: 'center', cellWidth: 20 },
+            4: { halign: 'center', cellWidth: 20 },
+            5: { halign: 'center', cellWidth: 22, fontStyle: 'bold' },
+            6: { halign: 'center', cellWidth: 20, fontStyle: 'bold' }
+          },
+          styles: {
+            fontSize: 7.5,
+            cellPadding: 1.8
+          }
+        });
+
+        nextY = (doc as any).lastAutoTable?.finalY + 6;
+      }
+
+      // -------------------------------------------------------------
+      // 6. CATATAN GURU & CAPAIAN KOMPETENSI
+      // -------------------------------------------------------------
+      if (nextY > 230) {
+        doc.addPage();
+        nextY = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('Catatan & Rekomendasi Guru:', 14, finalY);
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.setTextColor(71, 85, 105);
-      const note = student.finalScore >= 88
-        ? 'Sangat baik! Pertahankan prestasi dan terus kembangkan bakat kepemimpinan dalam diskusi kelas.'
-        : student.finalScore >= 78
-        ? 'Pencapaian baik! Tingkatkan keaktifan pengerjaan tugas mandiri untuk hasil yang lebih optimal.'
-        : 'Perlu bimbingan lanjutan dan pengayaan materi pada topik yang belum tuntas.';
-      doc.text(`"${note}"`, 14, finalY + 6);
-
-      // Signatures
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setTextColor(30, 41, 59);
-      doc.text('Orang Tua / Wali Siswa,', 25, finalY + 25);
-      doc.text('( ....................................... )', 25, finalY + 45);
+      doc.text('Catatan & Rekomendasi Guru Pengampu:', margin, nextY);
+      nextY += 4;
 
-      doc.text('Guru Mata Pelajaran,', 140, finalY + 25);
-      doc.text('( ....................................... )', 140, finalY + 45);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
 
-      doc.save(`Rapor_${student.nama.replace(/\s+/g, '_')}_${selectedSubject?.nama_mapel || 'Mapel'}.pdf`);
+      const noteText = student.finalScore >= 88
+        ? 'Sangat baik! Menunjukkan penguasaan kompetensi yang luar biasa. Pertahankan prestasi dan jadilah teladan dalam diskusi serta kolaborasi ilmiah di kelas.'
+        : student.finalScore >= 78
+        ? 'Pencapaian baik! Memiliki pemahaman materi yang konsisten. Terus pertahankan kedisiplinan dan tingkatkan partisipasi aktif saat penugasan mandiri.'
+        : student.finalScore >= 68
+        ? 'Capaian telah memenuhi standar KKM minimal. Disarankan untuk menambah referensi belajar dan lebih aktif dalam sesi tanya jawab materi.'
+        : 'Perlu bimbingan dan remedial terstruktur pada materi yang belum tuntas. Diharapkan berkomunikasi dengan guru untuk bimbingan tambahan.';
+
+      const splitNote = doc.splitTextToSize(`"${noteText}"`, contentWidth);
+      doc.text(splitNote, margin, nextY);
+      nextY += splitNote.length * 4 + 7;
+
+      // -------------------------------------------------------------
+      // 7. TANDA TANGAN PENGESAHAN DUA PIHAK
+      // -------------------------------------------------------------
+      if (nextY > 245) {
+        doc.addPage();
+        nextY = 25;
+      }
+
+      const colLeftX = margin + 15;
+      const colRightX = pageWidth - margin - 55;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+
+      doc.text('Mengetahui,', colLeftX, nextY);
+      const city = appSettings.schoolAddress ? (appSettings.schoolAddress.split(',')[1]?.trim() || 'Jakarta') : 'Jakarta';
+      doc.text(`${city}, ${todayFormatted.split(',')[1]?.trim() || todayFormatted}`, colRightX, nextY);
+
+      nextY += 4.5;
+      doc.text('Orang Tua / Wali Siswa,', colLeftX, nextY);
+      doc.text('Guru Pengampu / Wali Kelas,', colRightX, nextY);
+
+      nextY += 18;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text('( ............................................ )', colLeftX, nextY);
+      const currentTeacher = dbService.getUserById(currentUserId);
+      const teacherName = currentTeacher ? currentTeacher.nama : (waliKelasUser?.nama || 'Guru Pengampu');
+      doc.text(`( ${teacherName} )`, colRightX, nextY);
+
+      // Save PDF file
+      const cleanFileName = `Rapor_${student.nama.replace(/\s+/g, '_')}_${selectedSubject?.nama_mapel || 'Mapel'}_${selectedClass?.nama_kelas || 'Kelas'}.pdf`;
+      doc.save(cleanFileName);
+
       Swal.fire({
         icon: 'success',
-        title: 'Rapor Siswa Terunduh!',
-        text: `Laporan individual untuk ${student.nama} siap dicetak.`,
-        timer: 1800,
+        title: 'Rapor Siswa Berhasil Diunduh!',
+        text: `Laporan capaian nilai untuk ${student.nama} lengkap dengan kop surat sekolah siap dicetak.`,
+        timer: 2000,
         showConfirmButton: false
       });
     } catch (err: any) {
+      console.error('Error generating student report PDF:', err);
       Swal.fire({
         icon: 'error',
         title: 'Gagal Membuat Rapor',
-        text: err.message
+        text: err.message || 'Terjadi kesalahan sistem saat mengekspor laporan.'
       });
     }
+  };
+
+  // Export Individual Student Report & Attendance to Excel (.xlsx)
+  const exportIndividualStudentExcel = (student: StudentGradeRow) => {
+    try {
+      const selectedClass = classes.find(c => c.id === selectedClassId);
+      const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+      const studentAttendance: Attendance[] = dbService.getAllAttendance().filter((a: Attendance) => a.student_id === student.studentId && a.class_id === selectedClassId);
+
+      const hadir = studentAttendance.filter(a => a.status === 'H').length;
+      const izin = studentAttendance.filter(a => a.status === 'I').length;
+      const sakit = studentAttendance.filter(a => a.status === 'S').length;
+      const alpa = studentAttendance.filter(a => a.status === 'A').length;
+      const totalSesi = studentAttendance.length;
+      const pctHadir = totalSesi > 0 ? `${Math.round((hadir / totalSesi) * 100)}%` : '100%';
+
+      const wb = XLSX.utils.book_new();
+
+      const data: any[][] = [
+        ['LAPORAN HASIL BELAJAR & PRESENSI INDIVIDUAL'],
+        [`Sekolah: ${appSettings.appName || 'SIMAK SEKOLAH'}`],
+        [`Alamat: ${appSettings.schoolAddress || '-'}`],
+        [],
+        ['DATA SISWA & AKADEMIK'],
+        ['Nama Lengkap', student.nama],
+        ['Kelas', selectedClass?.nama_kelas || '-'],
+        ['Mata Pelajaran', selectedSubject?.nama_mapel || '-'],
+        ['Tanggal Cetak', new Date().toLocaleDateString('id-ID')],
+        [],
+        ['RINCIAN NILAI KOMPONEN', 'BOBOT', 'NILAI', 'NILAI TERBOBOT'],
+        ['Nilai Tugas Mandiri / Harian', '30%', student.tugas, (student.tugas * 0.3).toFixed(1)],
+        ['Ujian Tengah Semester (UTS)', '30%', student.uts, (student.uts * 0.3).toFixed(1)],
+        ['Ujian Akhir Semester (UAS)', '40%', student.uas, (student.uas * 0.4).toFixed(1)],
+        ['NILAI AKHIR KUMULATIF', '100%', student.finalScore, student.finalScore],
+        ['Predikat Capaian', '', student.predicate, ''],
+        ['Status Kelulusan', '', student.finalScore >= 68 ? 'TUNTAS' : 'REMEDIAL', ''],
+        [],
+        ['REKAPITULASI PRESENSI KEHADIRAN'],
+        ['Hadir (H)', hadir],
+        ['Izin (I)', izin],
+        ['Sakit (S)', sakit],
+        ['Alpa (A)', alpa],
+        ['Total Pertemuan', totalSesi],
+        ['Persentase Kehadiran', pctHadir]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = [{ wch: 32 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'Rapor Siswa');
+
+      const fileName = `Rapor_${student.nama.replace(/\s+/g, '_')}_${selectedSubject?.nama_mapel || 'Mapel'}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Excel Rapor Diunduh!',
+        text: `Data nilai dan presensi ${student.nama} berhasil diekspor ke Excel.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (err: any) {
+      console.error('Error exporting individual student excel:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor Excel',
+        text: err.message || 'Terjadi kesalahan sistem saat mengekspor ke Excel.'
+      });
+    }
+  };
+
+  // Modal dialog to select student and export PDF
+  const handleOpenExportStudentModal = () => {
+    if (rows.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Data Siswa Kosong',
+        text: 'Belum ada data siswa di kelas ini.'
+      });
+      return;
+    }
+
+    const inputOptions: Record<string, string> = {};
+    rows.forEach(r => {
+      inputOptions[r.studentId] = `${r.nama} — Skor Akhir: ${r.finalScore} (${r.predicate})`;
+    });
+
+    Swal.fire({
+      title: 'Cetak Rapor Nilai Per Siswa',
+      text: 'Pilih siswa untuk mengunduh laporan capaian hasil belajar individual (PDF lengkap dengan kop surat resmi sekolah):',
+      input: 'select',
+      inputOptions,
+      inputPlaceholder: '-- Pilih Nama Siswa --',
+      showCancelButton: true,
+      confirmButtonText: 'Unduh Rapor PDF',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#2563EB',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'Silakan pilih siswa terlebih dahulu!';
+        }
+        return null;
+      }
+    }).then(res => {
+      if (res.isConfirmed && res.value) {
+        const targetStudent = rows.find(r => r.studentId === res.value);
+        if (targetStudent) {
+          exportIndividualStudentPDF(targetStudent);
+        }
+      }
+    });
   };
 
   // Class statistics
@@ -417,20 +869,44 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
               <span>Mode Fokus (Zen)</span>
             </button>
 
+            {/* PDF Export Button for Individual Student Report Card */}
+            <button
+              id="btn-export-student-pdf"
+              onClick={handleOpenExportStudentModal}
+              disabled={rows.length === 0}
+              className="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-1.5 shadow-xs shadow-blue-500/20 transition cursor-pointer disabled:opacity-50 flex-1 sm:flex-initial"
+              title="Cetak Laporan Rapor Per Siswa ke File PDF Lengkap dengan Kop Sekolah Resmi"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Cetak Rapor Siswa</span>
+            </button>
+
             {/* PDF Export Button for Class Grade Data */}
             <button
               id="btn-export-pdf-grades"
               onClick={exportClassLedgerPDF}
               disabled={isExporting || rows.length === 0}
               className="px-3.5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 shadow-xs shadow-rose-500/20 transition cursor-pointer disabled:opacity-50 flex-1 sm:flex-initial"
-              title="Ekspor Data Nilai Kelas Ini ke File PDF (jsPDF)"
+              title="Ekspor Rekap Nilai Satu Kelas ke File PDF (jsPDF)"
             >
               {isExporting ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <FileText className="w-4 h-4" />
               )}
-              <span>{isExporting ? 'Membuat PDF...' : 'Ekspor PDF Nilai'}</span>
+              <span>{isExporting ? 'Membuat PDF...' : 'Ekspor PDF Rekap'}</span>
+            </button>
+
+            {/* Excel Export Button (.xlsx) */}
+            <button
+              id="btn-export-excel-grades"
+              onClick={exportGradeAndAttendanceExcel}
+              disabled={rows.length === 0}
+              className="px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl flex items-center justify-center gap-2 shadow-xs shadow-emerald-500/20 transition cursor-pointer disabled:opacity-50 flex-1 sm:flex-initial"
+              title="Ekspor Rekap Nilai dan Presensi Kelas ke Format Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Ekspor Excel (.xlsx)</span>
             </button>
 
             {/* Save All Button */}
@@ -615,14 +1091,24 @@ export const GradeManager: React.FC<GradeManagerProps> = ({ currentRole, current
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center">
-                        <button
-                          onClick={() => exportIndividualStudentPDF(row)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-lg transition shadow-2xs cursor-pointer"
-                          title={`Cetak Rapor PDF untuk ${row.nama}`}
-                        >
-                          <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                          <span>PDF Rapor</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => exportIndividualStudentPDF(row)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-lg transition shadow-2xs cursor-pointer"
+                            title={`Cetak Rapor PDF untuk ${row.nama}`}
+                          >
+                            <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            <span>PDF</span>
+                          </button>
+                          <button
+                            onClick={() => exportIndividualStudentExcel(row)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 rounded-lg transition shadow-2xs cursor-pointer"
+                            title={`Ekspor Nilai & Presensi ${row.nama} ke Excel (.xlsx)`}
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Excel</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

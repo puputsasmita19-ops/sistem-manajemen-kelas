@@ -80,3 +80,23 @@ body {
 .animate-marquee-paused {
   animation-play-state: paused !important;
 }
+
+/* Smartphone Proportional Layout & Touch Enhancements */
+@media (max-width: 640px) {
+  /* Ensure smooth responsive fluid text and elements without overflowing viewport */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* Table containers allow fluid desktop-like layout with horizontal touch panning */
+  .table-responsive-desktop {
+    min-width: 640px;
+  }
+
+  /* Proportional compact typography for small screens */
+  .proportional-mobile-text {
+    font-size: clamp(0.75rem, 2.5vw, 0.875rem);
+  }
+}
+

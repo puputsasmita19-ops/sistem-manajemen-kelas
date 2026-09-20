@@ -115,8 +115,12 @@ export class DatabaseService {
     return DatabaseService.instance;
   }
 
-  private persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db));
+  public persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db));
+    } catch (e) {
+      console.warn('Failed to persist local DB to localStorage:', e);
+    }
   }
 
   public resetDatabase(): void {
@@ -257,6 +261,26 @@ export class DatabaseService {
     this.settingsListeners.push(listener);
     return () => {
       this.settingsListeners = this.settingsListeners.filter(l => l !== listener);
+    };
+  }
+
+  // --- REAL-TIME DATA REFRESH LISTENERS (DASHBOARD & CHARTS) ---
+  private dataChangeListeners: (() => void)[] = [];
+
+  public notifyDataChange(): void {
+    this.dataChangeListeners.forEach(l => {
+      try {
+        l();
+      } catch (e) {
+        console.warn('Data change listener error:', e);
+      }
+    });
+  }
+
+  public subscribeDataChange(listener: () => void): () => void {
+    this.dataChangeListeners.push(listener);
+    return () => {
+      this.dataChangeListeners = this.dataChangeListeners.filter(l => l !== listener);
     };
   }
 
@@ -522,6 +546,105 @@ export class DatabaseService {
     );
   }
 
+  public batchDeleteUsers(userIds: string[]): { deletedCount: number; skippedAdminCount: number } {
+    let deletedCount = 0;
+    let skippedAdminCount = 0;
+
+    userIds.forEach(id => {
+      const user = this.db.users[id];
+      if (!user) return;
+
+      // Protect primary admin accounts
+      if (
+        user.role === 'admin' &&
+        (user.id === 'user-admin' ||
+          user.id === 'user_admin1' ||
+          user.email === 'admin@sekolah.id' ||
+          user.username === 'admin')
+      ) {
+        skippedAdminCount++;
+        return;
+      }
+
+      delete this.db.users[id];
+      FirestoreSyncService.getInstance().deleteDocument('users', id);
+
+      // Clean up class_members if student
+      Object.keys(this.db.class_members).forEach(cmId => {
+        if (this.db.class_members[cmId].student_id === id) {
+          delete this.db.class_members[cmId];
+          FirestoreSyncService.getInstance().deleteDocument('class_members', cmId);
+        }
+      });
+
+      // Clean up parent-student relations
+      Object.keys(this.db.parent_student_relations).forEach(psrId => {
+        if (
+          this.db.parent_student_relations[psrId].parent_id === id ||
+          this.db.parent_student_relations[psrId].student_id === id
+        ) {
+          delete this.db.parent_student_relations[psrId];
+        }
+      });
+
+      deletedCount++;
+    });
+
+    this.persist();
+    this.notifyDataChange();
+
+    this.logActivity(
+      'user_batch_delete',
+      'Penghapusan Massal Pengguna',
+      `Administrator melakukan batch delete pada ${deletedCount} akun pengguna (Dilewati: ${skippedAdminCount} akun admin).`,
+      'batch_action'
+    );
+
+    return { deletedCount, skippedAdminCount };
+  }
+
+  public batchUpdateUserRole(
+    userIds: string[],
+    newRole: UserRole
+  ): { updatedCount: number; skippedAdminCount: number } {
+    let updatedCount = 0;
+    let skippedAdminCount = 0;
+
+    userIds.forEach(id => {
+      const user = this.db.users[id];
+      if (!user) return;
+
+      // Protect root admin account from accidental role demotion
+      if (
+        user.role === 'admin' &&
+        (user.id === 'user-admin' ||
+          user.id === 'user_admin1' ||
+          user.email === 'admin@sekolah.id' ||
+          user.username === 'admin') &&
+        newRole !== 'admin'
+      ) {
+        skippedAdminCount++;
+        return;
+      }
+
+      this.db.users[id].role = newRole;
+      FirestoreSyncService.getInstance().syncDocument('users', id, this.db.users[id]);
+      updatedCount++;
+    });
+
+    this.persist();
+    this.notifyDataChange();
+
+    this.logActivity(
+      'user_batch_role_change',
+      'Pembaruan Peran Massal',
+      `Administrator mengubah peran ${updatedCount} pengguna menjadi "${newRole.toUpperCase()}".`,
+      'batch_action'
+    );
+
+    return { updatedCount, skippedAdminCount };
+  }
+
   // --- CLASSES & SUBJECTS ---
   public getAllClasses(): ClassEntity[] {
     return Object.values(this.db.classes);
@@ -591,6 +714,50 @@ export class DatabaseService {
     });
   }
 
+  public getAttendanceByClassAndDateRange(
+    classId: string,
+    startDate: string,
+    endDate: string,
+    subjectId?: string
+  ) {
+    const students = this.getStudentsInClass(classId);
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    const allRecords = Object.values(this.db.attendance).filter(a => {
+      if (a.class_id !== classId) return false;
+      if (subjectId && subjectId !== 'all' && a.subject_id !== subjectId) return false;
+      if (a.date < startDate || a.date > endDate) return false;
+      return true;
+    });
+
+    allRecords.sort((a, b) => {
+      if (b.date !== a.date) return b.date.localeCompare(a.date);
+      const nameA = studentMap.get(a.student_id)?.nama || '';
+      const nameB = studentMap.get(b.student_id)?.nama || '';
+      return nameA.localeCompare(nameB);
+    });
+
+    return allRecords.map(rec => {
+      const student = studentMap.get(rec.student_id);
+      return {
+        id: rec.id,
+        studentId: rec.student_id,
+        nama: student?.nama || 'Siswa',
+        email: student?.email || '',
+        no_wa: student?.no_wa || '',
+        nis: student?.nis || '',
+        date: rec.date,
+        subject_id: rec.subject_id,
+        status: rec.status,
+        timestamp: rec.timestamp,
+        photoUrl: rec.photoUrl,
+        location: rec.location,
+        verified: rec.verified,
+        notes: rec.notes
+      };
+    });
+  }
+
   public saveBulkAttendance(
     classId: string,
     subjectId: string,
@@ -628,6 +795,7 @@ export class DatabaseService {
     if (batchItems.length > 0) {
       FirestoreSyncService.getInstance().syncBatchDocuments('attendance', batchItems);
     }
+    this.notifyDataChange();
 
     const cls = this.db.classes[classId];
     this.logActivity(
@@ -647,6 +815,10 @@ export class DatabaseService {
       }
     });
     return { summary, records };
+  }
+
+  public getAllAttendance(): Attendance[] {
+    return Object.values(this.db.attendance);
   }
 
   // --- PRESENSI MANDIRI REALTIME: Foto Selfie, Timestamp & Validasi GPS ---
@@ -732,6 +904,7 @@ export class DatabaseService {
 
     this.persist();
     FirestoreSyncService.getInstance().syncDocument('attendance', savedAttendance.id, savedAttendance);
+    this.notifyDataChange();
 
     const student = this.db.users[params.studentId];
     const studentName = student ? student.nama : 'Siswa';
@@ -853,6 +1026,8 @@ export class DatabaseService {
       score,
       updatedBy: 'Guru Pengampu'
     });
+
+    this.notifyDataChange();
   }
 
   public getStudentReport(studentId: string) {

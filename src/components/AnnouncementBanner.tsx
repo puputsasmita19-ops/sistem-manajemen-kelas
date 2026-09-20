@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
+import { realtimeNotificationService } from '../services/realtimeNotificationService';
 import { SchoolAnnouncement, UserRole } from '../types';
 import Swal from 'sweetalert2';
 import {
@@ -206,6 +207,20 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                 {activeIdx + 1} dari {announcements.length}
               </span>
             )}
+
+            <button
+              type="button"
+              id="btn-browser-push-notif"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await realtimeNotificationService.requestBrowserNotificationPermission();
+              }}
+              className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-lg border border-amber-500/20 flex items-center gap-1.5 transition cursor-pointer"
+              title="Aktifkan Notifikasi Peramban (Browser Push Notification) untuk Pengumuman & Nilai Baru"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Push Notif</span>
+            </button>
 
             <button
               type="button"

@@ -22,18 +22,23 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({ data, title = 
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
     const isDarkMode = typeof document !== 'undefined' 
       ? document.documentElement.classList.contains('dark') 
       : isDark;
     const legendTextColor = isDarkMode ? '#F8FAFC' : '#0F172A';
     const sliceBorderColor = isDarkMode ? '#1E293B' : '#FFFFFF';
+
+    // If chart instance already exists, update data in place for smooth real-time animation
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.data.datasets[0].data = [data.Hadir, data.Izin, data.Sakit, data.Alpa];
+      chartInstanceRef.current.data.datasets[0].borderColor = sliceBorderColor;
+      chartInstanceRef.current.options.plugins!.legend!.labels!.color = legendTextColor;
+      chartInstanceRef.current.update();
+      return;
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
 
     Chart.defaults.color = legendTextColor;
     Chart.defaults.borderColor = isDarkMode ? 'rgba(148, 163, 184, 0.2)' : '#E2E8F0';
@@ -93,9 +98,10 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({ data, title = 
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
       }
     };
-  }, [data, isDark]);
+  }, [data.Hadir, data.Izin, data.Sakit, data.Alpa, isDark]);
 
   return (
     <div className="w-full h-64 flex flex-col items-center">

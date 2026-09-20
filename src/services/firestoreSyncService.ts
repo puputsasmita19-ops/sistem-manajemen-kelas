@@ -246,18 +246,51 @@ export class FirestoreSyncService {
       }, (err) => console.warn('Announcements realtime listener warning:', err));
       this.activeSubscriptions.push(unsubAnn);
 
-      // Listener Grades Realtime
-      const unsubGrades = onSnapshot(collection(firestore, 'grades'), (snap) => {
+      // Listener Attendance Realtime (Auto-Refresh Dashboard & Charts)
+      const unsubAttendance = onSnapshot(collection(firestore, 'attendance'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
         snap.docChanges().forEach(change => {
           if (change.type === 'added' || change.type === 'modified') {
-            const dbService = DatabaseService.getInstance();
-            const raw = dbService.getRawSnapshot();
+            const attData = change.doc.data() as any;
+            if (attData && attData.id) {
+              raw.attendance[attData.id] = attData;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.attendance[change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+        }
+      }, (err) => console.warn('Attendance realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubAttendance);
+
+      // Listener Grades Realtime (Auto-Refresh Dashboard & Charts)
+      const unsubGrades = onSnapshot(collection(firestore, 'grades'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
             const gradeData = change.doc.data() as any;
             if (gradeData && gradeData.id) {
               raw.grades[gradeData.id] = gradeData;
+              hasChanges = true;
             }
+          } else if (change.type === 'removed') {
+            delete raw.grades[change.doc.id];
+            hasChanges = true;
           }
         });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+        }
       }, (err) => console.warn('Grades realtime listener warning:', err));
       this.activeSubscriptions.push(unsubGrades);
 

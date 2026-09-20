@@ -8,6 +8,7 @@ export interface User {
   password_hash: string;
   role: UserRole;
   no_wa: string;
+  nis?: string;
 }
 
 export interface RunningTextItem {
@@ -71,10 +72,12 @@ export interface Attendance {
   student_id: string; // FK -> users.id
   status: AttendanceStatus;
   note?: string;
+  notes?: string;
   // Realtime Selfie & Geolocation validation metadata
   photoUrl?: string; // Base64 data URL dengan watermark stempel waktu & GPS
   latitude?: number;
   longitude?: number;
+  location?: { lat: number; lng: number };
   accuracy?: number; // Radius akurasi GPS dalam meter
   address?: string; // Alamat / landmark
   timestamp?: string; // Format: "07:15:22 WIB"
@@ -82,6 +85,7 @@ export interface Attendance {
   distanceMeters?: number; // Jarak kalkulasi meter ke titik pusat sekolah
   deviceInfo?: string; // Informasi peramban / perangkat
   verifiedBy?: 'self_scan_gps' | 'manual_teacher' | 'quick_qr' | 'admin';
+  verified?: boolean;
 }
 
 export type GradeType = 'Tugas' | 'UTS' | 'UAS';
@@ -137,6 +141,8 @@ export type ActivityActionType =
   | 'user_create'
   | 'user_update'
   | 'user_delete'
+  | 'user_batch_delete'
+  | 'user_batch_role_change'
   | 'attendance_input'
   | 'announcement_create'
   | 'announcement_delete'
