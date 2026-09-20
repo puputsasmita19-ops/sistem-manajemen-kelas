@@ -21,6 +21,10 @@ import { DashboardOverview } from './components/DashboardOverview';
 import { HomeroomDashboard } from './components/homeroom/HomeroomDashboard';
 import { RunningText } from './components/RunningText';
 import { ActivityLogViewer } from './components/ActivityLogViewer';
+import { AndroidTopBar } from './components/AndroidTopBar';
+import { AndroidBottomNav } from './components/AndroidBottomNav';
+import { AndroidAppDrawer } from './components/AndroidAppDrawer';
+import { useTheme } from './utils/useTheme';
 import { realtimeNotificationService } from './services/realtimeNotificationService';
 import { antiCheatSecurityService } from './services/antiCheatSecurityService';
 import { TourService } from './services/tourService';
@@ -71,7 +75,8 @@ export default function App() {
 
   // App Identity & Branding State
   const [appSettings, setAppSettings] = useState<AppSettings>(() => dbService.getAppSettings());
-  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [isAndroidDrawerOpen, setIsAndroidDrawerOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   // Authentication State - Defaults to null (Login Page) so any new visitor lands on the login page first
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -392,65 +397,81 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-blue-600 selection:text-white transition-colors duration-200">
-      {/* Top Application Bar */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40 shadow-xs transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between min-h-14 sm:min-h-16 py-2 gap-2 sm:gap-3 flex-nowrap">
+      {/* SMARTPHONE TOP APP BAR (PENGALAMAN APLIKASI ANDROID NATIVE) */}
+      <AndroidTopBar
+        appSettings={appSettings}
+        currentUser={currentUser}
+        clock={clock}
+        remainingTimeFormatted={remainingTimeFormatted}
+        onOpenDrawer={() => setIsAndroidDrawerOpen(true)}
+        onOpenTour={() => {
+          TourService.getInstance().startTour(
+            currentUser,
+            appSettings.appName,
+            (tab) => setActiveTab(tab),
+            true
+          );
+        }}
+      />
+
+      {/* DESKTOP TOP APPLICATION BAR (PENGALAMAN DESKTOP WEB PRO & LEGA) */}
+      <header className="hidden md:block bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40 shadow-xs transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between min-h-16 py-2 gap-3 flex-nowrap">
             {/* Left: Logo & Brand */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               <AppLogo settings={appSettings} size="md" />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                  <h1 className="text-base font-black text-slate-900 dark:text-white leading-tight">
                     {appSettings.appName}
                   </h1>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden md:block max-w-[200px] lg:max-w-[260px] truncate">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[260px] truncate">
                   {appSettings.appDescription}
                 </p>
               </div>
             </div>
 
-            {/* Right: Badges for Clock & Date, Firebase + Wifi / PWA Offline + Buttons (Gelap/Terang, Reset, Exit) */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
-              {/* Badges for Clock & Date (di sebelah Firestore), Firebase, WPA Offline & Network status */}
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                {/* Jam & Tanggal Realtime Bersebelahan dengan Icon Firestore (Tampil Proporsional di Smartphone & Desktop) */}
+            {/* Right: Badges for Clock & Date, Firebase + Wifi / PWA Offline + Action Dock */}
+            <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+              {/* Badges for Clock & Date, Firebase, WPA Offline & Network status */}
+              <div className="flex items-center gap-1.5">
                 <div
-                  className="flex items-center gap-1 sm:gap-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs"
+                  className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-2xs"
                   title={`Waktu & Tanggal Realtime: ${clock.timeFormatted} • ${clock.dateFormatted}`}
                 >
                   <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 animate-pulse shrink-0" />
+                    <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse shrink-0" />
                     <span className="font-mono font-bold text-slate-900 dark:text-amber-300">
                       {clock.timeFormatted}
                     </span>
                   </div>
-                  <span className="hidden xs:inline text-slate-300 dark:text-slate-600">•</span>
-                  <div className="hidden xs:flex items-center gap-1">
-                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span className="whitespace-nowrap text-[10px] sm:text-xs">{clock.dateFormatted}</span>
+                  <span className="text-slate-300 dark:text-slate-600">•</span>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span className="whitespace-nowrap text-xs">{clock.dateFormatted}</span>
                   </div>
                 </div>
 
                 <FirebaseStatusBadge />
                 <OfflineIndicator />
 
-                {/* Auto-Logout Timer Indicator (15 min idle - Tampil Proporsional) */}
+                {/* Auto-Logout Timer Indicator (15 min idle) */}
                 <div
-                  className="inline-flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 shadow-2xs cursor-help"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 shadow-2xs cursor-help"
                   title={`Proteksi Keamanan: Sesi akan logout otomatis setelah 15 menit tanpa aktivitas. Waktu tersisa: ${remainingTimeFormatted}. Gerakkan mouse atau sentuh layar untuk memperpanjang.`}
                 >
-                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
-                  <span className="font-mono text-[10px] sm:text-xs font-bold text-slate-800 dark:text-amber-300">{remainingTimeFormatted}</span>
+                  <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-amber-300">{remainingTimeFormatted}</span>
                 </div>
               </div>
 
               {/* Divider */}
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
-              {/* Unified Proportional Action Dock: Panduan Tour, Gelap/Terang, Reset Data, Exit (Sebelah Icon Wifi) */}
-              <div className="flex items-center gap-1 sm:gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/70 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs shrink-0">
+              {/* Unified Proportional Action Dock */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-900/70 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs shrink-0">
                 {/* 0. Panduan Tour Interaktif */}
                 <button
                   id="btn-interactive-tour"
@@ -462,11 +483,11 @@ export default function App() {
                       true
                     );
                   }}
-                  className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/80 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/80 transition shadow-2xs cursor-pointer"
+                  className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/80 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/80 transition shadow-2xs cursor-pointer"
                   title="Mulai Panduan Tour Interaktif Berdasarkan Role"
                   aria-label="Panduan Interaktif"
                 >
-                  <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <HelpCircle className="w-4 h-4" />
                 </button>
 
                 {/* 1. Theme Toggle */}
@@ -476,22 +497,22 @@ export default function App() {
                 <button
                   id="btn-reset-database"
                   onClick={handleResetData}
-                  className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition shadow-2xs cursor-pointer"
+                  className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition shadow-2xs cursor-pointer"
                   title="Reset Database ke Initial Seed"
                   aria-label="Reset Database"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <RotateCcw className="w-4 h-4" />
                 </button>
 
-                {/* 3. Exit / Logout Button (Proportional & Matching) */}
+                {/* 3. Exit / Logout Button */}
                 <button
                   id="btn-logout"
                   onClick={handleLogout}
-                  className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:border-rose-300 dark:hover:border-rose-800 transition shadow-2xs cursor-pointer"
+                  className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:border-rose-300 dark:hover:border-rose-800 transition shadow-2xs cursor-pointer"
                   title="Keluar / Logout Akun"
                   aria-label="Keluar / Logout Akun"
                 >
-                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -499,15 +520,14 @@ export default function App() {
         </div>
       </header>
 
-      {/* Sub-Bar: Running Text Identitas Pengguna & Hak Akses (Posisi Tengah & Proporsional) */}
-      <div className="bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 py-1 px-3 sm:px-6 lg:px-8 transition-colors">
+      {/* DESKTOP SUB-BAR: Running Text Identitas Pengguna & Hak Akses */}
+      <div className="hidden md:block bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 py-1.5 px-6 lg:px-8 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-center text-xs">
-          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 px-3 py-1 rounded-full shadow-2xs max-w-full sm:max-w-md md:max-w-lg overflow-hidden">
+          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 px-3 py-1 rounded-full shadow-2xs max-w-lg overflow-hidden">
             <span
               className="inline-flex items-center gap-1.5 font-bold text-blue-700 dark:text-blue-400 shrink-0 bg-blue-50 dark:bg-blue-950/80 border border-blue-200/80 dark:border-blue-800/80 px-2 py-0.5 rounded-full text-[11px]"
               title="Data akun & aktivitas tersinkronisasi secara real-time"
             >
-              {/* Dot Indikator Pulsing Hijau Real-time */}
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -516,7 +536,7 @@ export default function App() {
               <span>Akun:</span>
             </span>
 
-            <div className="overflow-hidden min-w-0 max-w-[200px] sm:max-w-[280px] md:max-w-[340px]">
+            <div className="overflow-hidden min-w-0 max-w-[340px]">
               <RunningText
                 text={`${currentUser.nama} • ${getRoleDisplayName(currentUser.role)}`}
                 maxLength={28}
@@ -528,8 +548,8 @@ export default function App() {
         </div>
       </div>
 
-      {/* Navigation Tab Bar (Mode Tab Terpusat & Responsif dengan Indikator Scroll Pintar) */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xs sticky top-[57px] sm:top-[65px] z-30 transition-colors duration-200">
+      {/* DESKTOP NAVIGATION TAB BAR (Mode Tab Terpusat & Responsif dengan Indikator Scroll Pintar) */}
+      <div className="hidden md:block bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-xs sticky top-[65px] z-30 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 relative flex items-center">
           {/* Tombol Geser Kiri (Muncul jika ada menu di sebelah kiri) */}
           {canScrollLeft && (
@@ -876,316 +896,38 @@ export default function App() {
       )}
 
       {/* ===================================================================== */}
-      {/* MOBILE BOTTOM NAVIGATION DOCK (KHUSUS SMARTPHONE & TOUCH DEVICE)      */}
+      {/* SMARTPHONE NATIVE ANDROID BOTTOM NAVIGATION BAR                       */}
       {/* ===================================================================== */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 shadow-xl transition-colors">
-        <div className="flex items-center justify-around gap-1 max-w-lg mx-auto">
-          {/* Dasbor Tab */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-              activeTab === 'dashboard'
-                ? 'text-blue-600 dark:text-blue-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${activeTab === 'dashboard' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] leading-tight mt-0.5">Dasbor</span>
-          </button>
-
-          {/* Presensi Tab */}
-          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('attendance')}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                activeTab === 'attendance'
-                  ? 'text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${activeTab === 'attendance' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
-                <CalendarCheck2 className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] leading-tight mt-0.5">Presensi</span>
-            </button>
-          )}
-
-          {/* Nilai & Rapor Tab */}
-          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('grades')}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                activeTab === 'grades'
-                  ? 'text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${activeTab === 'grades' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
-                <Award className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] leading-tight mt-0.5">Nilai</span>
-            </button>
-          )}
-
-          {/* Menu Wali Kelas (18 Fitur) */}
-          {(currentUser.role === 'admin' || currentUser.role === 'wali_kelas') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('homeroom')}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                activeTab === 'homeroom'
-                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <div className={`relative p-1 rounded-lg ${activeTab === 'homeroom' ? 'bg-indigo-50 dark:bg-indigo-950/60' : ''}`}>
-                <School className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 px-1 py-0.2 rounded-full bg-indigo-600 text-white text-[8px] font-black leading-none">
-                  18
-                </span>
-              </div>
-              <span className="text-[10px] leading-tight mt-0.5">Wali Kelas</span>
-            </button>
-          )}
-
-          {/* Portal Siswa / Orang Tua */}
-          {(currentUser.role === 'siswa' || currentUser.role === 'orang_tua') && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('student_portal')}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                activeTab === 'student_portal'
-                  ? 'text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${activeTab === 'student_portal' ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
-                <GraduationCap className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] leading-tight mt-0.5">Portal</span>
-            </button>
-          )}
-
-          {/* Menu Lainnya (Khusus Admin untuk membuka tool drawer) */}
-          {currentUser.role === 'admin' && (
-            <button
-              type="button"
-              onClick={() => setIsMobileMoreOpen(true)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition cursor-pointer min-w-[56px] ${
-                ['users', 'app_settings', 'running_text', 'drive_photos', 'architecture', 'activity_logs'].includes(activeTab)
-                  ? 'text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${['users', 'app_settings', 'running_text', 'drive_photos', 'architecture', 'activity_logs'].includes(activeTab) ? 'bg-blue-50 dark:bg-blue-950/60' : ''}`}>
-                <LayoutGrid className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] leading-tight mt-0.5">Lainnya</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <AndroidBottomNav
+        currentUser={currentUser}
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          scrollToTop();
+        }}
+        onOpenDrawer={() => setIsAndroidDrawerOpen(true)}
+        isDrawerOpen={isAndroidDrawerOpen}
+      />
 
       {/* ===================================================================== */}
-      {/* MOBILE MORE MENU DRAWER / BOTTOM SHEET                                */}
+      {/* SMARTPHONE ANDROID APP DRAWER & LAUNCHER (CATEGORIZED & SEARCHABLE)   */}
       {/* ===================================================================== */}
-      <AnimatePresence>
-        {isMobileMoreOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileMoreOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs cursor-pointer"
-            />
-
-            {/* Sheet Container */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 420, mass: 0.8 }}
-              className="relative bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 p-5 shadow-2xl space-y-4 max-h-[80vh] overflow-y-auto"
-            >
-              {/* Sheet Drag Handle & Title */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <LayoutGrid className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Menu & Pengaturan Admin</h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Pilih menu konfigurasi aplikasi</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileMoreOpen(false)}
-                  className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Grid of Secondary Admin Modules */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
-                {/* 1. Pengguna */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('users');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'users'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Pengguna</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Kelola akun & hak akses</div>
-                  </div>
-                </button>
-
-                {/* 2. Identitas & Logo */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('app_settings');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'app_settings'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                    <Settings className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Identitas & Logo</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Nama sekolah & branding</div>
-                  </div>
-                </button>
-
-                {/* 3. Running Text Login */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('running_text');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'running_text'
-                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                    <Megaphone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Running Text</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Siaran teks halaman login</div>
-                  </div>
-                </button>
-
-                {/* 4. Foto Drive */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('drive_photos');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'drive_photos'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                    <HardDrive className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Foto Drive</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Integrasi foto Google Drive</div>
-                  </div>
-                </button>
-
-                {/* 5. Skema & Keamanan */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('architecture');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'architecture'
-                      ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
-                    <Database className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Skema & Keamanan</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Rules & skema Firestore</div>
-                  </div>
-                </button>
-
-                {/* 6. Log Aktivitas */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('activity_logs');
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className={`p-3 rounded-2xl border text-left flex flex-col gap-2 transition cursor-pointer ${
-                    activeTab === 'activity_logs'
-                      ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-                    <History className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold">Log Aktivitas</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Audit trail & riwayat sistem</div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Quick Setting: Tema & Mode Tampilan Smartphone */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">Mode Tampilan</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Gelap / Terang (OLED friendly)</div>
-                  </div>
-                </div>
-                <ThemeToggle />
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <AndroidAppDrawer
+        isOpen={isAndroidDrawerOpen}
+        onClose={() => setIsAndroidDrawerOpen(false)}
+        currentUser={currentUser}
+        appSettings={appSettings}
+        activeTab={activeTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          scrollToTop();
+        }}
+        onLogout={handleLogout}
+        onResetData={handleResetData}
+        remainingTimeFormatted={remainingTimeFormatted}
+        isDarkMode={isDark}
+        onToggleTheme={toggleTheme}
+      />
     </div>
   );
 }
