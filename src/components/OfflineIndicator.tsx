@@ -7,8 +7,7 @@ import {
   CheckCircle2,
   HardDrive,
   RefreshCw,
-  Zap,
-  Layers,
+  ArrowLeft,
   X,
   ShieldCheck,
   Globe
@@ -63,6 +62,17 @@ export const OfflineIndicator: React.FC = () => {
     };
   }, []);
 
+  // Listen for Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showPwaModal) {
+        setShowPwaModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showPwaModal]);
+
   const effectivelyOffline = !isOnline || isSimulatedOffline;
 
   const toggleSimulateOffline = () => {
@@ -108,171 +118,225 @@ export const OfflineIndicator: React.FC = () => {
 
   return (
     <div className="flex items-center gap-1 sm:gap-1.5">
-      {/* 1. Wifi Status Badge (Online / Offline) */}
+      {/* 1. Status Badge: Tulisan kecil 'Online' atau 'Terputus' */}
       {effectivelyOffline ? (
-        <div
-          className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse"
-          title="Koneksi terputus. Menggunakan Cache Offline lokal."
+        <button
+          type="button"
+          onClick={() => setShowPwaModal(true)}
+          className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[10px] font-bold animate-pulse cursor-pointer shadow-2xs"
+          title="Koneksi terputus. Klik untuk buka status offline."
+          aria-label="Koneksi terputus"
         >
-          <WifiOff className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Offline</span>
-        </div>
+          <WifiOff className="w-3 h-3 shrink-0" />
+          <span className="leading-none">Terputus</span>
+        </button>
       ) : (
-        <div
-          className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold"
-          title={`Tersambung ke Cloud. Terakhir sinkron: ${lastSyncTime}`}
+        <button
+          type="button"
+          onClick={() => setShowPwaModal(true)}
+          className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold cursor-pointer shadow-2xs"
+          title={`Online & Terhubung Cloud. Terakhir sinkron: ${lastSyncTime}. Klik untuk detail.`}
+          aria-label="Status Online"
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-          <span className="text-[11px] font-bold hidden sm:inline">Online</span>
-        </div>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+          <span className="leading-none">Online</span>
+        </button>
       )}
 
-      {/* 2. FITUR WPA / PWA OFFLINE BUTTON (Bersebelahan dengan Icon Wifi) */}
+      {/* 2. Tombol Fitur PWA (Install PWA) */}
       <button
         type="button"
         id="btn-pwa-offline"
         onClick={() => setShowPwaModal(true)}
-        className="px-2 sm:px-2.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/80 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-2xs flex items-center gap-1 sm:gap-1.5 text-xs font-bold cursor-pointer group"
-        title="Fitur PWA & Mode Offline Mandiri (Klik untuk Buka Pusat Offline)"
+        className="px-1.5 sm:px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-800/80 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition shadow-2xs flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+        title="Pasang Aplikasi (Install PWA) & Pusat Offline"
         aria-label="Pusat PWA & Mode Offline"
       >
-        <Smartphone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform shrink-0" />
-        <span className="hidden xs:inline sm:inline font-bold">PWA Offline</span>
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span>
+        <Smartphone className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
+        <span className="leading-none">PWA</span>
       </button>
 
-      {/* 3. Simulator Button to test offline capability - sleek icon button */}
+      {/* 3. Tombol Uji Coba Offline di Desktop */}
       <button
         type="button"
         onClick={toggleSimulateOffline}
-        className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 hidden md:flex items-center justify-center rounded-xl border transition shadow-2xs cursor-pointer ${
+        className={`w-7 h-7 sm:w-8 sm:h-8 shrink-0 hidden lg:flex items-center justify-center rounded-lg border transition shadow-2xs cursor-pointer ${
           isSimulatedOffline
             ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-400 text-amber-700 dark:text-amber-300 ring-2 ring-amber-400'
             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
         }`}
-        title={isSimulatedOffline ? 'Simulasi Terputus Aktif - Klik untuk pulihkan koneksi online' : 'Uji Simulasi Mode Offline PWA'}
+        title={isSimulatedOffline ? 'Simulasi Terputus Aktif - Klik untuk pulihkan online' : 'Uji Simulasi Mode Offline'}
         aria-label="Uji Simulasi Offline"
       >
-        <WifiOff className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isSimulatedOffline ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}`} />
+        <WifiOff className={`w-3.5 h-3.5 ${isSimulatedOffline ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}`} />
       </button>
 
-      {/* Modal Pusat Fitur PWA & Offline */}
+      {/* MODAL PUSAT FITUR PWA & OFFLINE (PROPORSIONAL, RAMAH SMARTPHONE, DILENGKAPI TOMBOL KEMBALI) */}
       {showPwaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-2xl border border-slate-200 dark:border-slate-700 relative overflow-hidden text-left">
-            {/* Header Modal */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-                  <Smartphone className="w-5 h-5" />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150"
+          onClick={() => setShowPwaModal(false)}
+        >
+          <div
+            className="w-full max-w-md my-auto rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[88dvh] sm:max-h-[85vh] overflow-hidden text-left animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pwa-modal-title"
+          >
+            {/* Header Modal - Sticky & Tidak Terpotong di Smartphone */}
+            <div className="shrink-0 px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Smartphone className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    Pusat PWA & Mode Offline
+                <div className="min-w-0">
+                  <h3 id="pwa-modal-title" className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight truncate">
+                    Pasang Aplikasi (PWA)
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Aplikasi siap digunakan tanpa koneksi internet (Zero Quota)
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    Akses Cepat & Mode Offline Tanpa Kuota
                   </p>
                 </div>
               </div>
+              {/* Tombol Kembali Atas */}
               <button
                 type="button"
                 onClick={() => setShowPwaModal(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shrink-0 cursor-pointer"
+                title="Tutup dan Kembali"
               >
-                <X className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali</span>
               </button>
             </div>
 
-            {/* Content Status & Features */}
-            <div className="mt-4 space-y-3.5 text-xs text-slate-600 dark:text-slate-300">
-              {/* Feature 1: Service Worker & Cache */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
-                  <CheckCircle2 className="w-4 h-4" />
+            {/* Isi Konten Modal - Scrollable & Proporsional */}
+            <div className="flex-1 overflow-y-auto px-4 py-3.5 sm:px-5 sm:py-4 space-y-2.5 text-xs text-slate-700 dark:text-slate-200">
+              {/* Kartu Status Koneksi Saat Ini */}
+              <div className="p-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${effectivelyOffline ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    Koneksi: {effectivelyOffline ? 'Terputus (Mode Offline)' : 'Online (Terhubung)'}
+                  </span>
                 </div>
-                <div>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  Sinkron: {lastSyncTime}
+                </span>
+              </div>
+
+              {/* Fitur 1: Pasang di Layar Utama HP */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
                   <h4 className="font-bold text-slate-900 dark:text-white text-xs">
-                    Service Worker & Cache Offline Aktif
+                    Pasang di Layar Utama (Home Screen)
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Seluruh aset antarmuka, font, skrip sistem, dan ikon tersimpan di CacheStorage browser sehingga aplikasi dapat dibuka meski tanpa sinyal data.
+                    Dapat dibuka langsung dari menu HP tanpa membuka browser, berjalan layar penuh (fullscreen) seperti aplikasi Android dari Play Store.
                   </p>
                 </div>
               </div>
 
-              {/* Feature 2: Local Database Persistence */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+              {/* Fitur 2: Mode Offline Bebas Kuota */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                   <HardDrive className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h4 className="font-bold text-slate-900 dark:text-white text-xs">
-                    Penyimpanan Lokal (IndexedDB & LocalStorage)
+                    Bekerja Mandiri Tanpa Kuota Internet
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Guru & Wali Kelas dapat menginput presensi harian, nilai tugas, UTS, UAS, dan rapor secara offline. Data tersimpan aman di memori perangkat.
+                    Presensi kelas, input nilai, dan administrasi dapat diisi saat offline. Data tersimpan aman di memori perangkat (IndexedDB).
                   </p>
                 </div>
               </div>
 
-              {/* Feature 3: Auto Sync to Firebase */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
+              {/* Fitur 3: Sinkronisasi Otomatis */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
                   <RefreshCw className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h4 className="font-bold text-slate-900 dark:text-white text-xs">
                     Sinkronisasi Otomatis saat Online
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Saat perangkat terhubung kembali ke internet, data lokal otomatis disinkronkan ke Cloud Firestore secara instan tanpa kehilangan data.
+                    Saat perangkat terhubung kembali ke internet, data lokal otomatis disinkronkan ke Cloud Firestore tanpa resiko kehilangan data.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons in Modal */}
-            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row gap-2.5">
-              {/* Install PWA Button */}
+            {/* Footer Modal - Sticky di Bawah, Jelas & Ada Tombol Kembali */}
+            <div className="shrink-0 p-3 sm:p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 flex flex-col gap-2">
+              {/* Tombol Utama Pasang PWA */}
               {isInstallable ? (
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md shadow-blue-500/20 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md shadow-blue-500/20 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   <span>Pasang Aplikasi (Install PWA)</span>
                 </button>
               ) : isInstalled ? (
-                <div className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Aplikasi Terpasang (Standalone PWA)</span>
+                <div className="w-full py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Aplikasi SIMAK Sudah Terpasang (PWA Aktif)</span>
                 </div>
+              ) : isIOS ? (
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md cursor-pointer"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Petunjuk Pasang di Layar Utama iPhone/iPad</span>
+                </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md cursor-pointer"
                 >
-                  <Smartphone className="w-4 h-4" />
-                  <span>Panduan Pasang Layar Beranda</span>
+                  <Download className="w-4 h-4" />
+                  <span>Pasang Aplikasi ke Layar Utama</span>
                 </button>
               )}
 
-              {/* Toggle Simulation Button */}
-              <button
-                type="button"
-                onClick={toggleSimulateOffline}
-                className={`py-2.5 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
-                  isSimulatedOffline
-                    ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-400 text-amber-800 dark:text-amber-200'
-                    : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
-                }`}
-              >
-                <WifiOff className="w-4 h-4" />
-                <span>{isSimulatedOffline ? 'Matikan Simulasi' : 'Uji Mode Offline'}</span>
-              </button>
+              {/* Baris Tombol Aksi Bawah: Tombol KEMBALI & Tombol Uji Offline */}
+              <div className="flex items-center gap-2">
+                {/* Tombol KEMBALI Sangat Jelas di Smartphone */}
+                <button
+                  type="button"
+                  onClick={() => setShowPwaModal(false)}
+                  className="flex-1 py-2 px-3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300/80 dark:border-slate-700 cursor-pointer"
+                  aria-label="Kembali ke Aplikasi"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali</span>
+                </button>
+
+                {/* Tombol Uji Coba Mode Offline */}
+                <button
+                  type="button"
+                  onClick={toggleSimulateOffline}
+                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    isSimulatedOffline
+                      ? 'bg-amber-100 dark:bg-amber-950/60 border-amber-400 text-amber-800 dark:text-amber-200'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                  aria-label="Uji Coba Mode Offline"
+                >
+                  <WifiOff className="w-3.5 h-3.5" />
+                  <span>{isSimulatedOffline ? 'Matikan Simulasi' : 'Uji Offline'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

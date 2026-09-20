@@ -75,14 +75,10 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
         {/* Left: App Logo & School Name */}
         <div className="flex items-center gap-2 min-w-0">
           <AppLogo settings={appSettings} size="sm" />
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center min-w-0">
             <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none tracking-tight truncate">
               {appSettings.appName}
             </h1>
-            <span
-              className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"
-              title="Sistem Online & Terhubung"
-            />
           </div>
         </div>
 
