@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { User, ClassEntity, Subject, AttendanceStatus } from '../types';
 import { DatabaseService } from '../services/databaseService';
+import { QuickActionTooltip } from './QuickActionTooltip';
 import Swal from 'sweetalert2';
 
 interface DashboardQuickActionsProps {
@@ -212,38 +213,87 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
           </div>
         </div>
 
-        {/* Quick Shortcut Buttons */}
+        {/* Quick Shortcut Buttons with Informative Tooltips */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowAnnouncementModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
-            title="Siarkan pengumuman instan"
+          <QuickActionTooltip
+            id="tooltip-announcement"
+            label="Kirim Pengumuman (Broadcast)"
+            description="Siarkan pengumuman instan dan informasi penting secara real-time ke seluruh civitas sekolah."
+            badge="Info"
+            position="bottom"
+            align="left"
           >
-            <Megaphone className="w-3.5 h-3.5 text-blue-500" />
-            <span>Kirim Pengumuman</span>
-          </button>
-
-          {onNavigateTab && (
             <button
               type="button"
-              onClick={() => onNavigateTab('grades')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
+              onClick={() => setShowAnnouncementModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Kirim Pengumuman: Siarkan pengumuman instan ke seluruh civitas sekolah"
             >
-              <Award className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Input Nilai</span>
+              <Megaphone className="w-3.5 h-3.5 text-blue-500" />
+              <span>Kirim Pengumuman</span>
             </button>
+          </QuickActionTooltip>
+
+          {onNavigateTab && (
+            <QuickActionTooltip
+              id="tooltip-view-attendance"
+              label="Lihat Presensi (View Attendance)"
+              description="Buka modul absensi utama untuk memeriksa rekapitulasi kehadiran harian, grafik statistik, dan riwayat presensi siswa."
+              badge="Modul Presensi"
+              position="bottom"
+              align="center"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigateTab('attendance')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Lihat Presensi: Buka modul absensi dan rekapitulasi siswa"
+              >
+                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                <span>Lihat Presensi</span>
+              </button>
+            </QuickActionTooltip>
           )}
 
-          <button
-            type="button"
-            onClick={handleExportPDF}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer"
-            title="Download PDF Presensi Hari Ini"
+          {onNavigateTab && (
+            <QuickActionTooltip
+              id="tooltip-print-grades"
+              label="Input & Cetak Nilai (Print Grades)"
+              description="Akses buku nilai untuk input nilai tugas, formatif, UTS, UAS, dan cetak lembar ledger nilai atau rapor."
+              badge="Buku Nilai"
+              position="bottom"
+              align="center"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigateTab('grades')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                aria-label="Input & Cetak Nilai: Buka buku nilai dan cetak leger akademik"
+              >
+                <Award className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Input & Cetak Nilai</span>
+              </button>
+            </QuickActionTooltip>
+          )}
+
+          <QuickActionTooltip
+            id="tooltip-export-pdf"
+            label="Cetak PDF Presensi Hari Ini"
+            description="Ekspor dan unduh dokumen resmi berita acara serta daftar presensi kelas hari ini dalam format PDF siap cetak."
+            badge="Ekspor PDF"
+            position="bottom"
+            align="right"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Cetak PDF</span>
-          </button>
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              aria-label="Cetak PDF: Unduh berkas rekap presensi kelas hari ini"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Cetak PDF</span>
+            </button>
+          </QuickActionTooltip>
         </div>
       </div>
 
@@ -302,27 +352,50 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
           {/* Quick Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* 1-Click Batch Hadir Semua */}
-            <button
-              id="btn-quick-mark-all-present"
-              type="button"
-              onClick={handleMarkAllPresent}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
-              title="Tandai seluruh siswa di kelas ini hadir hari ini"
+            <QuickActionTooltip
+              id="tooltip-mark-all-present"
+              label="Tandai Semua Hadir (1-Klik)"
+              description="Secara otomatis menyetel status kehadiran seluruh siswa di kelas ini menjadi 'Hadir' pada tanggal hari ini."
+              badge="Batch 1-Klik"
+              position="bottom"
+              align="center"
             >
-              <CheckCheck className="w-4 h-4" />
-              <span>Tandai Semua Hadir (1-Klik)</span>
-            </button>
+              <button
+                id="btn-quick-mark-all-present"
+                type="button"
+                onClick={handleMarkAllPresent}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                aria-label="Tandai Semua Hadir: Otomatis setel semua siswa hadir hari ini"
+              >
+                <CheckCheck className="w-4 h-4" />
+                <span>Tandai Semua Hadir (1-Klik)</span>
+              </button>
+            </QuickActionTooltip>
 
             {/* Expand / Roster button */}
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+            <QuickActionTooltip
+              id="tooltip-toggle-roster"
+              label={isExpanded ? 'Tutup Daftar Siswa' : 'Edit Presensi Cepat'}
+              description={
+                isExpanded
+                  ? 'Sembunyikan lembar daftar pengisian presensi siswa.'
+                  : 'Buka daftar siswa untuk mengubah kehadiran individu (Hadir, Izin, Sakit, Alpa) secara langsung.'
+              }
+              badge="Roster Siswa"
+              position="bottom"
+              align="right"
             >
-              <Users className="w-4 h-4" />
-              <span>{isExpanded ? 'Tutup Daftar' : 'Edit Presensi Cepat'}</span>
-              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
+                aria-label={isExpanded ? 'Tutup daftar absensi cepat' : 'Buka daftar absensi cepat per siswa'}
+              >
+                <Users className="w-4 h-4" />
+                <span>{isExpanded ? 'Tutup Daftar' : 'Edit Presensi Cepat'}</span>
+                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </QuickActionTooltip>
           </div>
         </div>
 
@@ -350,14 +423,24 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                 Daftar Siswa {selectedClass?.nama_kelas || ''} ({classStudents.length} siswa)
               </span>
-              <button
-                type="button"
-                onClick={handleSaveAttendance}
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer"
+              <QuickActionTooltip
+                id="tooltip-save-attendance-header"
+                label="Simpan Perubahan Presensi"
+                description="Simpan pembaharuan kehadiran seluruh siswa kelas ini ke basis data lokal dan sinkronisasi server."
+                badge="Simpan"
+                position="bottom"
+                align="right"
               >
-                <Save className="w-3.5 h-3.5" />
-                <span>Simpan Perubahan Presensi</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAttendance}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  aria-label="Simpan perubahan status presensi siswa"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Simpan Perubahan Presensi</span>
+                </button>
+              </QuickActionTooltip>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1">
@@ -408,14 +491,24 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
             </div>
 
             <div className="flex justify-end pt-1">
-              <button
-                type="button"
-                onClick={handleSaveAttendance}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+              <QuickActionTooltip
+                id="tooltip-save-attendance-bottom"
+                label="Simpan Presensi Hari Ini"
+                description={`Simpan seluruh catatan presensi tanggal ${todayStr} ke penyimpanan lokal dan sinkronisasi server.`}
+                badge="Simpan"
+                position="top"
+                align="right"
               >
-                <Save className="w-4 h-4" />
-                <span>Simpan Presensi Hari Ini ({todayStr})</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSaveAttendance}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  aria-label={`Simpan Presensi Hari Ini tanggal ${todayStr}`}
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Presensi Hari Ini ({todayStr})</span>
+                </button>
+              </QuickActionTooltip>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { User, UserRole, ClassEntity } from '../types';
 import { AppSettingsManager } from './AppSettingsManager';
 import { BulkUserAccountManager } from './BulkUserAccountManager';
 import { MultiRoleExportImportModal } from './MultiRoleExportImportModal';
+import { ClassManagement } from './ClassManagement';
 import Swal from 'sweetalert2';
 import {
   UserPlus,
@@ -30,16 +31,17 @@ import {
   Sparkles,
   CheckSquare,
   Square,
-  Users
+  Users,
+  School
 } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
   const dbService = DatabaseService.getInstance();
   const classes = dbService.getAllClasses();
-  const [activeAdminView, setActiveAdminView] = useState<'users' | 'bulk_credentials' | 'settings'>(() => {
+  const [activeAdminView, setActiveAdminView] = useState<'users' | 'classes' | 'bulk_credentials' | 'settings'>(() => {
     try {
       const saved = localStorage.getItem('SIMAK_USER_ADMIN_VIEW');
-      if (saved === 'users' || saved === 'bulk_credentials' || saved === 'settings') return saved;
+      if (saved === 'users' || saved === 'classes' || saved === 'bulk_credentials' || saved === 'settings') return saved;
     } catch (e) {}
     return 'users';
   });
@@ -86,10 +88,34 @@ export const UserManagement: React.FC = () => {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchSearch =
-      u.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.username && u.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    
+    let matchSearch = true;
+    if (q) {
+      const matchName = u.nama.toLowerCase().includes(q);
+      const matchUsername = Boolean(u.username && u.username.toLowerCase().includes(q));
+      const matchEmail = Boolean(u.email && u.email.toLowerCase().includes(q));
+      const matchPhone = Boolean(u.no_wa && u.no_wa.includes(q));
+      const matchNis = Boolean(u.nis && u.nis.toLowerCase().includes(q));
+      const matchId = u.id.toLowerCase().includes(q);
+      const matchRoleName = u.role.toLowerCase().includes(q);
+
+      let matchClass = false;
+      if (u.role === 'siswa') {
+        const studentClass = dbService.getStudentClass(u.id);
+        if (studentClass && studentClass.nama_kelas.toLowerCase().includes(q)) {
+          matchClass = true;
+        }
+      } else if (u.role === 'wali_kelas') {
+        const homeroom = dbService.getHomeroomClass(u.id);
+        if (homeroom && homeroom.nama_kelas.toLowerCase().includes(q)) {
+          matchClass = true;
+        }
+      }
+
+      matchSearch = matchName || matchUsername || matchEmail || matchPhone || matchNis || matchId || matchRoleName || matchClass;
+    }
+
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     return matchSearch && matchRole;
   });
@@ -357,6 +383,22 @@ export const UserManagement: React.FC = () => {
 
         <button
           type="button"
+          onClick={() => setActiveAdminView('classes')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeAdminView === 'classes'
+              ? 'bg-purple-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <School className="w-4 h-4" />
+          <span>Manajemen Kelas & Roster</span>
+          <span className="px-1.5 py-0.2 bg-blue-500/30 text-[10px] rounded-md font-bold uppercase">
+            {classes.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveAdminView('bulk_credentials')}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
             activeAdminView === 'bulk_credentials'
@@ -366,9 +408,6 @@ export const UserManagement: React.FC = () => {
         >
           <KeyRound className="w-4 h-4" />
           <span>Pengaturan Massal Username & Password</span>
-          <span className="px-1.5 py-0.2 bg-purple-500/30 text-[10px] rounded-md font-bold uppercase">
-            Baru
-          </span>
         </button>
 
         <button
@@ -387,17 +426,19 @@ export const UserManagement: React.FC = () => {
 
       {activeAdminView === 'settings' ? (
         <AppSettingsManager />
+      ) : activeAdminView === 'classes' ? (
+        <ClassManagement onRefresh={reload} />
       ) : activeAdminView === 'bulk_credentials' ? (
         <BulkUserAccountManager onUpdateSuccess={reload} />
       ) : (
         <>
           {/* Header & Controls */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition space-y-4">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
               <div>
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                   <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  Manajemen Pengguna (CRUD Admin)
+                  Daftar Pengguna (CRUD Admin)
                 </h2>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 font-medium">
                   Pengelolaan terpusat akun Admin, Wali Kelas, Guru Mapel, Siswa, dan Orang Tua pada node <code className="font-mono bg-slate-100 dark:bg-slate-700 dark:text-slate-300 px-1 py-0.5 rounded text-xs">/users</code>.
@@ -414,7 +455,7 @@ export const UserManagement: React.FC = () => {
                   title="Ekspor Data Pengguna (Semua Role & Kelas)"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Ekspor Data (Semua Role)</span>
+                  <span>Ekspor Data</span>
                 </button>
 
                 {/* Bulk Import Multi-Role CSV Button */}
@@ -426,19 +467,18 @@ export const UserManagement: React.FC = () => {
                   title="Impor Massal Pengguna Semua Role Akses (CSV)"
                 >
                   <UploadCloud className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Impor Massal (Semua Role)</span>
+                  <span>Impor Massal</span>
                 </button>
 
-                {/* Bulk Password Shortcut Button */}
+                {/* Switch to Class Management */}
                 <button
-                  id="btn-switch-bulk-credentials"
                   type="button"
-                  onClick={() => setActiveAdminView('bulk_credentials')}
-                  className="px-3 py-2 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
-                  title="Atur Username & Password Massal"
+                  onClick={() => setActiveAdminView('classes')}
+                  className="px-3 py-2 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+                  title="Buka Manajemen Rombel & Kelas"
                 >
-                  <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Atur Password Massal</span>
+                  <School className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>Manajemen Kelas</span>
                 </button>
 
                 {/* Add User Button */}
@@ -453,34 +493,120 @@ export const UserManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-              <div className="relative sm:col-span-2">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  id="input-search-user"
-                  type="text"
-                  placeholder="Cari nama, username, atau email pengguna..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none"
-                />
+            {/* Enhanced Fast Search Bar & Role Filter Pills */}
+            <div className="space-y-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Search Bar with Fast Clear and Counter */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    id="input-search-user"
+                    type="text"
+                    placeholder="Pencarian cepat nama, username, email, WhatsApp, NIS, atau kelas..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-hidden transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full cursor-pointer"
+                      title="Hapus pencarian"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="sm:w-60">
+                  <select
+                    id="select-filter-role"
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
+                    className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-hidden cursor-pointer"
+                  >
+                    <option value="all">Semua Peran ({users.length})</option>
+                    <option value="admin">Administrator ({users.filter(u => u.role === 'admin').length})</option>
+                    <option value="wali_kelas">Wali Kelas ({users.filter(u => u.role === 'wali_kelas').length})</option>
+                    <option value="guru">Guru Mapel ({users.filter(u => u.role === 'guru').length})</option>
+                    <option value="siswa">Siswa ({users.filter(u => u.role === 'siswa').length})</option>
+                    <option value="orang_tua">Orang Tua ({users.filter(u => u.role === 'orang_tua').length})</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <select
-                  id="select-filter-role"
-                  value={roleFilter}
-                  onChange={e => setRoleFilter(e.target.value)}
-                  className="w-full py-2 px-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none"
-                >
-                  <option value="all">Semua Peran (All Roles)</option>
-                  <option value="admin">Administrator</option>
-                  <option value="wali_kelas">Wali Kelas</option>
-                  <option value="guru">Guru Mata Pelajaran</option>
-                  <option value="siswa">Siswa</option>
-                  <option value="orang_tua">Orang Tua / Wali</option>
-                </select>
+              {/* Live Search Status & Quick Role Chips */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Menampilkan <b className="text-purple-600 dark:text-purple-400 font-bold">{filteredUsers.length}</b> dari {users.length} akun pengguna
+                  </span>
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-md text-[11px]">
+                      Filter: "{searchQuery}"
+                    </span>
+                  )}
+                </div>
+
+                {/* Quick Role Shortcut Chips */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                      roleFilter === 'all'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    Semua
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('siswa')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                      roleFilter === 'siswa'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    Siswa ({users.filter(u => u.role === 'siswa').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('guru')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                      roleFilter === 'guru'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    Guru ({users.filter(u => u.role === 'guru').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('wali_kelas')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                      roleFilter === 'wali_kelas'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    Wali Kelas ({users.filter(u => u.role === 'wali_kelas').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoleFilter('orang_tua')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                      roleFilter === 'orang_tua'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    Orang Tua ({users.filter(u => u.role === 'orang_tua').length})
+                  </button>
+                </div>
               </div>
             </div>
           </div>

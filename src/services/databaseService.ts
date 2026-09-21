@@ -1,5 +1,5 @@
 import { INITIAL_DATABASE } from '../mockData';
-import { DatabaseSnapshot, User, ClassEntity, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem, AcademicEvent, ActivityLog, ActivityActionType } from '../types';
+import { DatabaseSnapshot, User, ClassEntity, ClassMember, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem, AcademicEvent, ActivityLog, ActivityActionType } from '../types';
 import { FirestoreSyncService } from './firestoreSyncService';
 import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
@@ -676,6 +676,155 @@ export class DatabaseService {
 
   public getSubjectsByTeacher(teacherId: string): Subject[] {
     return Object.values(this.db.subjects).filter(s => s.guru_id === teacherId);
+  }
+
+  /**
+   * Tambah kelas baru dengan sinkronisasi Firebase Firestore
+   */
+  public createClass(data: { nama_kelas: string; wali_kelas_id: string; tahun_ajaran: string }): ClassEntity {
+    const newId = `cls_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const newClass: ClassEntity = {
+      id: newId,
+      nama_kelas: data.nama_kelas.trim(),
+      wali_kelas_id: data.wali_kelas_id,
+      tahun_ajaran: data.tahun_ajaran.trim()
+    };
+
+    this.db.classes[newId] = newClass;
+    this.persist();
+    this.notifyDataChange();
+
+    FirestoreSyncService.getInstance().syncDocument('classes', newId, newClass);
+    this.logActivity(
+      'bulk_action',
+      'Penambahan Kelas Baru',
+      `Menambahkan kelas baru "${newClass.nama_kelas}" (Tahun: ${newClass.tahun_ajaran})`,
+      `cls_${newId}`
+    );
+
+    return newClass;
+  }
+
+  /**
+   * Update data kelas dengan sinkronisasi Firebase Firestore
+   */
+  public updateClass(id: string, data: Partial<ClassEntity>): ClassEntity {
+    const existing = this.db.classes[id];
+    if (!existing) {
+      throw new Error(`Kelas dengan ID ${id} tidak ditemukan.`);
+    }
+
+    const updated: ClassEntity = {
+      ...existing,
+      ...data,
+      id // Pastikan ID tidak tertimpa
+    };
+
+    this.db.classes[id] = updated;
+    this.persist();
+    this.notifyDataChange();
+
+    FirestoreSyncService.getInstance().syncDocument('classes', id, updated);
+    this.logActivity(
+      'bulk_action',
+      'Pembaruan Data Kelas',
+      `Memperbarui data kelas "${updated.nama_kelas}"`,
+      `cls_${id}`
+    );
+
+    return updated;
+  }
+
+  /**
+   * Hapus kelas beserta anggota kelas terkait dan sinkronkan ke Firebase
+   */
+  public deleteClass(id: string): { deletedMembersCount: number } {
+    const existing = this.db.classes[id];
+    if (!existing) {
+      throw new Error(`Kelas dengan ID ${id} tidak ditemukan.`);
+    }
+
+    const className = existing.nama_kelas;
+    delete this.db.classes[id];
+
+    // Hapus keanggotaan siswa dalam kelas ini
+    let deletedMembersCount = 0;
+    Object.keys(this.db.class_members).forEach(cmId => {
+      if (this.db.class_members[cmId].class_id === id) {
+        delete this.db.class_members[cmId];
+        deletedMembersCount++;
+        FirestoreSyncService.getInstance().deleteDocument('class_members', cmId);
+      }
+    });
+
+    this.persist();
+    this.notifyDataChange();
+
+    FirestoreSyncService.getInstance().deleteDocument('classes', id);
+    this.logActivity(
+      'bulk_action',
+      'Penghapusan Kelas',
+      `Menghapus kelas "${className}" beserta ${deletedMembersCount} relasi anggota siswa`,
+      `cls_${id}`
+    );
+
+    return { deletedMembersCount };
+  }
+
+  /**
+   * Menambahkan siswa ke dalam kelas
+   */
+  public assignStudentToClass(classId: string, studentId: string): ClassMember {
+    // Hapus jika siswa sebelumnya terdaftar di kelas lain
+    Object.keys(this.db.class_members).forEach(cmId => {
+      if (this.db.class_members[cmId].student_id === studentId) {
+        delete this.db.class_members[cmId];
+        FirestoreSyncService.getInstance().deleteDocument('class_members', cmId);
+      }
+    });
+
+    const newCmId = `cm_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const newMember: ClassMember = {
+      id: newCmId,
+      class_id: classId,
+      student_id: studentId
+    };
+
+    this.db.class_members[newCmId] = newMember;
+    this.persist();
+    this.notifyDataChange();
+
+    FirestoreSyncService.getInstance().syncDocument('class_members', newCmId, newMember);
+    return newMember;
+  }
+
+  /**
+   * Menghapus siswa dari kelas
+   */
+  public removeStudentFromClass(classId: string, studentId: string): void {
+    Object.keys(this.db.class_members).forEach(cmId => {
+      const member = this.db.class_members[cmId];
+      if (member.class_id === classId && member.student_id === studentId) {
+        delete this.db.class_members[cmId];
+        FirestoreSyncService.getInstance().deleteDocument('class_members', cmId);
+      }
+    });
+
+    this.persist();
+    this.notifyDataChange();
+  }
+
+  /**
+   * Dapatkan siswa yang belum terdaftar di kelas manapun
+   */
+  public getUnassignedStudents(): User[] {
+    const assignedStudentIds = new Set(
+      Object.values(this.db.class_members).map(cm => cm.student_id)
+    );
+
+    return Object.values(this.db.users)
+      .filter(u => u.role === 'siswa' && !assignedStudentIds.has(u.id))
+      .sort((a, b) => a.nama.localeCompare(b.nama));
   }
 
   // --- RELATIONAL JOIN: Siswa dalam Kelas ---

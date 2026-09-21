@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { DatabaseService } from './databaseService';
 import { GoogleDriveService } from './googleDriveService';
+import Swal from 'sweetalert2';
 
 export interface SyncStatus {
   isConnected: boolean;
@@ -21,6 +22,24 @@ export interface SyncStatus {
   lastSyncedAt: string | null;
   error: string | null;
 }
+
+// SweetAlert2 Toast configuration for elegant non-intrusive realtime notifications
+const SyncToast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  background: '#0F172A',
+  color: '#F8FAFC',
+  customClass: {
+    popup: 'rounded-xl shadow-2xl border border-slate-700/80 text-xs text-left'
+  },
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
 
 export class FirestoreSyncService {
   private static instance: FirestoreSyncService;
@@ -33,12 +52,48 @@ export class FirestoreSyncService {
   };
   private listeners: ((status: SyncStatus) => void)[] = [];
   private activeSubscriptions: (() => void)[] = [];
+  private isInitialLoadComplete = false;
+  private toastDebounceTimer: any = null;
+  private pendingToastMessages: Set<string> = new Set();
 
   public static getInstance(): FirestoreSyncService {
     if (!FirestoreSyncService.instance) {
       FirestoreSyncService.instance = new FirestoreSyncService();
     }
     return FirestoreSyncService.instance;
+  }
+
+  /**
+   * Tampilkan SweetAlert2 Toast pemberitahuan sinkronisasi Firebase
+   */
+  public showFirebaseToast(title: string, detail?: string, icon: 'success' | 'info' | 'warning' = 'success') {
+    if (!this.isInitialLoadComplete) return;
+
+    const messageKey = detail ? `${title}: ${detail}` : title;
+    this.pendingToastMessages.add(messageKey);
+
+    if (this.toastDebounceTimer) {
+      clearTimeout(this.toastDebounceTimer);
+    }
+
+    this.toastDebounceTimer = setTimeout(() => {
+      const messages = Array.from(this.pendingToastMessages);
+      this.pendingToastMessages.clear();
+
+      if (messages.length === 0) return;
+
+      const displayTitle = messages.length === 1 ? title : 'Sinkronisasi Real-time Cloud';
+      const displayDetail = messages.length === 1 ? (detail || 'Data berhasil disinkronisasi.') : `${messages.length} pembaruan data berhasil disinkronisasi ke Firebase Firestore.`;
+
+      SyncToast.fire({
+        icon,
+        title: `<div class="font-bold flex items-center gap-1.5 text-xs text-emerald-400">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          ${displayTitle}
+        </div>`,
+        html: `<div class="text-[11px] text-slate-300 font-normal mt-0.5 leading-snug">${displayDetail}</div>`
+      });
+    }, 400);
   }
 
   public getStatus(): SyncStatus {
@@ -90,11 +145,13 @@ export class FirestoreSyncService {
       // Inisialisasi real-time listeners untuk cloud update
       this.startRealtimeListeners();
 
+      this.isInitialLoadComplete = true;
       this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
       this.status.error = null;
       this.notify();
       return true;
     } catch (err: any) {
+      this.isInitialLoadComplete = true;
       console.error('Firestore init error:', err);
       this.status.error = err.message || 'Gagal menyinkronkan Firestore';
       this.notify();
@@ -212,6 +269,80 @@ export class FirestoreSyncService {
     this.activeSubscriptions = [];
 
     try {
+      // Listener Users Realtime
+      const unsubUsers = onSnapshot(collection(firestore, 'users'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const userData = change.doc.data() as any;
+            if (userData && userData.id) {
+              raw.users[userData.id] = userData;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.users[change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Data Pengguna Tersinkronisasi', 'Pembaruan data akun berhasil disinkronkan dengan Firebase.');
+        }
+      }, (err) => console.warn('Users realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubUsers);
+
+      // Listener Classes Realtime
+      const unsubClasses = onSnapshot(collection(firestore, 'classes'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const classData = change.doc.data() as any;
+            if (classData && classData.id) {
+              raw.classes[classData.id] = classData;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.classes[change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Data Kelas Tersinkronisasi', 'Pembaruan manajemen kelas berhasil disinkronkan dengan Firebase.');
+        }
+      }, (err) => console.warn('Classes realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubClasses);
+
+      // Listener Class Members Realtime
+      const unsubMembers = onSnapshot(collection(firestore, 'class_members'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const cmData = change.doc.data() as any;
+            if (cmData && cmData.id) {
+              raw.class_members[cmData.id] = cmData;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.class_members[change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+        }
+      }, (err) => console.warn('Class members realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubMembers);
+
       // Listener App Settings
       const unsubSettings = onSnapshot(collection(firestore, 'app_settings'), (snap) => {
         snap.docChanges().forEach(change => {
@@ -220,6 +351,7 @@ export class FirestoreSyncService {
             if (data && data.appName) {
               const dbService = DatabaseService.getInstance();
               dbService.updateAppSettings(data as any);
+              this.showFirebaseToast('Pengaturan Sekolah Tersinkronisasi', 'Identitas dan konfigurasi aplikasi disinkronkan.');
             }
           }
         });
@@ -238,6 +370,7 @@ export class FirestoreSyncService {
               raw.announcements[item.id] = item as any;
               // Broadcast realtime event
               dbService.notifyAnnouncementUpdate(item as any);
+              this.showFirebaseToast('Pengumuman Baru', `${item.judul || 'Pengumuman'} tersinkronisasi dari cloud.`);
             }
           } else if (change.type === 'removed') {
             delete raw.announcements[change.doc.id];
@@ -266,6 +399,7 @@ export class FirestoreSyncService {
         if (hasChanges) {
           dbService.persist();
           dbService.notifyDataChange();
+          this.showFirebaseToast('Presensi Tersinkronisasi', 'Catatan absensi siswa berhasil disinkronkan ke cloud.');
         }
       }, (err) => console.warn('Attendance realtime listener warning:', err));
       this.activeSubscriptions.push(unsubAttendance);
@@ -290,6 +424,7 @@ export class FirestoreSyncService {
         if (hasChanges) {
           dbService.persist();
           dbService.notifyDataChange();
+          this.showFirebaseToast('Nilai Tersinkronisasi', 'Pembaruan nilai akademik tersinkronkan.');
         }
       }, (err) => console.warn('Grades realtime listener warning:', err));
       this.activeSubscriptions.push(unsubGrades);
@@ -419,6 +554,7 @@ export class FirestoreSyncService {
       await setDoc(ref, data, { merge: true });
       this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
       this.notify();
+      this.showFirebaseToast('Data Berhasil Disinkronkan', `Dokumen pada koleksi ${collectionName} berhasil disimpan ke Firebase.`);
     } catch (err) {
       console.warn(`Background sync failed for ${collectionName}/${id}:`, err);
     }
@@ -433,6 +569,7 @@ export class FirestoreSyncService {
       await deleteDoc(ref);
       this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
       this.notify();
+      this.showFirebaseToast('Data Dihapus di Cloud', `Dokumen pada koleksi ${collectionName} telah dihapus dari Firebase.`);
     } catch (err) {
       console.warn(`Background delete failed for ${collectionName}/${id}:`, err);
     }
@@ -451,6 +588,7 @@ export class FirestoreSyncService {
       await batch.commit();
       this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
       this.notify();
+      this.showFirebaseToast('Batch Data Tersinkronisasi', `${items.length} dokumen ${collectionName} berhasil disimpan ke Firebase Firestore.`);
     } catch (err) {
       console.warn(`Batch sync failed for ${collectionName}:`, err);
     }
