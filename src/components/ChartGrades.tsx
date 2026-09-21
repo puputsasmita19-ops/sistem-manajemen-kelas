@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { DatabaseService } from '../services/databaseService';
-import { User } from '../types';
+import { User, TimeRangeFilter } from '../types';
 import { useTheme } from '../utils/useTheme';
 import {
   TrendingUp,
@@ -31,6 +31,8 @@ interface ChartGradesProps {
   finalScores?: number[];
   title?: string;
   classId?: string;
+  timeRange?: TimeRangeFilter;
+  onTimeRangeChange?: (range: TimeRangeFilter) => void;
 }
 
 export const ChartGrades: React.FC<ChartGradesProps> = ({
@@ -40,13 +42,29 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
   uas: propUas,
   finalScores: propFinalScores,
   title = 'Analisis Capaian & Tren Perkembangan Akademik',
-  classId = 'class_10_ipa1'
+  classId = 'class_10_ipa1',
+  timeRange: propTimeRange = 'mingguan',
+  onTimeRangeChange
 }) => {
   const dbService = DatabaseService.getInstance();
   const subjects = dbService.getAllSubjects();
   const students = dbService.getClassStudents(classId);
   const appSettings = dbService.getAppSettings();
   const { isDark } = useTheme();
+
+  // Active Time Range State (synced with parent or local)
+  const [activeRange, setActiveRange] = useState<TimeRangeFilter>(propTimeRange);
+
+  useEffect(() => {
+    if (propTimeRange) {
+      setActiveRange(propTimeRange);
+    }
+  }, [propTimeRange]);
+
+  const handleRangeChange = (newRange: TimeRangeFilter) => {
+    setActiveRange(newRange);
+    onTimeRangeChange?.(newRange);
+  };
 
   // Filter States
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -92,7 +110,18 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       const avgU = uItems.length > 0 ? Math.round(uItems.reduce((a, b) => a + b.score, 0) / uItems.length) : (propUts?.[0] || 80);
       const avgA = aItems.length > 0 ? Math.round(aItems.reduce((a, b) => a + b.score, 0) / aItems.length) : (propUas?.[0] || 82);
 
-      const fScore = Math.round(avgT * 0.3 + avgU * 0.3 + avgA * 0.4);
+      // Kalkulasi nilai akhir dinamis sesuai rentang waktu aktif
+      let fScore = Math.round(avgT * 0.3 + avgU * 0.3 + avgA * 0.4);
+      if (activeRange === 'mingguan') {
+        // Rentang mingguan: Bobot penuh pada tugas formatif harian & kuis pekan ini
+        fScore = avgT;
+      } else if (activeRange === 'bulanan') {
+        // Rentang bulanan: Evaluasi tugas bulanan (50%) dan UTS / Ulangan Harian (50%)
+        fScore = Math.round(avgT * 0.5 + avgU * 0.5);
+      } else {
+        // Rentang semester: Evaluasi semester penuh (Tugas 30%, UTS 30%, UAS 40%)
+        fScore = Math.round(avgT * 0.3 + avgU * 0.3 + avgA * 0.4);
+      }
 
       tugasList.push(avgT);
       utsList.push(avgU);
@@ -120,7 +149,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
         passingRate
       }
     };
-  }, [selectedSubjectId, selectedComponent, students, propLabels, propTugas, propUts, propUas, propFinalScores, realtimeVersion]);
+  }, [selectedSubjectId, selectedComponent, students, propLabels, propTugas, propUts, propUas, propFinalScores, realtimeVersion, activeRange]);
 
   // Render Chart.js
   useEffect(() => {
@@ -148,10 +177,27 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     const isLineOrArea = chartType === 'line' || chartType === 'area';
     const fillOption = chartType === 'area';
 
+    // Label dinamis sesuai rentang waktu aktif
+    const tugasLabel = activeRange === 'mingguan' 
+      ? 'Tugas Pekan Ini (100%)' 
+      : activeRange === 'bulanan' 
+        ? 'Tugas Bulanan (50%)' 
+        : 'Tugas (30%)';
+
+    const utsLabel = activeRange === 'bulanan' 
+      ? 'UTS / Ulangan Bulanan (50%)' 
+      : 'UTS (30%)';
+
+    const finalScoreLabel = activeRange === 'mingguan' 
+      ? 'Capaian Rata-Rata Pekan Ini' 
+      : activeRange === 'bulanan' 
+        ? 'Nilai Akhir Bulan Ini' 
+        : 'Nilai Akhir Semester (100%)';
+
     if (selectedComponent === 'all' || selectedComponent === 'Tugas') {
       datasets.push({
         type: isLineOrArea ? 'line' : 'bar',
-        label: 'Tugas (30%)',
+        label: tugasLabel,
         data: chartData.tugas,
         backgroundColor: fillOption ? 'rgba(96, 165, 250, 0.25)' : '#60A5FA',
         borderColor: '#3B82F6',
@@ -162,10 +208,11 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       });
     }
 
-    if (selectedComponent === 'all' || selectedComponent === 'UTS') {
+    // UTS ditampilkan pada mode bulanan dan semester (atau jika komponen dipilih manual)
+    if ((activeRange !== 'mingguan' || selectedComponent === 'UTS') && (selectedComponent === 'all' || selectedComponent === 'UTS')) {
       datasets.push({
         type: isLineOrArea ? 'line' : 'bar',
-        label: 'UTS (30%)',
+        label: utsLabel,
         data: chartData.uts,
         backgroundColor: fillOption ? 'rgba(245, 158, 11, 0.25)' : '#F59E0B',
         borderColor: '#D97706',
@@ -176,10 +223,11 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       });
     }
 
-    if (selectedComponent === 'all' || selectedComponent === 'UAS') {
+    // UAS ditampilkan pada mode semester (atau jika komponen dipilih manual)
+    if ((activeRange === 'semester' || selectedComponent === 'UAS') && (selectedComponent === 'all' || selectedComponent === 'UAS')) {
       datasets.push({
         type: isLineOrArea ? 'line' : 'bar',
-        label: 'UAS (40%)',
+        label: 'UAS Semester (40%)',
         data: chartData.uas,
         backgroundColor: fillOption ? 'rgba(139, 92, 246, 0.25)' : '#8B5CF6',
         borderColor: '#7C3AED',
@@ -193,7 +241,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     if (selectedComponent === 'all' || selectedComponent === 'Final') {
       datasets.push({
         type: 'line',
-        label: 'Nilai Akhir',
+        label: finalScoreLabel,
         data: chartData.finalScores,
         borderColor: '#10B981',
         backgroundColor: fillOption ? 'rgba(16, 185, 129, 0.3)' : '#10B981',
@@ -461,17 +509,45 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       {/* Header & Interactive Filters */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-slate-700">
         <div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            {title}
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              {title}
+            </h3>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+              activeRange === 'mingguan' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
+              activeRange === 'bulanan' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
+              'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800'
+            }`}>
+              <Calendar className="w-3 h-3" />
+              {activeRange === 'mingguan' ? 'Pekan Berjalan' : activeRange === 'bulanan' ? 'Bulan Berjalan' : 'Semester Ganjil 2025/2026'}
+            </span>
+          </div>
           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
-            Gunakan filter di samping untuk memantau performa per mata pelajaran atau per komponen penilaian.
+            {activeRange === 'mingguan'
+              ? 'Memantau capaian tugas dan kuis formatif harian pekan berjalan.'
+              : activeRange === 'bulanan'
+              ? 'Evaluasi berkala akumulasi tugas bulanan (50%) dan ulangan bulanan/UTS (50%).'
+              : 'Rekapitulasi komprehensif semester ganjil (Tugas 30%, UTS 30%, UAS 40%).'}
           </p>
         </div>
 
         {/* Filter Controls Bar & PDF Export */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Filter Rentang Waktu (Mingguan, Bulanan, Semester) */}
+          <div className="flex items-center gap-1.5 bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 rounded-xl px-2.5 py-1.5 text-xs shadow-xs">
+            <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <select
+              value={activeRange}
+              onChange={(e) => handleRangeChange(e.target.value as TimeRangeFilter)}
+              className="bg-transparent font-bold text-indigo-950 dark:text-indigo-200 outline-none text-xs cursor-pointer"
+            >
+              <option value="mingguan" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Rentang: Mingguan</option>
+              <option value="bulanan" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Rentang: Bulanan</option>
+              <option value="semester" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Rentang: Semester</option>
+            </select>
+          </div>
+
           {/* PDF Export Button for Visual Chart */}
           <button
             onClick={exportVisualAnalysisPDF}
@@ -484,7 +560,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
             ) : (
               <Download className="w-3.5 h-3.5" />
             )}
-            <span>{isExportingPDF ? 'Membuat PDF...' : 'Ekspor PDF Analisis'}</span>
+            <span>{isExportingPDF ? 'Membuat PDF...' : 'Ekspor PDF'}</span>
           </button>
 
           {/* Filter Mapel */}
@@ -513,8 +589,12 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
               className="bg-transparent font-bold text-slate-800 dark:text-slate-100 outline-none text-xs cursor-pointer"
             >
               <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Semua Komponen</option>
-              <option value="Tugas" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Tugas Saja (30%)</option>
-              <option value="UTS" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">UTS Saja (30%)</option>
+              <option value="Tugas" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                {activeRange === 'mingguan' ? 'Tugas Saja (100%)' : activeRange === 'bulanan' ? 'Tugas Saja (50%)' : 'Tugas Saja (30%)'}
+              </option>
+              <option value="UTS" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">
+                {activeRange === 'bulanan' ? 'UTS / Bulanan (50%)' : 'UTS Saja (30%)'}
+              </option>
               <option value="UAS" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">UAS Saja (40%)</option>
               <option value="Final" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100">Nilai Akhir</option>
             </select>

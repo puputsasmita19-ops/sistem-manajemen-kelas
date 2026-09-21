@@ -64,6 +64,8 @@ export interface ClassMember {
 
 export type AttendanceStatus = 'H' | 'I' | 'S' | 'A'; // Hadir, Izin, Sakit, Alpa
 
+export type TimeRangeFilter = 'mingguan' | 'bulanan' | 'semester';
+
 export interface Attendance {
   id: string;
   class_id: string; // FK -> classes.id

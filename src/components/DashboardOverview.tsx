@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { motion, type Variants } from 'motion/react';
 import {
   GraduationCap,
   School,
@@ -11,9 +12,11 @@ import {
   CalendarCheck,
   Award,
   Sparkles,
-  ArrowUpRight
+  ArrowUpRight,
+  Calendar
 } from 'lucide-react';
-import { User, ClassEntity, Subject } from '../types';
+import { User, ClassEntity, Subject, TimeRangeFilter } from '../types';
+import { DatabaseService } from '../services/databaseService';
 import { AnnouncementBanner } from './AnnouncementBanner';
 import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
@@ -22,6 +25,37 @@ import { WeeklyAttendanceSparkline } from './WeeklyAttendanceSparkline';
 import { StudentDirectorySearch } from './StudentDirectorySearch';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { AcademicCalendarWidget } from './AcademicCalendarWidget';
+
+// Framer Motion staggered entrance animations for summary cards
+const staggerContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const staggerCardVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+    scale: 0.97
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 24,
+      mass: 0.8
+    }
+  }
+};
 
 interface DashboardOverviewProps {
   currentUser: User;
@@ -56,9 +90,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   aCount,
   onNavigateTab
 }) => {
+  // Dynamic Time Range Filter ('mingguan', 'bulanan', 'semester')
+  const [timeRange, setTimeRange] = useState<TimeRangeFilter>('mingguan');
+  const dbService = DatabaseService.getInstance();
+
+  // Dynamic Attendance Aggregation based on timeRange
+  const attendanceRangeStats = useMemo(() => {
+    return dbService.getAttendanceStatsByRange(timeRange);
+  }, [timeRange, dbService, hCount, iCount, sCount, aCount]);
+
+  const activeHCount = attendanceRangeStats.hCount;
+  const activeICount = attendanceRangeStats.iCount;
+  const activeSCount = attendanceRangeStats.sCount;
+  const activeACount = attendanceRangeStats.aCount;
+  const activeAttendanceRate = attendanceRangeStats.rate;
+  const activeTotalPresensi = attendanceRangeStats.total;
+
   // Weekly achievements metrics calculation
-  const totalPresensi = (hCount + iCount + sCount + aCount) || 1;
-  const weeklyAttendanceAvg = Math.round(((hCount + iCount) / totalPresensi) * 100);
+  const totalPresensi = activeTotalPresensi;
+  const weeklyAttendanceAvg = Math.round(((activeHCount + activeICount) / totalPresensi) * 100);
   const totalTasks = students.length > 0 ? students.length * 4 : 48;
   const completedTasks = Math.round(totalTasks * 0.92);
   const taskCompletionPercent = Math.round((completedTasks / totalTasks) * 100);
@@ -85,8 +135,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       )}
 
       {/* Role-Specific Metric Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs transition">
+      <motion.div
+        variants={staggerContainerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <motion.div
+          variants={staggerCardVariants}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+        >
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Siswa Aktif</div>
             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
@@ -95,9 +155,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{students.length}</div>
           <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">Terdaftar dalam kelas</div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs transition">
+        <motion.div
+          variants={staggerCardVariants}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+        >
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Rombel / Kelas</div>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
@@ -106,9 +171,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{classes.length}</div>
           <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">T.A. 2025/2026</div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs transition">
+        <motion.div
+          variants={staggerCardVariants}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+        >
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Mata Pelajaran</div>
             <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
@@ -117,9 +187,14 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{subjects.length}</div>
           <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">Kurikulum Berjalan</div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs transition">
+        <motion.div
+          variants={staggerCardVariants}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+        >
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Kehadiran Hari Ini</div>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
@@ -128,8 +203,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </div>
           <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{attendanceRate}%</div>
           <div className="text-xs text-emerald-700 dark:text-emerald-300 font-bold mt-1">Rata-rata Sekolah</div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* PENCARIAN & DIREKTORI SISWA (SEARCH BAR BY NAME OR CLASS ID) */}
       <StudentDirectorySearch
@@ -181,10 +256,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
+          {/* Metrics Grid with Framer Motion Stagger */}
+          <motion.div
+            variants={staggerContainerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-5"
+          >
             {/* Task Completion Metric */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition">
+            <motion.div
+              variants={staggerCardVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition cursor-pointer select-none"
+            >
               <div>
                 <div className="flex items-center justify-between text-xs text-indigo-200">
                   <span className="font-semibold flex items-center gap-1.5">
@@ -222,14 +308,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               <div className="text-[11px] text-indigo-300/80 bg-emerald-950/30 border border-emerald-500/20 px-2.5 py-1 rounded-lg mt-3">
                 🎯 Melampaui target mingguan 85% pengumpulan tugas.
               </div>
-            </div>
+            </motion.div>
 
             {/* Weekly Attendance Average */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition">
+            <motion.div
+              variants={staggerCardVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition cursor-pointer select-none"
+            >
               <div>
                 <div className="flex items-center justify-between text-xs text-indigo-200">
                   <span className="font-semibold flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-blue-400" /> Rata-Rata Presensi Mingguan
+                    <TrendingUp className="w-4 h-4 text-blue-400" /> Rata-Rata Presensi ({attendanceRangeStats.rangeName})
                   </span>
                   <span className="text-blue-400 font-bold">Stabil</span>
                 </div>
@@ -247,7 +338,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <div className="mt-3 space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] text-indigo-200">
                     <span>Hadir & Izin Sah:</span>
-                    <span className="font-bold text-white">{hCount + iCount} sesi</span>
+                    <span className="font-bold text-white">{activeHCount + activeICount} sesi</span>
                   </div>
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
@@ -256,20 +347,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                     />
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-indigo-300/70">
-                    <span>Sakit: {sCount}</span>
-                    <span>Alpa: {aCount}</span>
-                    <span>Kehadiran Efektif: {attendanceRate}%</span>
+                    <span>Sakit: {activeSCount}</span>
+                    <span>Alpa: {activeACount}</span>
+                    <span>Kehadiran Efektif: {activeAttendanceRate}%</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-[11px] text-indigo-300/80 bg-blue-950/30 border border-blue-500/20 px-2.5 py-1 rounded-lg mt-3">
-                📈 Tren kehadiran konsisten dan tidak ada lonjakan ketidakhadiran tanpa keterangan.
+                📈 {attendanceRangeStats.periodLabel} • Tren kehadiran terdata rapi.
               </div>
-            </div>
+            </motion.div>
 
             {/* Academic Quality & Teacher Rating Badge */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition md:col-span-2 lg:col-span-1">
+            <motion.div
+              variants={staggerCardVariants}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4.5 flex flex-col justify-between hover:bg-white/8 transition md:col-span-2 lg:col-span-1 cursor-pointer select-none"
+            >
               <div>
                 <div className="flex items-center justify-between text-xs text-indigo-200">
                   <span className="font-semibold flex items-center gap-1.5">
@@ -298,37 +394,78 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
                 <span>Status Evaluasi:</span>
                 <span className="text-amber-300 font-bold">Lulus Ambang Batas</span>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Charts Overview with Live Auto-Refresh Indicator */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          Visualisasi & Grafik Analisis Real-Time
-        </h3>
-        {currentUser.role === 'admin' && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-full shadow-2xs">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      {/* Charts Overview with Time Range Selector & Live Auto-Refresh Indicator */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              Visualisasi & Grafik Analisis Real-Time
+            </h3>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+              timeRange === 'mingguan' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' :
+              timeRange === 'bulanan' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' :
+              'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800'
+            }`}>
+              <Calendar className="w-3 h-3" />
+              {attendanceRangeStats.rangeName}
             </span>
-            <span>Live Firebase Auto-Refresh</span>
           </div>
-        )}
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Periode aktif: <strong className="text-slate-700 dark:text-slate-200 font-semibold">{attendanceRangeStats.periodLabel}</strong>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Dropdown Pemilih Rentang Waktu (Mingguan, Bulanan, Semester) */}
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 shadow-2xs">
+            <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Rentang Waktu:</span>
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value as TimeRangeFilter)}
+              className="bg-transparent font-bold text-slate-900 dark:text-white text-xs outline-none cursor-pointer pr-1"
+            >
+              <option value="mingguan" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                Mingguan (Pekan Berjalan)
+              </option>
+              <option value="bulanan" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                Bulanan (Bulan September 2026)
+              </option>
+              <option value="semester" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                Semester (Ganjil TA 2025/2026)
+              </option>
+            </select>
+          </div>
+
+          {currentUser.role === 'admin' && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-full shadow-2xs">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>Live Firebase Auto-Refresh</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-xs flex flex-col justify-center transition">
           <ChartAttendance
             title="Rekapitulasi Kehadiran Siswa"
+            timeRange={timeRange}
+            periodLabel={attendanceRangeStats.periodLabel}
             data={{
-              Hadir: hCount,
-              Izin: iCount,
-              Sakit: sCount,
-              Alpa: aCount
+              Hadir: activeHCount,
+              Izin: activeICount,
+              Sakit: activeSCount,
+              Alpa: activeACount
             }}
           />
         </div>
@@ -337,6 +474,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           <ChartGrades
             title="Capaian & Tren Perkembangan Akademik Siswa"
             classId="class_10_ipa1"
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
           />
         </div>
       </div>

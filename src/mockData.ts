@@ -157,7 +157,45 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
     att_12: { id: "att_12", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-17", student_id: "user_std2", status: "I" },
     att_13: { id: "att_13", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-17", student_id: "user_std3", status: "H" },
     att_14: { id: "att_14", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-17", student_id: "user_std4", status: "H" },
-    att_15: { id: "att_15", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-17", student_id: "user_std5", status: "A" }
+    att_15: { id: "att_15", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-17", student_id: "user_std5", status: "A" },
+
+    // Rekam Presensi Historis Pekan 1 & 2 September 2026 (Presensi Bulanan)
+    att_16: { id: "att_16", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-08", student_id: "user_std1", status: "H" },
+    att_17: { id: "att_17", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-08", student_id: "user_std2", status: "H" },
+    att_18: { id: "att_18", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-08", student_id: "user_std3", status: "H" },
+    att_19: { id: "att_19", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-08", student_id: "user_std4", status: "H" },
+    att_20: { id: "att_20", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-08", student_id: "user_std5", status: "H" },
+
+    att_21: { id: "att_21", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-09", student_id: "user_std1", status: "H" },
+    att_22: { id: "att_22", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-09", student_id: "user_std2", status: "H" },
+    att_23: { id: "att_23", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-09", student_id: "user_std3", status: "S" },
+    att_24: { id: "att_24", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-09", student_id: "user_std4", status: "H" },
+    att_25: { id: "att_25", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-09", student_id: "user_std5", status: "I" },
+
+    att_26: { id: "att_26", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-10", student_id: "user_std1", status: "H" },
+    att_27: { id: "att_27", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-10", student_id: "user_std2", status: "H" },
+    att_28: { id: "att_28", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-10", student_id: "user_std3", status: "H" },
+    att_29: { id: "att_29", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-10", student_id: "user_std4", status: "H" },
+    att_30: { id: "att_30", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-10", student_id: "user_std5", status: "H" },
+
+    att_31: { id: "att_31", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-02", student_id: "user_std1", status: "H" },
+    att_32: { id: "att_32", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-02", student_id: "user_std2", status: "H" },
+    att_33: { id: "att_33", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-02", student_id: "user_std3", status: "H" },
+    att_34: { id: "att_34", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-02", student_id: "user_std4", status: "H" },
+    att_35: { id: "att_35", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-09-02", student_id: "user_std5", status: "H" },
+
+    // Rekam Presensi Historis Bulan Agustus 2026 (Semester Ganjil)
+    att_36: { id: "att_36", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-25", student_id: "user_std1", status: "H" },
+    att_37: { id: "att_37", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-25", student_id: "user_std2", status: "H" },
+    att_38: { id: "att_38", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-25", student_id: "user_std3", status: "H" },
+    att_39: { id: "att_39", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-25", student_id: "user_std4", status: "H" },
+    att_40: { id: "att_40", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-25", student_id: "user_std5", status: "I" },
+
+    att_41: { id: "att_41", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-26", student_id: "user_std1", status: "H" },
+    att_42: { id: "att_42", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-26", student_id: "user_std2", status: "H" },
+    att_43: { id: "att_43", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-26", student_id: "user_std3", status: "S" },
+    att_44: { id: "att_44", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-26", student_id: "user_std4", status: "H" },
+    att_45: { id: "att_45", class_id: "class_10_ipa1", subject_id: "subj_mat", date: "2026-08-26", student_id: "user_std5", status: "H" }
   },
   grades: {
     grd_1: { id: "grd_1", student_id: "user_std1", subject_id: "subj_mat", type: "Tugas", score: 88 },

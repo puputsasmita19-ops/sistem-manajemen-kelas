@@ -35,6 +35,12 @@ export class DatabaseService {
         if (!this.db.activity_logs || Object.keys(this.db.activity_logs).length === 0) {
           this.db.activity_logs = JSON.parse(JSON.stringify(INITIAL_DATABASE.activity_logs || {}));
         }
+        if (!this.db.attendance || Object.keys(this.db.attendance).length < 25) {
+          this.db.attendance = {
+            ...JSON.parse(JSON.stringify(INITIAL_DATABASE.attendance || {})),
+            ...(this.db.attendance || {})
+          };
+        }
         if (!this.db.app_settings) {
           this.db.app_settings = JSON.parse(JSON.stringify(INITIAL_DATABASE.app_settings));
         } else {
@@ -819,6 +825,77 @@ export class DatabaseService {
 
   public getAllAttendance(): Attendance[] {
     return Object.values(this.db.attendance);
+  }
+
+  /**
+   * Menghitung statistik presensi teragregasi secara dinamis berdasarkan rentang waktu:
+   * 'mingguan' (Pekan Berjalan), 'bulanan' (Bulan Berjalan), 'semester' (Semester Berjalan).
+   */
+  public getAttendanceStatsByRange(range: 'mingguan' | 'bulanan' | 'semester'): {
+    hCount: number;
+    iCount: number;
+    sCount: number;
+    aCount: number;
+    total: number;
+    rate: number;
+    periodLabel: string;
+    subLabel: string;
+    rangeName: string;
+  } {
+    const all = Object.values(this.db.attendance || {});
+
+    // Referensi tanggal kalender akademik SIMAK (September 2026)
+    const weekStart = '2026-09-14';
+    const weekEnd = '2026-09-20';
+    const monthPrefix = '2026-09';
+    const semesterStart = '2026-07-01';
+    const semesterEnd = '2026-12-31';
+
+    let filtered = all;
+    let periodLabel = '';
+    let subLabel = '';
+    let rangeName = '';
+
+    if (range === 'mingguan') {
+      rangeName = 'Mingguan';
+      periodLabel = 'Pekan Berjalan (14 - 20 Sep 2026)';
+      subLabel = 'Presensi 7 Hari Terakhir';
+      // Filter presensi pekan ini
+      filtered = all.filter(a => {
+        if (a.date >= weekStart && a.date <= weekEnd) return true;
+        // Hanya rekam presensi yang bukan rekam historis pekan awal september/agustus
+        return !a.date.startsWith('2026-08') && !['2026-09-02', '2026-09-08', '2026-09-09', '2026-09-10'].includes(a.date);
+      });
+    } else if (range === 'bulanan') {
+      rangeName = 'Bulanan';
+      periodLabel = 'Bulan September 2026';
+      subLabel = 'Presensi 30 Hari Berjalan';
+      filtered = all.filter(a => a.date.startsWith(monthPrefix) || a.date >= '2026-09-01');
+    } else {
+      rangeName = 'Semester';
+      periodLabel = 'Semester Ganjil TA 2025/2026';
+      subLabel = 'Presensi Kumulatif Semester';
+      filtered = all.filter(a => a.date >= semesterStart && a.date <= semesterEnd);
+    }
+
+    const hCount = filtered.filter(a => a.status === 'H').length;
+    const iCount = filtered.filter(a => a.status === 'I').length;
+    const sCount = filtered.filter(a => a.status === 'S').length;
+    const aCount = filtered.filter(a => a.status === 'A').length;
+    const total = (hCount + iCount + sCount + aCount) || 1;
+    const rate = Math.round((hCount / total) * 100);
+
+    return {
+      hCount,
+      iCount,
+      sCount,
+      aCount,
+      total,
+      rate,
+      periodLabel,
+      subLabel,
+      rangeName
+    };
   }
 
   // --- PRESENSI MANDIRI REALTIME: Foto Selfie, Timestamp & Validasi GPS ---

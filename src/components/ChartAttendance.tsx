@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { useTheme } from '../utils/useTheme';
+import { TimeRangeFilter } from '../types';
+import { Calendar } from 'lucide-react';
 
 Chart.register(...registerables);
 
@@ -12,12 +14,35 @@ interface ChartAttendanceProps {
     Alpa: number;
   };
   title?: string;
+  timeRange?: TimeRangeFilter;
+  periodLabel?: string;
 }
 
-export const ChartAttendance: React.FC<ChartAttendanceProps> = ({ data, title = 'Distribusi Kehadiran' }) => {
+export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
+  data,
+  title = 'Distribusi Kehadiran',
+  timeRange = 'mingguan',
+  periodLabel
+}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const { isDark } = useTheme();
+
+  const total = data.Hadir + data.Izin + data.Sakit + data.Alpa;
+  const attendanceRate = total > 0 ? Math.round((data.Hadir / total) * 100) : 0;
+
+  const getRangeBadge = () => {
+    switch (timeRange) {
+      case 'mingguan':
+        return { label: 'Pekan Berjalan', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' };
+      case 'bulanan':
+        return { label: 'Bulan Ini', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' };
+      case 'semester':
+        return { label: 'Semester Berjalan', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' };
+    }
+  };
+
+  const badge = getRangeBadge();
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -104,12 +129,51 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({ data, title = 
   }, [data.Hadir, data.Izin, data.Sakit, data.Alpa, isDark]);
 
   return (
-    <div className="w-full h-64 flex flex-col items-center">
-      <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
-        {title}
+    <div className="w-full flex flex-col">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <span>{title}</span>
+          </div>
+          {periodLabel && (
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {periodLabel}
+            </div>
+          )}
+        </div>
+        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${badge.color}`}>
+          <Calendar className="w-3 h-3" />
+          {badge.label}
+        </span>
       </div>
-      <div className="relative w-full h-full">
+
+      <div className="relative w-full h-52">
         <canvas ref={canvasRef}></canvas>
+      </div>
+
+      {/* Mini metric breakdown */}
+      <div className="grid grid-cols-4 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60 text-center text-xs">
+        <div className="p-1.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60">
+          <div className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">Hadir</div>
+          <div className="text-sm font-black text-emerald-800 dark:text-emerald-200">{data.Hadir}</div>
+        </div>
+        <div className="p-1.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/60">
+          <div className="text-[10px] font-bold text-blue-700 dark:text-blue-300">Izin</div>
+          <div className="text-sm font-black text-blue-800 dark:text-blue-200">{data.Izin}</div>
+        </div>
+        <div className="p-1.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60">
+          <div className="text-[10px] font-bold text-amber-700 dark:text-amber-300">Sakit</div>
+          <div className="text-sm font-black text-amber-800 dark:text-amber-200">{data.Sakit}</div>
+        </div>
+        <div className="p-1.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/60">
+          <div className="text-[10px] font-bold text-rose-700 dark:text-rose-300">Alpa</div>
+          <div className="text-sm font-black text-rose-800 dark:text-rose-200">{data.Alpa}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+        <span>Total Log: <strong className="text-slate-700 dark:text-slate-200">{total} Sesi</strong></span>
+        <span>Tingkat Kehadiran: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{attendanceRate}%</strong></span>
       </div>
     </div>
   );
