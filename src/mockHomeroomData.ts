@@ -10,6 +10,7 @@ import {
   PiketAttendanceRecord,
   AttitudeAssessmentItem,
   ClassTreasuryTransaction,
+  SchoolFeeAdministrationDoc,
   ClassJournalItem,
   StudentMutationItem,
   StudentCaseItem,
@@ -30,6 +31,7 @@ export interface HomeroomClassData {
   piketAttendanceLogs: PiketAttendanceRecord[];
   attitudeAssessments: AttitudeAssessmentItem[];
   treasuryTransactions: ClassTreasuryTransaction[];
+  schoolFeeAdministration?: SchoolFeeAdministrationDoc;
   classJournals: ClassJournalItem[];
   studentMutations: StudentMutationItem[];
   studentCases: StudentCaseItem[];
@@ -532,7 +534,211 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
       }
     ],
 
-    // 12) RINCIAN ADMINISTRASI SEKOLAH (Buku Kas & Keuangan Kelas)
+    // 12) RINCIAN ADMINISTRASI SEKOLAH (SPP, Asrama, Buku, Praktikum, Kesiswaan, dll.)
+    schoolFeeAdministration: {
+      class_id: 'class_10_ipa1',
+      className: 'XI APL',
+      month: 'Agustus 2026',
+      academicYear: '2026 - 2027',
+      tagihanPreviousHeader: 'TAGIHAN KELAS X',
+      asramaHeaderPeriod: 'ASRAMA 2026 - 2027',
+      sppHeaderPeriod: 'SPP (JULI 2026 - JUNI 2027)',
+      dataPerDate: 'Data per Tanggal 15 Agustus 2026',
+      signDate: 'Jember, 31 Agustus 2026',
+      homeroomTeacherName: 'Puput Sasmita, S.Pd., Gr.',
+      homeroomTeacherCallName: 'BAPAK PUPUT',
+      schoolTreasurerName: 'Agustin Rahmawati, A.Md.',
+      receivingTreasurerName: 'Agustin Rahmawati',
+      bankName: 'BANK SYARIAH INDONESIA (BSI)',
+      bankAccountNumber: '4444-400-167',
+      bankAccountHolder: 'SMK DR SOEBANDI JEMBER',
+      updatedAt: '2026-08-15T08:00:00.000Z',
+      records: [
+        {
+          id: 'fee_1',
+          studentId: 'std_01',
+          studentName: 'ALIRA DIDIK SALSA BHITA',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 700000,
+          praktikum: 2000000,
+          kesiswaan: 500000,
+          spp: {
+            juli: 200000,
+            agustus: 200000,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {
+            buku: 'cicil',
+            kesiswaan: 'cicil',
+            spp_juli: 'wajib'
+          },
+          rowHighlight: 'none',
+          notes: 'SPP Juli wajib dilunasi, buku & kesiswaan mohon dicicil.'
+        },
+        {
+          id: 'fee_2',
+          studentId: 'std_02',
+          studentName: 'BAGUS MADHA EFFENDY',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 700000,
+          praktikum: 2000000,
+          kesiswaan: 500000,
+          spp: {
+            juli: 200000,
+            agustus: 200000,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {
+            buku: 'cicil',
+            kesiswaan: 'cicil',
+            spp_juli: 'wajib'
+          },
+          rowHighlight: 'none',
+          notes: 'SPP Juli wajib dilunasi segera.'
+        },
+        {
+          id: 'fee_3',
+          studentId: 'std_03',
+          studentName: 'BIMA PUTRA RAMADHAN',
+          tagihanKelasX: 1450000,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 700000,
+          praktikum: 2000000,
+          kesiswaan: 500000,
+          spp: {
+            juli: 200000,
+            agustus: 200000,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {
+            tagihanKelasX: 'wajib',
+            buku: 'cicil',
+            kesiswaan: 'cicil',
+            spp_juli: 'wajib'
+          },
+          rowHighlight: 'none',
+          notes: 'Tagihan Kelas X wajib dilunasi.'
+        },
+        {
+          id: 'fee_4',
+          studentId: 'std_04',
+          studentName: 'DHIYAUL AULIYA',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 400000,
+          praktikum: 1500000,
+          kesiswaan: 200000,
+          spp: {
+            juli: 0,
+            agustus: 0,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {},
+          rowHighlight: 'none',
+          notes: 'SPP Juli dan Agustus telah lunas.'
+        },
+        {
+          id: 'fee_5',
+          studentId: 'std_05',
+          studentName: 'KANAYA CANDRANING RATRI FIBRIONO',
+          tagihanKelasX: 0,
+          asrama: 3000000,
+          ptsPas: 0,
+          buku: 0,
+          praktikum: 0,
+          kesiswaan: 0,
+          spp: {
+            juli: 0,
+            agustus: 0,
+            september: 0,
+            oktober: 0,
+            november: 0,
+            desember: 0,
+            januari: 0,
+            februari: 0,
+            maret: 0,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {},
+          rowHighlight: 'none',
+          notes: 'Santri asrama, SPP semester 1 sudah lunas.'
+        },
+        {
+          id: 'fee_6',
+          studentId: 'std_06',
+          studentName: 'NEYSA PUTRI',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 0,
+          buku: 0,
+          praktikum: 0,
+          kesiswaan: 0,
+          spp: {
+            juli: 0,
+            agustus: 0,
+            september: 0,
+            oktober: 0,
+            november: 0,
+            desember: 0,
+            januari: 0,
+            februari: 0,
+            maret: 0,
+            april: 0,
+            mei: 0,
+            juni: 0
+          },
+          cellStatus: {},
+          rowHighlight: 'lunas_full',
+          notes: 'Beasiswa Penuh Prestasi / Administrasi Lunas Bebas Biaya.'
+        }
+      ]
+    },
+
+    // Transaksi Kas Pendukung
     treasuryTransactions: [
       {
         id: 'trs_1',

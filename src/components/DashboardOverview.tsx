@@ -134,75 +134,91 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         />
       )}
 
-      {/* Role-Specific Metric Overview Cards */}
+      {/* Role-Specific Metric Overview Cards (Clean Typographic Proportional Layout Without Logos) */}
       <motion.div
         variants={staggerContainerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5"
       >
         <motion.div
           variants={staggerCardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+          whileHover={{ scale: 1.015, y: -2 }}
+          whileTap={{ scale: 0.985 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4.5 sm:p-5 shadow-xs hover:shadow-md transition-all select-none flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Siswa Aktif</div>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-              <GraduationCap className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Siswa Aktif</span>
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+            </div>
+            <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight mt-2.5">
+              {students.length}
             </div>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{students.length}</div>
-          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">Terdaftar dalam kelas</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-medium pt-2 border-t border-slate-100 dark:border-slate-700/50">
+            Terdaftar dalam kelas
+          </div>
         </motion.div>
 
         <motion.div
           variants={staggerCardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+          whileHover={{ scale: 1.015, y: -2 }}
+          whileTap={{ scale: 0.985 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4.5 sm:p-5 shadow-xs hover:shadow-md transition-all select-none flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Rombel / Kelas</div>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
-              <School className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Rombel / Kelas</span>
+              <span className="w-2 h-2 rounded-full bg-indigo-500" />
+            </div>
+            <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight mt-2.5">
+              {classes.length}
             </div>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{classes.length}</div>
-          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">T.A. 2025/2026</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-medium pt-2 border-t border-slate-100 dark:border-slate-700/50">
+            T.A. 2025/2026
+          </div>
         </motion.div>
 
         <motion.div
           variants={staggerCardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+          whileHover={{ scale: 1.015, y: -2 }}
+          whileTap={{ scale: 0.985 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4.5 sm:p-5 shadow-xs hover:shadow-md transition-all select-none flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Mata Pelajaran</div>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-              <BookOpen className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mata Pelajaran</span>
+              <span className="w-2 h-2 rounded-full bg-purple-500" />
+            </div>
+            <div className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white font-mono tracking-tight mt-2.5">
+              {subjects.length}
             </div>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{subjects.length}</div>
-          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">Kurikulum Berjalan</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-medium pt-2 border-t border-slate-100 dark:border-slate-700/50">
+            Kurikulum Berjalan
+          </div>
         </motion.div>
 
         <motion.div
           variants={staggerCardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow cursor-pointer select-none"
+          whileHover={{ scale: 1.015, y: -2 }}
+          whileTap={{ scale: 0.985 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl p-4.5 sm:p-5 shadow-xs hover:shadow-md transition-all select-none flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">Kehadiran Hari Ini</div>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-              <CheckCircle2 className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kehadiran Hari Ini</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </div>
+            <div className="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight mt-2.5">
+              {attendanceRate}%
             </div>
           </div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white mt-2">{attendanceRate}%</div>
-          <div className="text-xs text-emerald-700 dark:text-emerald-300 font-bold mt-1">Rata-rata Sekolah</div>
+          <div className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-2 font-bold pt-2 border-t border-slate-100 dark:border-slate-700/50">
+            Rata-rata Sekolah
+          </div>
         </motion.div>
       </motion.div>
 

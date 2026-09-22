@@ -182,15 +182,46 @@ body {
   color: #e2e8f0 !important;
 }
 
-/* Ensure placeholder visibility across light and dark modes */
+/* Ensure placeholder and input visibility across light and dark modes */
 ::placeholder {
-  opacity: 0.6;
+  opacity: 0.75;
+}
+
+html:not(.dark) ::placeholder {
+  color: #64748b !important;
 }
 
 .dark ::placeholder {
   color: #94a3b8 !important;
-  opacity: 0.7;
+  opacity: 0.85;
 }
+
+/* Ensure text contrast in both light and dark modes */
+html:not(.dark) span.text-slate-400:not(.badge-icon),
+html:not(.dark) p.text-slate-400,
+html:not(.dark) div.text-slate-400:not(.badge-icon),
+html:not(.dark) td.text-slate-400,
+html:not(.dark) th.text-slate-400,
+html:not(.dark) label.text-slate-400 {
+  color: #475569; /* Upgrade faint slate-400 to slate-600 in light mode for WCAG AA compliance */
+}
+
+/* Ensure dark mode text contrast when dark: is missing */
+.dark span.text-slate-500:not([class*="dark:text-"]),
+.dark p.text-slate-500:not([class*="dark:text-"]),
+.dark div.text-slate-500:not([class*="dark:text-"]),
+.dark td.text-slate-500:not([class*="dark:text-"]),
+.dark th.text-slate-500:not([class*="dark:text-"]),
+.dark label.text-slate-500:not([class*="dark:text-"]) {
+  color: #cbd5e1; /* Upgrade dark text to slate-300 in dark mode */
+}
+
+/* High contrast selection highlight */
+::selection {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
 
 
 

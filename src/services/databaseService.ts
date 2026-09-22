@@ -1,5 +1,28 @@
 import { INITIAL_DATABASE } from '../mockData';
-import { DatabaseSnapshot, User, ClassEntity, ClassMember, Subject, Attendance, Grade, UserRole, AttendanceStatus, GradeType, SchoolAnnouncement, AppSettings, RunningTextItem, AcademicEvent, ActivityLog, ActivityActionType } from '../types';
+import {
+  DatabaseSnapshot,
+  User,
+  ClassEntity,
+  ClassMember,
+  Subject,
+  Attendance,
+  Grade,
+  UserRole,
+  AttendanceStatus,
+  GradeType,
+  SchoolAnnouncement,
+  AppSettings,
+  RunningTextItem,
+  AcademicEvent,
+  ActivityLog,
+  ActivityActionType,
+  AcademicYear,
+  Curriculum,
+  Department,
+  MasterSubject,
+  Extracurricular,
+  StudyScheduleSlot
+} from '../types';
 import { FirestoreSyncService } from './firestoreSyncService';
 import jsPDF from 'jspdf';
 import Swal from 'sweetalert2';
@@ -34,6 +57,30 @@ export class DatabaseService {
         }
         if (!this.db.activity_logs || Object.keys(this.db.activity_logs).length === 0) {
           this.db.activity_logs = JSON.parse(JSON.stringify(INITIAL_DATABASE.activity_logs || {}));
+        }
+        if (!this.db.academic_years || Object.keys(this.db.academic_years).length === 0) {
+          this.db.academic_years = JSON.parse(JSON.stringify(INITIAL_DATABASE.academic_years || {}));
+        }
+        if (!this.db.curriculums || Object.keys(this.db.curriculums).length === 0) {
+          this.db.curriculums = JSON.parse(JSON.stringify(INITIAL_DATABASE.curriculums || {}));
+        }
+        if (!this.db.departments || Object.keys(this.db.departments).length === 0) {
+          this.db.departments = JSON.parse(JSON.stringify(INITIAL_DATABASE.departments || {}));
+        }
+        if (!this.db.master_subjects || Object.keys(this.db.master_subjects).length === 0) {
+          this.db.master_subjects = JSON.parse(JSON.stringify(INITIAL_DATABASE.master_subjects || {}));
+        }
+        if (!this.db.extracurriculars || Object.keys(this.db.extracurriculars).length === 0) {
+          this.db.extracurriculars = JSON.parse(JSON.stringify(INITIAL_DATABASE.extracurriculars || {}));
+        }
+        if (!this.db.study_schedules || Object.keys(this.db.study_schedules).length === 0) {
+          this.db.study_schedules = JSON.parse(JSON.stringify(INITIAL_DATABASE.study_schedules || {}));
+        }
+        if (!this.db.scheduled_export_configs || Object.keys(this.db.scheduled_export_configs).length === 0) {
+          this.db.scheduled_export_configs = JSON.parse(JSON.stringify(INITIAL_DATABASE.scheduled_export_configs || {}));
+        }
+        if (!this.db.scheduled_reports || Object.keys(this.db.scheduled_reports).length === 0) {
+          this.db.scheduled_reports = JSON.parse(JSON.stringify(INITIAL_DATABASE.scheduled_reports || {}));
         }
         if (!this.db.attendance || Object.keys(this.db.attendance).length < 25) {
           this.db.attendance = {
@@ -244,6 +291,38 @@ export class DatabaseService {
       if (this.db.app_settings.antiCheatBlockCopyPaste === undefined) {
         this.db.app_settings.antiCheatBlockCopyPaste = true;
       }
+      // Paper Defaults
+      if (!this.db.app_settings.paperSize) this.db.app_settings.paperSize = 'a4';
+      if (!this.db.app_settings.paperOrientation) this.db.app_settings.paperOrientation = 'portrait';
+      if (this.db.app_settings.paperMarginTop === undefined) this.db.app_settings.paperMarginTop = 15;
+      if (this.db.app_settings.paperMarginBottom === undefined) this.db.app_settings.paperMarginBottom = 15;
+      if (this.db.app_settings.paperMarginLeft === undefined) this.db.app_settings.paperMarginLeft = 15;
+      if (this.db.app_settings.paperMarginRight === undefined) this.db.app_settings.paperMarginRight = 15;
+      if (this.db.app_settings.paperPageNumbering === undefined) this.db.app_settings.paperPageNumbering = true;
+      // Kop Surat Defaults
+      if (this.db.app_settings.kopEnabled === undefined) this.db.app_settings.kopEnabled = true;
+      if (!this.db.app_settings.kopInstansiUtama) this.db.app_settings.kopInstansiUtama = 'PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA';
+      if (!this.db.app_settings.kopDinas) this.db.app_settings.kopDinas = 'DINAS PENDIDIKAN DAN KEBUDAYAAN';
+      if (!this.db.app_settings.kopNamaSekolah) this.db.app_settings.kopNamaSekolah = this.db.app_settings.appName || 'SMA NEGERI UNGGULAN INDONESIA';
+      if (!this.db.app_settings.kopSubHeading) this.db.app_settings.kopSubHeading = 'SEKOLAH PENGGERAK • STATUS AKREDITASI A (UNGGUL)';
+      if (!this.db.app_settings.kopAlamat) this.db.app_settings.kopAlamat = this.db.app_settings.schoolAddress || 'Jl. Pendidikan Nasional No. 45, Kompleks Edukasi, Jakarta';
+      if (!this.db.app_settings.kopKontak) this.db.app_settings.kopKontak = 'Telp: (021) 7890123 • Email: info@sekolah.sch.id • Web: www.sekolah.sch.id';
+      if (!this.db.app_settings.kopKodePos) this.db.app_settings.kopKodePos = 'Kode Pos: 12345';
+      if (!this.db.app_settings.kopBorderType) this.db.app_settings.kopBorderType = 'double';
+      // Tanda Tangan Defaults
+      if (this.db.app_settings.signatureEnabled === undefined) this.db.app_settings.signatureEnabled = true;
+      if (!this.db.app_settings.signatureKota) this.db.app_settings.signatureKota = 'Jakarta';
+      if (this.db.app_settings.signatureTanggalOtomatis === undefined) this.db.app_settings.signatureTanggalOtomatis = true;
+      if (!this.db.app_settings.signatureJabatanKiri) this.db.app_settings.signatureJabatanKiri = 'Wali Kelas / Petugas Administrasi';
+      if (!this.db.app_settings.signatureNamaKiri) this.db.app_settings.signatureNamaKiri = 'Dra. Hj. Siti Rahmawati, M.Pd';
+      if (!this.db.app_settings.signatureNipKiri) this.db.app_settings.signatureNipKiri = 'NIP. 19780512 200312 2 001';
+      if (!this.db.app_settings.signatureJabatanKanan) this.db.app_settings.signatureJabatanKanan = 'Kepala Sekolah';
+      if (!this.db.app_settings.signatureNamaKanan) this.db.app_settings.signatureNamaKanan = 'Dr. H. Bambang Sudarsono, M.Si';
+      if (!this.db.app_settings.signatureNipKanan) this.db.app_settings.signatureNipKanan = 'NIP. 19690415 199403 1 004';
+      if (this.db.app_settings.signatureQrVerification === undefined) this.db.app_settings.signatureQrVerification = true;
+      if (!this.db.app_settings.signaturePosKiri) this.db.app_settings.signaturePosKiri = 'left_signer';
+      if (!this.db.app_settings.signaturePosTengah) this.db.app_settings.signaturePosTengah = 'empty';
+      if (!this.db.app_settings.signaturePosKanan) this.db.app_settings.signaturePosKanan = 'right_signer';
     }
     return this.db.app_settings;
   }
@@ -261,6 +340,10 @@ export class DatabaseService {
       }
     });
     return this.db.app_settings;
+  }
+
+  public saveToStorage(): void {
+    this.persist();
   }
 
   public subscribeAppSettings(listener: (settings: AppSettings) => void): () => void {
@@ -520,6 +603,15 @@ export class DatabaseService {
     );
 
     return this.db.users[id];
+  }
+
+  public recordUserLogin(userId: string): void {
+    if (this.db.users[userId]) {
+      const nowIso = new Date().toISOString();
+      this.db.users[userId].last_login = nowIso;
+      this.persist();
+      FirestoreSyncService.getInstance().syncDocument('users', userId, this.db.users[userId]);
+    }
   }
 
   public deleteUser(id: string): void {
@@ -1938,6 +2030,7 @@ export class DatabaseService {
       'Role Akses',
       'No. WhatsApp',
       ...(includePassword ? ['Password Akun'] : []),
+      'Terakhir Masuk (Last Login)',
       'Kelas Siswa',
       'Wali Kelas Dari',
       'Mata Pelajaran Diampu',
@@ -1945,6 +2038,15 @@ export class DatabaseService {
     ];
 
     const rows = users.map(u => {
+      // Format last login
+      let lastLoginText = 'Belum Pernah Login';
+      if (u.last_login) {
+        const d = new Date(u.last_login);
+        if (!isNaN(d.getTime())) {
+          lastLoginText = d.toLocaleString('id-ID');
+        }
+      }
+
       // Find class info if student
       let studentClassName = '-';
       if (u.role === 'siswa') {
@@ -1984,6 +2086,7 @@ export class DatabaseService {
         `"${u.role}"`,
         `"${(u.no_wa || '-').replace(/"/g, '""')}"`,
         ...(includePassword ? [`"${(u.password_hash || 'pass123').replace(/"/g, '""')}"`] : []),
+        `"${lastLoginText}"`,
         `"${studentClassName.replace(/"/g, '""')}"`,
         `"${homeroomClass.replace(/"/g, '""')}"`,
         `"${taughtSubjects.replace(/"/g, '""')}"`,
@@ -2628,4 +2731,517 @@ export class DatabaseService {
       };
     }
   }
+
+  // =========================================================================
+  // MASTER DATA AKADEMIK METHODS
+  // =========================================================================
+
+  // --- 1. TAHUN AJARAN & SEMESTER ---
+  public getAcademicYears(): AcademicYear[] {
+    if (!this.db.academic_years) {
+      this.db.academic_years = JSON.parse(JSON.stringify(INITIAL_DATABASE.academic_years || {}));
+    }
+    return Object.values(this.db.academic_years || {}).sort((a, b) => b.tahun.localeCompare(a.tahun));
+  }
+
+  public getActiveAcademicYear(): AcademicYear | null {
+    const years = this.getAcademicYears();
+    const active = years.find(y => y.status === 'Aktif');
+    return active || (years.length > 0 ? years[0] : null);
+  }
+
+  public createAcademicYear(data: Omit<AcademicYear, 'id'>): AcademicYear {
+    if (!this.db.academic_years) this.db.academic_years = {};
+    const id = `ay_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newYear: AcademicYear = { id, ...data };
+
+    // If new year is active, deactivate others
+    if (newYear.status === 'Aktif') {
+      Object.keys(this.db.academic_years).forEach(k => {
+        if (this.db.academic_years![k].status === 'Aktif') {
+          this.db.academic_years![k].status = 'Arsip';
+        }
+      });
+    }
+
+    this.db.academic_years[id] = newYear;
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Tahun Ajaran Baru',
+      `Tahun Ajaran ${newYear.tahun} (${newYear.semesterAktif}) ditambahkan ke Master Data.`,
+      `academic_year_${id}`,
+      newYear
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('academic_years', newYear);
+    return newYear;
+  }
+
+  public updateAcademicYear(id: string, data: Partial<AcademicYear>): void {
+    if (!this.db.academic_years || !this.db.academic_years[id]) return;
+
+    if (data.status === 'Aktif') {
+      Object.keys(this.db.academic_years).forEach(k => {
+        if (k !== id && this.db.academic_years![k].status === 'Aktif') {
+          this.db.academic_years![k].status = 'Arsip';
+          FirestoreSyncService.getInstance().syncItemToFirestore('academic_years', this.db.academic_years![k]);
+        }
+      });
+    }
+
+    this.db.academic_years[id] = { ...this.db.academic_years[id], ...data };
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Tahun Ajaran',
+      `Tahun Ajaran ${this.db.academic_years[id].tahun} diperbarui.`,
+      `academic_year_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('academic_years', this.db.academic_years[id]);
+  }
+
+  public setActiveAcademicYear(id: string): void {
+    if (!this.db.academic_years || !this.db.academic_years[id]) return;
+    Object.keys(this.db.academic_years).forEach(k => {
+      this.db.academic_years![k].status = k === id ? 'Aktif' : 'Arsip';
+      FirestoreSyncService.getInstance().syncItemToFirestore('academic_years', this.db.academic_years![k]);
+    });
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Aktivasi Periode Akademik',
+      `Tahun Ajaran ${this.db.academic_years[id].tahun} (${this.db.academic_years[id].semesterAktif}) ditetapkan sebagai periode aktif sistem.`,
+      `academic_year_${id}`
+    );
+  }
+
+  public deleteAcademicYear(id: string): boolean {
+    if (!this.db.academic_years || !this.db.academic_years[id]) return false;
+    const target = this.db.academic_years[id];
+    delete this.db.academic_years[id];
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Tahun Ajaran',
+      `Tahun Ajaran ${target.tahun} dihapus dari Master Data.`,
+      `academic_year_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('academic_years', id);
+    return true;
+  }
+
+  // --- 2. KURIKULUM & FASE ---
+  public getCurriculums(): Curriculum[] {
+    if (!this.db.curriculums) {
+      this.db.curriculums = JSON.parse(JSON.stringify(INITIAL_DATABASE.curriculums || {}));
+    }
+    return Object.values(this.db.curriculums || {});
+  }
+
+  public createCurriculum(data: Omit<Curriculum, 'id'>): Curriculum {
+    if (!this.db.curriculums) this.db.curriculums = {};
+    const id = `curr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newCurr: Curriculum = { id, ...data };
+    this.db.curriculums[id] = newCurr;
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Kurikulum Baru',
+      `Kurikulum ${newCurr.nama} (${newCurr.kode}) ditambahkan.`,
+      `curriculum_${id}`,
+      newCurr
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('curriculums', newCurr);
+    return newCurr;
+  }
+
+  public updateCurriculum(id: string, data: Partial<Curriculum>): void {
+    if (!this.db.curriculums || !this.db.curriculums[id]) return;
+    this.db.curriculums[id] = { ...this.db.curriculums[id], ...data };
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Kurikulum',
+      `Kurikulum ${this.db.curriculums[id].nama} diperbarui.`,
+      `curriculum_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('curriculums', this.db.curriculums[id]);
+  }
+
+  public deleteCurriculum(id: string): boolean {
+    if (!this.db.curriculums || !this.db.curriculums[id]) return false;
+    const target = this.db.curriculums[id];
+    delete this.db.curriculums[id];
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Kurikulum',
+      `Kurikulum ${target.nama} dihapus dari Master Data.`,
+      `curriculum_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('curriculums', id);
+    return true;
+  }
+
+  // --- 3. JURUSAN & PROGRAM KEAHLIAN ---
+  public getDepartments(): Department[] {
+    if (!this.db.departments) {
+      this.db.departments = JSON.parse(JSON.stringify(INITIAL_DATABASE.departments || {}));
+    }
+    return Object.values(this.db.departments || {});
+  }
+
+  public createDepartment(data: Omit<Department, 'id'>): Department {
+    if (!this.db.departments) this.db.departments = {};
+    const id = `dept_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newDept: Department = { id, ...data };
+    this.db.departments[id] = newDept;
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Jurusan/Program',
+      `Jurusan ${newDept.nama} (${newDept.kode}) ditambahkan ke Master Data.`,
+      `department_${id}`,
+      newDept
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('departments', newDept);
+    return newDept;
+  }
+
+  public updateDepartment(id: string, data: Partial<Department>): void {
+    if (!this.db.departments || !this.db.departments[id]) return;
+    this.db.departments[id] = { ...this.db.departments[id], ...data };
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Data Jurusan',
+      `Jurusan ${this.db.departments[id].nama} diperbarui.`,
+      `department_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('departments', this.db.departments[id]);
+  }
+
+  public deleteDepartment(id: string): boolean {
+    if (!this.db.departments || !this.db.departments[id]) return false;
+    const target = this.db.departments[id];
+    delete this.db.departments[id];
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Jurusan',
+      `Jurusan ${target.nama} dihapus dari Master Data.`,
+      `department_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('departments', id);
+    return true;
+  }
+
+  // --- 4. MASTER MATA PELAJARAN (MAPEL) ---
+  public getMasterSubjects(): MasterSubject[] {
+    if (!this.db.master_subjects || Object.keys(this.db.master_subjects).length === 0) {
+      this.db.master_subjects = JSON.parse(JSON.stringify(INITIAL_DATABASE.master_subjects || {}));
+    }
+    return Object.values(this.db.master_subjects || {});
+  }
+
+  public createMasterSubject(data: Omit<MasterSubject, 'id'>): MasterSubject {
+    if (!this.db.master_subjects) this.db.master_subjects = {};
+    const id = `ms_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newSubject: MasterSubject = { id, ...data };
+    this.db.master_subjects[id] = newSubject;
+
+    // Synchronize to active subjects collection if not existing
+    if (!this.db.subjects[id]) {
+      this.db.subjects[id] = {
+        id,
+        nama_mapel: newSubject.nama_mapel,
+        guru_id: newSubject.guru_id
+      };
+      FirestoreSyncService.getInstance().syncItemToFirestore('subjects', this.db.subjects[id]);
+    }
+
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Master Mapel',
+      `Mata Pelajaran ${newSubject.nama_mapel} (${newSubject.kode_mapel}) ditambahkan.`,
+      `master_subject_${id}`,
+      newSubject
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('master_subjects', newSubject);
+    return newSubject;
+  }
+
+  public updateMasterSubject(id: string, data: Partial<MasterSubject>): void {
+    if (!this.db.master_subjects || !this.db.master_subjects[id]) return;
+    this.db.master_subjects[id] = { ...this.db.master_subjects[id], ...data };
+
+    // Update in subjects collection too
+    if (this.db.subjects[id]) {
+      if (data.nama_mapel) this.db.subjects[id].nama_mapel = data.nama_mapel;
+      if (data.guru_id) this.db.subjects[id].guru_id = data.guru_id;
+      FirestoreSyncService.getInstance().syncItemToFirestore('subjects', this.db.subjects[id]);
+    }
+
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Master Mapel',
+      `Mata Pelajaran ${this.db.master_subjects[id].nama_mapel} diperbarui.`,
+      `master_subject_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('master_subjects', this.db.master_subjects[id]);
+  }
+
+  public deleteMasterSubject(id: string): boolean {
+    if (!this.db.master_subjects || !this.db.master_subjects[id]) return false;
+    const target = this.db.master_subjects[id];
+    delete this.db.master_subjects[id];
+    if (this.db.subjects[id]) {
+      delete this.db.subjects[id];
+      FirestoreSyncService.getInstance().deleteItemFromFirestore('subjects', id);
+    }
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Master Mapel',
+      `Mata Pelajaran ${target.nama_mapel} dihapus dari Master Data.`,
+      `master_subject_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('master_subjects', id);
+    return true;
+  }
+
+  // --- 5. EKSTRAKURIKULER ---
+  public getExtracurriculars(): Extracurricular[] {
+    if (!this.db.extracurriculars) {
+      this.db.extracurriculars = JSON.parse(JSON.stringify(INITIAL_DATABASE.extracurriculars || {}));
+    }
+    return Object.values(this.db.extracurriculars || {});
+  }
+
+  public createExtracurricular(data: Omit<Extracurricular, 'id'>): Extracurricular {
+    if (!this.db.extracurriculars) this.db.extracurriculars = {};
+    const id = `ekskul_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newEkskul: Extracurricular = { id, ...data };
+    this.db.extracurriculars[id] = newEkskul;
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Ekstrakurikuler',
+      `Ekstrakurikuler ${newEkskul.nama} ditambahkan ke Master Data.`,
+      `extracurricular_${id}`,
+      newEkskul
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('extracurriculars', newEkskul);
+    return newEkskul;
+  }
+
+  public updateExtracurricular(id: string, data: Partial<Extracurricular>): void {
+    if (!this.db.extracurriculars || !this.db.extracurriculars[id]) return;
+    this.db.extracurriculars[id] = { ...this.db.extracurriculars[id], ...data };
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Ekstrakurikuler',
+      `Ekstrakurikuler ${this.db.extracurriculars[id].nama} diperbarui.`,
+      `extracurricular_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('extracurriculars', this.db.extracurriculars[id]);
+  }
+
+  public deleteExtracurricular(id: string): boolean {
+    if (!this.db.extracurriculars || !this.db.extracurriculars[id]) return false;
+    const target = this.db.extracurriculars[id];
+    delete this.db.extracurriculars[id];
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Ekstrakurikuler',
+      `Ekstrakurikuler ${target.nama} dihapus dari Master Data.`,
+      `extracurricular_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('extracurriculars', id);
+    return true;
+  }
+
+  // --- 6. JAM PEMBELAJARAN (STUDY SCHEDULES) ---
+  public getStudySchedules(): StudyScheduleSlot[] {
+    if (!this.db.study_schedules) {
+      this.db.study_schedules = JSON.parse(JSON.stringify(INITIAL_DATABASE.study_schedules || {}));
+    }
+    return Object.values(this.db.study_schedules || {}).sort((a, b) => a.waktuMulai.localeCompare(b.waktuMulai));
+  }
+
+  public createStudySchedule(data: Omit<StudyScheduleSlot, 'id'>): StudyScheduleSlot {
+    if (!this.db.study_schedules) this.db.study_schedules = {};
+    const id = `slot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newSlot: StudyScheduleSlot = { id, ...data };
+    this.db.study_schedules[id] = newSlot;
+    this.persist();
+    this.logActivity(
+      'master_academic_create',
+      'Tambah Slot Jam Belajar',
+      `Slot Jam [${newSlot.waktuMulai} - ${newSlot.waktuSelesai}] (${newSlot.keterangan}) ditambahkan.`,
+      `schedule_slot_${id}`,
+      newSlot
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('study_schedules', newSlot);
+    return newSlot;
+  }
+
+  public updateStudySchedule(id: string, data: Partial<StudyScheduleSlot>): void {
+    if (!this.db.study_schedules || !this.db.study_schedules[id]) return;
+    this.db.study_schedules[id] = { ...this.db.study_schedules[id], ...data };
+    this.persist();
+    this.logActivity(
+      'master_academic_update',
+      'Pembaruan Slot Jam Belajar',
+      `Slot Jam [${this.db.study_schedules[id].waktuMulai} - ${this.db.study_schedules[id].waktuSelesai}] diperbarui.`,
+      `schedule_slot_${id}`,
+      data
+    );
+    FirestoreSyncService.getInstance().syncItemToFirestore('study_schedules', this.db.study_schedules[id]);
+  }
+
+  public deleteStudySchedule(id: string): boolean {
+    if (!this.db.study_schedules || !this.db.study_schedules[id]) return false;
+    const target = this.db.study_schedules[id];
+    delete this.db.study_schedules[id];
+    this.persist();
+    this.logActivity(
+      'master_academic_delete',
+      'Hapus Slot Jam Belajar',
+      `Slot Jam [${target.waktuMulai} - ${target.waktuSelesai}] dihapus dari Master Data.`,
+      `schedule_slot_${id}`
+    );
+    FirestoreSyncService.getInstance().deleteItemFromFirestore('study_schedules', id);
+    return true;
+  }
+
+  // --- 7. EXPORT & RESTORE MASTER AKADEMIK JSON ---
+  public exportMasterAcademicJSON(): { blob: Blob; filename: string; summary: Record<string, number> } {
+    const payload = {
+      _meta: {
+        app: this.db.app_settings?.appName || 'SIMAK',
+        type: 'MASTER_ACADEMIC_BACKUP',
+        exportedAt: new Date().toISOString(),
+        version: '2.0.0'
+      },
+      academic_years: this.db.academic_years || {},
+      curriculums: this.db.curriculums || {},
+      departments: this.db.departments || {},
+      master_subjects: this.db.master_subjects || {},
+      extracurriculars: this.db.extracurriculars || {},
+      study_schedules: this.db.study_schedules || {},
+      classes: this.db.classes || {}
+    };
+
+    const summary: Record<string, number> = {
+      academic_years: Object.keys(payload.academic_years).length,
+      curriculums: Object.keys(payload.curriculums).length,
+      departments: Object.keys(payload.departments).length,
+      master_subjects: Object.keys(payload.master_subjects).length,
+      extracurriculars: Object.keys(payload.extracurriculars).length,
+      study_schedules: Object.keys(payload.study_schedules).length,
+      classes: Object.keys(payload.classes).length
+    };
+
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const filename = `SIMAK_Master_Akademik_${new Date().toISOString().split('T')[0]}.json`;
+
+    return { blob, filename, summary };
+  }
+
+  public downloadMasterAcademicJSON(): void {
+    const { blob, filename, summary } = this.exportMasterAcademicJSON();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    this.logActivity(
+      'export_data',
+      'Unduh Cadangan Master Akademik JSON',
+      `Mengunduh file cadangan Master Data Akademik (${filename})`,
+      filename,
+      summary
+    );
+  }
+
+  public restoreMasterAcademicJSON(jsonContent: string): { success: boolean; message: string; summary?: Record<string, number> } {
+    try {
+      const parsed = JSON.parse(jsonContent);
+      let count = 0;
+
+      if (parsed.academic_years) {
+        this.db.academic_years = { ...(this.db.academic_years || {}), ...parsed.academic_years };
+        count += Object.keys(parsed.academic_years).length;
+      }
+      if (parsed.curriculums) {
+        this.db.curriculums = { ...(this.db.curriculums || {}), ...parsed.curriculums };
+        count += Object.keys(parsed.curriculums).length;
+      }
+      if (parsed.departments) {
+        this.db.departments = { ...(this.db.departments || {}), ...parsed.departments };
+        count += Object.keys(parsed.departments).length;
+      }
+      if (parsed.master_subjects) {
+        this.db.master_subjects = { ...(this.db.master_subjects || {}), ...parsed.master_subjects };
+        count += Object.keys(parsed.master_subjects).length;
+      }
+      if (parsed.extracurriculars) {
+        this.db.extracurriculars = { ...(this.db.extracurriculars || {}), ...parsed.extracurriculars };
+        count += Object.keys(parsed.extracurriculars).length;
+      }
+      if (parsed.study_schedules) {
+        this.db.study_schedules = { ...(this.db.study_schedules || {}), ...parsed.study_schedules };
+        count += Object.keys(parsed.study_schedules).length;
+      }
+
+      this.persist();
+
+      // Trigger cloud sync to Firebase
+      FirestoreSyncService.getInstance().syncAllMasterAcademicToFirestore();
+
+      const summary: Record<string, number> = {
+        academic_years: Object.keys(this.db.academic_years || {}).length,
+        curriculums: Object.keys(this.db.curriculums || {}).length,
+        departments: Object.keys(this.db.departments || {}).length,
+        master_subjects: Object.keys(this.db.master_subjects || {}).length,
+        extracurriculars: Object.keys(this.db.extracurriculars || {}).length,
+        study_schedules: Object.keys(this.db.study_schedules || {}).length
+      };
+
+      this.logActivity(
+        'import_data',
+        'Impor Master Data Akademik',
+        `Memulihkan master data akademik (${count} entitas diperbarui).`,
+        'restore_master_academic',
+        summary
+      );
+
+      return {
+        success: true,
+        message: `Berhasil mengimpor dan menyinkronkan ${count} entitas Master Data Akademik.`,
+        summary
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        message: `Gagal memproses file master data: ${e?.message || 'Format JSON tidak valid'}`
+      };
+    }
+  }
 }
+

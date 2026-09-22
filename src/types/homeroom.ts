@@ -158,6 +158,80 @@ export interface AttitudeAssessmentItem {
   }[];
 }
 
+// 12) RINCIAN ADMINISTRASI SEKOLAH (SPP, ASRAMA, BUKU, PRAKTIKUM, KESISWAAN, DLL.)
+export type PaymentStatusColor = 'lunas' | 'wajib' | 'cicil' | 'subsidi';
+
+export interface SppMonthlyFee {
+  juli: number;
+  agustus: number;
+  september: number;
+  oktober: number;
+  november: number;
+  desember: number;
+  januari: number;
+  februari: number;
+  maret: number;
+  april: number;
+  mei: number;
+  juni: number;
+}
+
+export interface StudentSchoolFeeRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
+  tagihanKelasX: number; // Tagihan Tingkat Sebelumnya (misal Kelas X)
+  asrama: number; // Asrama Tahun Berjalan
+  ptsPas: number; // PTS - PAS
+  buku: number; // BUKU
+  praktikum: number; // PRAKTIKUM 1 TAHUN
+  kesiswaan: number; // KESISWAAN
+  spp: SppMonthlyFee; // SPP 12 Bulan (Juli s.d. Juni)
+  cellStatus?: {
+    tagihanKelasX?: PaymentStatusColor;
+    asrama?: PaymentStatusColor;
+    ptsPas?: PaymentStatusColor;
+    buku?: PaymentStatusColor;
+    praktikum?: PaymentStatusColor;
+    kesiswaan?: PaymentStatusColor;
+    spp_juli?: PaymentStatusColor;
+    spp_agustus?: PaymentStatusColor;
+    spp_september?: PaymentStatusColor;
+    spp_oktober?: PaymentStatusColor;
+    spp_november?: PaymentStatusColor;
+    spp_desember?: PaymentStatusColor;
+    spp_januari?: PaymentStatusColor;
+    spp_februari?: PaymentStatusColor;
+    spp_maret?: PaymentStatusColor;
+    spp_april?: PaymentStatusColor;
+    spp_mei?: PaymentStatusColor;
+    spp_juni?: PaymentStatusColor;
+  };
+  rowHighlight?: 'lunas_full' | 'wajib' | 'cicil' | 'subsidi' | 'none';
+  notes?: string;
+}
+
+export interface SchoolFeeAdministrationDoc {
+  class_id: string;
+  className: string;
+  month: string; // e.g. "Agustus 2026"
+  academicYear: string; // e.g. "2026 - 2027"
+  tagihanPreviousHeader: string; // e.g. "TAGIHAN KELAS X"
+  asramaHeaderPeriod: string; // e.g. "ASRAMA 2026 - 2027"
+  sppHeaderPeriod: string; // e.g. "SPP (JULI 2026 - JUNI 2027)"
+  dataPerDate: string; // e.g. "Data per Tanggal 15 Agustus 2026"
+  signDate: string; // e.g. "Jember, 31 Agustus 2026"
+  homeroomTeacherName: string; // e.g. "Puput Sasmita, S.Pd., Gr."
+  homeroomTeacherCallName: string; // e.g. "BAPAK PUPUT"
+  schoolTreasurerName: string; // e.g. "Agustin Rahmawati, A.Md."
+  receivingTreasurerName: string; // e.g. "Agustin Rahmawati"
+  bankName: string; // e.g. "BANK SYARIAH INDONESIA (BSI)"
+  bankAccountNumber: string; // e.g. "4444-400-167"
+  bankAccountHolder: string; // e.g. "SMK DR SOEBANDI JEMBER"
+  records: StudentSchoolFeeRecord[];
+  updatedAt: string;
+}
+
 export interface ClassTreasuryTransaction {
   id: string;
   class_id: string;
@@ -287,6 +361,7 @@ export interface HomeroomClassData {
   piketAttendanceLogs: PiketAttendanceRecord[];
   attitudeAssessments: AttitudeAssessmentItem[];
   treasuryTransactions: ClassTreasuryTransaction[];
+  schoolFeeAdministration?: SchoolFeeAdministrationDoc;
   classJournals: ClassJournalItem[];
   studentMutations: StudentMutationItem[];
   studentCases: StudentCaseItem[];

@@ -18,15 +18,18 @@ import {
   Volume2,
   VolumeX,
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  KeyRound,
+  Maximize2
 } from 'lucide-react';
 import { navigationBackService } from '../services/navigationBackService';
+import { DynamicQRAttendanceService } from '../services/dynamicQRAttendanceService';
 
 interface ScannedLog {
   studentId: string;
   nama: string;
   time: string;
-  method: 'Kamera Live' | 'Unggah Gambar' | 'Simulasi Kartu';
+  method: 'Kamera Live' | 'Unggah Gambar' | 'Simulasi Kartu' | 'QR Dinamis' | 'PIN OTP';
 }
 
 interface QRScannerSectionProps {
@@ -35,6 +38,7 @@ interface QRScannerSectionProps {
   students: User[];
   onAttendanceMarked: (studentId: string, nama: string) => void;
   onClose?: () => void;
+  onOpenDynamicQRModal?: () => void;
 }
 
 export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
@@ -42,7 +46,8 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
   classNameTitle,
   students,
   onAttendanceMarked,
-  onClose
+  onClose,
+  onOpenDynamicQRModal
 }) => {
   // Intercept tombol kembali perangkat Android untuk membatalkan/menutup scanner
   useEffect(() => {
@@ -53,13 +58,15 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
     });
     return () => unregister();
   }, [onClose]);
-  const [activeSubTab, setActiveSubTab] = useState<'camera' | 'upload' | 'simulate' | 'cards'>('camera');
+  const [activeSubTab, setActiveSubTab] = useState<'camera' | 'upload' | 'simulate' | 'cards' | 'pin'>('camera');
   const [cameraActive, setCameraActive] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [scannedLogs, setScannedLogs] = useState<ScannedLog[]>([]);
   const [lastScannedStudent, setLastScannedStudent] = useState<{ id: string; nama: string; time: string } | null>(null);
   const [studentQRCodes, setStudentQRCodes] = useState<Record<string, string>>({});
+  const [manualPin, setManualPin] = useState<string>('');
+  const [pinStudentId, setPinStudentId] = useState<string>('');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -117,10 +124,94 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
   }, [students, classId]);
 
   // Process decoded QR text
-  const handleDecodedText = (text: string, method: 'Kamera Live' | 'Unggah Gambar' | 'Simulasi Kartu') => {
+  const handleDecodedText = (text: string, method: 'Kamera Live' | 'Unggah Gambar' | 'Simulasi Kartu' | 'QR Dinamis' | 'PIN OTP') => {
     let studentIdToFind = text.trim();
 
-    // Check if JSON payload
+    // Check if dynamic QR payload
+    const dynamicService = DynamicQRAttendanceService.getInstance();
+    const activeDynamicSess = dynamicService.getActiveSession(classId);
+
+    if (
+      text.includes('DYNAMIC_CLASS_ATTENDANCE') ||
+      text.includes('SIMAK_SECURE_QR') ||
+      (activeDynamicSess && (text === activeDynamicSess.token || text === activeDynamicSess.otpCode))
+    ) {
+      // It's a dynamic classroom QR code!
+      if (!activeDynamicSess) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sesi QR Dinamis Tidak Aktif',
+          text: 'Tidak ada sesi QR dinamis aktif untuk kelas ini.',
+          confirmButtonColor: '#2563eb'
+        });
+        return;
+      }
+
+      // Check if session is expired
+      const now = new Date().getTime();
+      const expireTime = new Date(activeDynamicSess.expiresAt).getTime();
+      if (now > expireTime || activeDynamicSess.status === 'expired') {
+        const expiredStr = new Date(activeDynamicSess.expiresAt).toLocaleTimeString('id-ID');
+        Swal.fire({
+          icon: 'error',
+          title: 'QR Code Telah Kadaluarsa!',
+          text: `Masa berlaku QR code dinamis kelas ini telah berakhir pukul ${expiredStr} WIB. Silakan perpanjang waktu melalui menu QR Dinamis.`,
+          confirmButtonColor: '#ef4444'
+        });
+        return;
+      }
+
+      // If valid dynamic QR, prompt/select which student is scanning (if in general teacher scanner)
+      if (students.length > 0) {
+        const firstUnscanned = students.find(
+          (s) => !activeDynamicSess.scannedStudents.some((sc) => sc.studentId === s.id)
+        );
+        const targetStd = firstUnscanned || students[0];
+        const res = dynamicService.verifyAndRecordAttendance({
+          scannedTextOrOtp: text,
+          studentId: targetStd.id,
+          studentName: targetStd.nama,
+          targetClassId: classId,
+          method: 'Kamera Pemindai Guru'
+        });
+
+        if (res.success) {
+          playScanBeep();
+          const timeStr = new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+          setLastScannedStudent({
+            id: targetStd.id,
+            nama: targetStd.nama,
+            time: timeStr
+          });
+          setScannedLogs((prev) => [
+            {
+              studentId: targetStd.id,
+              nama: targetStd.nama,
+              time: timeStr,
+              method: 'QR Dinamis'
+            },
+            ...prev.filter((l) => l.studentId !== targetStd.id)
+          ]);
+          onAttendanceMarked(targetStd.id, targetStd.nama);
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: `✅ Hadir (QR Dinamis): ${targetStd.nama}`,
+            text: `Token valid (berlaku s/d ${new Date(activeDynamicSess.expiresAt).toLocaleTimeString('id-ID')})`,
+            timer: 2500,
+            showConfirmButton: false
+          });
+        }
+        return;
+      }
+    }
+
+    // Standard Student ID check
     try {
       if (text.startsWith('{') && text.endsWith('}')) {
         const parsed = JSON.parse(text);
@@ -186,6 +277,70 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
       timer: 2000,
       showConfirmButton: false
     });
+  };
+
+  const handleManualPinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualPin.trim() || !pinStudentId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Data Belum Lengkap',
+        text: 'Pilih siswa dan masukkan 6-digit PIN sesi presensi.'
+      });
+      return;
+    }
+
+    const student = students.find((s) => s.id === pinStudentId);
+    if (!student) return;
+
+    const dynamicService = DynamicQRAttendanceService.getInstance();
+    const res = dynamicService.verifyAndRecordAttendance({
+      scannedTextOrOtp: manualPin.trim(),
+      studentId: student.id,
+      studentName: student.nama,
+      targetClassId: classId,
+      method: 'Input PIN Manual'
+    });
+
+    if (res.success) {
+      playScanBeep();
+      const timeStr = new Date().toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      setLastScannedStudent({
+        id: student.id,
+        nama: student.nama,
+        time: timeStr
+      });
+      setScannedLogs((prev) => [
+        {
+          studentId: student.id,
+          nama: student.nama,
+          time: timeStr,
+          method: 'PIN OTP'
+        },
+        ...prev.filter((l) => l.studentId !== student.id)
+      ]);
+      onAttendanceMarked(student.id, student.nama);
+      setManualPin('');
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `✅ Hadir: ${student.nama}`,
+        text: 'Presensi berhasil dicatat via verifikasi PIN OTP.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire({
+        icon: res.isExpired ? 'warning' : 'error',
+        title: res.isExpired ? 'PIN Kadaluarsa' : 'Verifikasi Gagal',
+        text: res.message
+      });
+    }
   };
 
   // Camera scanner routine using requestAnimationFrame and jsQR
@@ -322,12 +477,24 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-              Kelas: <strong className="text-slate-900 dark:text-white">{classNameTitle}</strong> • Dekode langsung dari Kamera, Foto QR, atau Kartu Pelajar Digital.
+              Kelas: <strong className="text-slate-900 dark:text-white">{classNameTitle}</strong> • Dekode langsung dari Kamera, Foto QR, Kartu Pelajar, atau QR Dinamis Kelas.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+          {onOpenDynamicQRModal && (
+            <button
+              type="button"
+              onClick={onOpenDynamicQRModal}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Buka Generator QR Dinamis dengan batas waktu untuk ditampilkan di proyektor kelas"
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-300" />
+              <span>Proyektor QR Dinamis</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
@@ -384,6 +551,18 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveSubTab('pin')}
+          className={`px-4 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
+            activeSubTab === 'pin'
+              ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-xs border border-slate-200 dark:border-slate-600'
+              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <KeyRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          Input PIN Sesi QR
+        </button>
+
+        <button
           onClick={() => setActiveSubTab('upload')}
           className={`px-4 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${
             activeSubTab === 'upload'
@@ -434,7 +613,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                     <div className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_8px_#EF4444] animate-bounce"></div>
                   </div>
                   <span className="text-[11px] font-bold text-slate-300 mt-4 bg-slate-900/80 px-3 py-1 rounded-full backdrop-blur-xs">
-                    Arahkan QR Code Kartu Pelajar ke dalam kotak
+                    Arahkan QR Code Kartu Pelajar atau QR Dinamis ke kotak
                   </span>
                 </div>
               )}
@@ -514,7 +693,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                     <button
                       type="button"
                       onClick={() => handleDecodedText(std.id, 'Simulasi Kartu')}
-                      className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-[11px] font-bold rounded-lg shrink-0 transition flex items-center gap-1 shadow-xs"
+                      className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-[11px] font-bold rounded-lg shrink-0 transition flex items-center gap-1 shadow-xs cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Scan
@@ -525,7 +704,68 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
             </div>
           )}
 
-          {/* TAB 3: UPLOAD GAMBAR QR CODE */}
+          {/* TAB 3: INPUT PIN SESI QR */}
+          {activeSubTab === 'pin' && (
+            <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                    Verifikasi Kehadiran via PIN OTP Sesi
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    Alternatif jika kamera siswa bermasalah atau buram saat memindai QR dinamis di layar proyektor.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleManualPinSubmit} className="space-y-4 pt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Pilih Siswa:
+                  </label>
+                  <select
+                    value={pinStudentId}
+                    onChange={(e) => setPinStudentId(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Pilih Siswa yang Hadir --</option>
+                    {students.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nama} ({s.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Kode PIN Sesi Proyektor (6-Digit):
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={manualPin}
+                    onChange={(e) => setManualPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Contoh: 849201"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-center font-mono text-xl font-black tracking-widest text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Verifikasi PIN & Catat Hadir</span>
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 4: UPLOAD GAMBAR QR CODE */}
           {activeSubTab === 'upload' && (
             <div className="bg-slate-50 dark:bg-slate-900/60 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-8 text-center space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 mx-auto flex items-center justify-center">
@@ -552,7 +792,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
             </div>
           )}
 
-          {/* TAB 4: CETAK KARTU QR SISWA */}
+          {/* TAB 5: CETAK KARTU QR SISWA */}
           {activeSubTab === 'cards' && (
             <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -567,7 +807,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" /> Cetak
                 </button>
@@ -600,7 +840,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDecodedText(std.id, 'Simulasi Kartu')}
-                        className="mt-2 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                        className="mt-2 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         Uji Scan &rarr;
                       </button>
@@ -638,7 +878,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
               </div>
               <div className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-2">Menunggu Pemindaian QR</div>
               <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
-                Arahkan kartu ke kamera atau gunakan tab uji coba scan.
+                Arahkan kartu ke kamera atau gunakan tab uji coba scan / PIN sesi.
               </p>
             </div>
           )}

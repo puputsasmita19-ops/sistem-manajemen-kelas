@@ -254,6 +254,66 @@ export class FirestoreSyncService {
         });
       }
 
+      // 10. Master Data: Academic Years
+      const aySnap = await getDocs(collection(firestore, 'academic_years'));
+      if (!aySnap.empty) {
+        if (!current.academic_years) current.academic_years = {};
+        aySnap.forEach(d => {
+          const ay = d.data();
+          if (ay && ay.id) current.academic_years![ay.id] = ay as any;
+        });
+      }
+
+      // 11. Master Data: Curriculums
+      const currSnap = await getDocs(collection(firestore, 'curriculums'));
+      if (!currSnap.empty) {
+        if (!current.curriculums) current.curriculums = {};
+        currSnap.forEach(d => {
+          const curr = d.data();
+          if (curr && curr.id) current.curriculums![curr.id] = curr as any;
+        });
+      }
+
+      // 12. Master Data: Departments
+      const deptSnap = await getDocs(collection(firestore, 'departments'));
+      if (!deptSnap.empty) {
+        if (!current.departments) current.departments = {};
+        deptSnap.forEach(d => {
+          const dept = d.data();
+          if (dept && dept.id) current.departments![dept.id] = dept as any;
+        });
+      }
+
+      // 13. Master Data: Master Subjects
+      const msSnap = await getDocs(collection(firestore, 'master_subjects'));
+      if (!msSnap.empty) {
+        if (!current.master_subjects) current.master_subjects = {};
+        msSnap.forEach(d => {
+          const ms = d.data();
+          if (ms && ms.id) current.master_subjects![ms.id] = ms as any;
+        });
+      }
+
+      // 14. Master Data: Extracurriculars
+      const ekskulSnap = await getDocs(collection(firestore, 'extracurriculars'));
+      if (!ekskulSnap.empty) {
+        if (!current.extracurriculars) current.extracurriculars = {};
+        ekskulSnap.forEach(d => {
+          const ekskul = d.data();
+          if (ekskul && ekskul.id) current.extracurriculars![ekskul.id] = ekskul as any;
+        });
+      }
+
+      // 15. Master Data: Study Schedules
+      const schedSnap = await getDocs(collection(firestore, 'study_schedules'));
+      if (!schedSnap.empty) {
+        if (!current.study_schedules) current.study_schedules = {};
+        schedSnap.forEach(d => {
+          const sched = d.data();
+          if (sched && sched.id) current.study_schedules![sched.id] = sched as any;
+        });
+      }
+
       // Simpan pembaruan ke local storage
       localStorage.setItem('SIMAK_FIREBASE_RTDB_SIMULATION', JSON.stringify(current));
     } catch (e) {
@@ -444,6 +504,162 @@ export class FirestoreSyncService {
         });
       }, (err) => console.warn('Logs realtime listener warning:', err));
       this.activeSubscriptions.push(unsubLogs);
+
+      // Listener Master Data: Academic Years Realtime
+      const unsubAY = onSnapshot(collection(firestore, 'academic_years'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.academic_years) raw.academic_years = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.academic_years![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.academic_years![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Tahun Ajaran Tersinkronisasi', 'Master Tahun Ajaran disinkronkan dengan Firebase.');
+        }
+      }, (err) => console.warn('AcademicYears realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubAY);
+
+      // Listener Master Data: Curriculums Realtime
+      const unsubCurr = onSnapshot(collection(firestore, 'curriculums'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.curriculums) raw.curriculums = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.curriculums![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.curriculums![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Kurikulum Tersinkronisasi', 'Master Kurikulum disinkronkan.');
+        }
+      }, (err) => console.warn('Curriculums realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubCurr);
+
+      // Listener Master Data: Departments Realtime
+      const unsubDept = onSnapshot(collection(firestore, 'departments'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.departments) raw.departments = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.departments![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.departments![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Jurusan Tersinkronisasi', 'Master Jurusan / Program Keahlian disinkronkan.');
+        }
+      }, (err) => console.warn('Departments realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubDept);
+
+      // Listener Master Data: Master Subjects Realtime
+      const unsubMS = onSnapshot(collection(firestore, 'master_subjects'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.master_subjects) raw.master_subjects = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.master_subjects![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.master_subjects![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Master Mapel Tersinkronisasi', 'Data Master Mata Pelajaran disinkronkan.');
+        }
+      }, (err) => console.warn('MasterSubjects realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubMS);
+
+      // Listener Master Data: Extracurriculars Realtime
+      const unsubEks = onSnapshot(collection(firestore, 'extracurriculars'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.extracurriculars) raw.extracurriculars = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.extracurriculars![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.extracurriculars![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Ekstrakurikuler Tersinkronisasi', 'Master Ekstrakurikuler disinkronkan.');
+        }
+      }, (err) => console.warn('Extracurriculars realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubEks);
+
+      // Listener Master Data: Study Schedules Realtime
+      const unsubSched = onSnapshot(collection(firestore, 'study_schedules'), (snap) => {
+        let hasChanges = false;
+        const dbService = DatabaseService.getInstance();
+        const raw = dbService.getRawSnapshot();
+        if (!raw.study_schedules) raw.study_schedules = {};
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const data = change.doc.data() as any;
+            if (data && data.id) {
+              raw.study_schedules![data.id] = data;
+              hasChanges = true;
+            }
+          } else if (change.type === 'removed') {
+            delete raw.study_schedules![change.doc.id];
+            hasChanges = true;
+          }
+        });
+        if (hasChanges) {
+          dbService.persist();
+          dbService.notifyDataChange();
+          this.showFirebaseToast('Jadwal Belajar Tersinkronisasi', 'Master Jam Belajar disinkronkan.');
+        }
+      }, (err) => console.warn('StudySchedules realtime listener warning:', err));
+      this.activeSubscriptions.push(unsubSched);
     } catch (err) {
       console.warn('Realtime listeners start error:', err);
     }
@@ -535,6 +751,60 @@ export class FirestoreSyncService {
       count++;
     });
 
+    // 11. Master Data: Academic Years
+    if (snapshot.academic_years) {
+      Object.values(snapshot.academic_years).forEach(ay => {
+        const ref = doc(firestore, 'academic_years', ay.id);
+        batch.set(ref, ay, { merge: true });
+        count++;
+      });
+    }
+
+    // 12. Master Data: Curriculums
+    if (snapshot.curriculums) {
+      Object.values(snapshot.curriculums).forEach(curr => {
+        const ref = doc(firestore, 'curriculums', curr.id);
+        batch.set(ref, curr, { merge: true });
+        count++;
+      });
+    }
+
+    // 13. Master Data: Departments
+    if (snapshot.departments) {
+      Object.values(snapshot.departments).forEach(dept => {
+        const ref = doc(firestore, 'departments', dept.id);
+        batch.set(ref, dept, { merge: true });
+        count++;
+      });
+    }
+
+    // 14. Master Data: Master Subjects
+    if (snapshot.master_subjects) {
+      Object.values(snapshot.master_subjects).forEach(ms => {
+        const ref = doc(firestore, 'master_subjects', ms.id);
+        batch.set(ref, ms, { merge: true });
+        count++;
+      });
+    }
+
+    // 15. Master Data: Extracurriculars
+    if (snapshot.extracurriculars) {
+      Object.values(snapshot.extracurriculars).forEach(ekskul => {
+        const ref = doc(firestore, 'extracurriculars', ekskul.id);
+        batch.set(ref, ekskul, { merge: true });
+        count++;
+      });
+    }
+
+    // 16. Master Data: Study Schedules
+    if (snapshot.study_schedules) {
+      Object.values(snapshot.study_schedules).forEach(sched => {
+        const ref = doc(firestore, 'study_schedules', sched.id);
+        batch.set(ref, sched, { merge: true });
+        count++;
+      });
+    }
+
     await batch.commit();
 
     this.status.totalSynced = count;
@@ -543,6 +813,80 @@ export class FirestoreSyncService {
     this.notify();
 
     return count;
+  }
+
+  /**
+   * Helper untuk menyinkronkan item secara individual
+   */
+  public async syncItemToFirestore(collectionName: string, item: any): Promise<void> {
+    if (!item || !item.id) return;
+    return this.syncDocument(collectionName, item.id, item);
+  }
+
+  /**
+   * Helper untuk menghapus item secara individual
+   */
+  public async deleteItemFromFirestore(collectionName: string, id: string): Promise<void> {
+    if (!id) return;
+    return this.deleteDocument(collectionName, id);
+  }
+
+  /**
+   * Menyinkronkan seluruh master akademik ke Firebase Firestore
+   */
+  public async syncAllMasterAcademicToFirestore(): Promise<{ success: boolean; count: number }> {
+    try {
+      const dbService = DatabaseService.getInstance();
+      const snapshot = dbService.getRawSnapshot();
+      const batch = writeBatch(firestore);
+      let count = 0;
+
+      if (snapshot.academic_years) {
+        Object.values(snapshot.academic_years).forEach(ay => {
+          batch.set(doc(firestore, 'academic_years', ay.id), ay, { merge: true });
+          count++;
+        });
+      }
+      if (snapshot.curriculums) {
+        Object.values(snapshot.curriculums).forEach(curr => {
+          batch.set(doc(firestore, 'curriculums', curr.id), curr, { merge: true });
+          count++;
+        });
+      }
+      if (snapshot.departments) {
+        Object.values(snapshot.departments).forEach(dept => {
+          batch.set(doc(firestore, 'departments', dept.id), dept, { merge: true });
+          count++;
+        });
+      }
+      if (snapshot.master_subjects) {
+        Object.values(snapshot.master_subjects).forEach(ms => {
+          batch.set(doc(firestore, 'master_subjects', ms.id), ms, { merge: true });
+          count++;
+        });
+      }
+      if (snapshot.extracurriculars) {
+        Object.values(snapshot.extracurriculars).forEach(ekskul => {
+          batch.set(doc(firestore, 'extracurriculars', ekskul.id), ekskul, { merge: true });
+          count++;
+        });
+      }
+      if (snapshot.study_schedules) {
+        Object.values(snapshot.study_schedules).forEach(sched => {
+          batch.set(doc(firestore, 'study_schedules', sched.id), sched, { merge: true });
+          count++;
+        });
+      }
+
+      await batch.commit();
+      this.status.lastSyncedAt = new Date().toLocaleTimeString('id-ID');
+      this.notify();
+      this.showFirebaseToast('Master Data Disinkronkan', `${count} Master Data Akademik tersinkronisasi ke Firebase Firestore.`);
+      return { success: true, count };
+    } catch (err: any) {
+      console.warn('Sync all master academic error:', err);
+      return { success: false, count: 0 };
+    }
   }
 
   /**

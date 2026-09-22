@@ -90,57 +90,57 @@ export const HomeroomStatistics: React.FC<HomeroomStatisticsProps> = ({
         </button>
       </div>
 
-      {/* Top 4 Key Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+      {/* Top 4 Key Metric Cards (Clean Proportional Layout Without Logos) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-xs space-y-1.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider">Total Siswa</span>
-            <Users className="w-4 h-4 text-blue-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
             {total} <span className="text-xs font-normal text-slate-400">Orang</span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/50">
             100% terdata dalam buku induk
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-xs space-y-1.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider">Gender (L / P)</span>
-            <PieChart className="w-4 h-4 text-indigo-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
             {maleCount} <span className="text-sm font-bold text-blue-600">L</span> : {femaleCount}{' '}
             <span className="text-sm font-bold text-rose-500">P</span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/50">
             {malePct}% Laki-laki, {femalePct}% Perempuan
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-xs space-y-1.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider">Penerima KIP / PIP</span>
-            <Wallet className="w-4 h-4 text-emerald-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
             {kipCount} <span className="text-xs font-normal text-slate-400">Siswa</span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/50">
             Bantuan Program Indonesia Pintar
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/80 shadow-xs space-y-1.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
             <span className="text-[10px] font-bold uppercase tracking-wider">Rata-rata Jarak</span>
-            <Compass className="w-4 h-4 text-amber-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">
+          <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
             {avgKm} <span className="text-xs font-normal text-slate-400">Km</span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/50">
             Jarak tempuh rumah ke sekolah
           </p>
         </div>
@@ -151,7 +151,7 @@ export const HomeroomStatistics: React.FC<HomeroomStatisticsProps> = ({
         {/* Gender Breakdown Bar */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
           <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-500" />
+            <Users className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
             <span>Komposisi Jenis Kelamin</span>
           </h4>
           <div className="h-4 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
@@ -183,7 +183,7 @@ export const HomeroomStatistics: React.FC<HomeroomStatisticsProps> = ({
         {/* Transportation Distribution */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
           <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Bus className="w-3.5 h-3.5 text-indigo-500" />
+            <Bus className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
             <span>Moda Transportasi ke Sekolah</span>
           </h4>
           <div className="space-y-2">
@@ -210,7 +210,7 @@ export const HomeroomStatistics: React.FC<HomeroomStatisticsProps> = ({
         {/* Blood Types */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
           <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Heart className="w-3.5 h-3.5 text-rose-500" />
+            <Heart className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
             <span>Distribusi Golongan Darah</span>
           </h4>
           <div className="grid grid-cols-4 gap-2 text-center">
@@ -233,7 +233,7 @@ export const HomeroomStatistics: React.FC<HomeroomStatisticsProps> = ({
         {/* Status Ekonomi & Bantuan */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
           <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Wallet className="w-3.5 h-3.5 text-emerald-500" />
+            <Wallet className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
             <span>Status Sosial Ekonomi Peserta Didik</span>
           </h4>
           <div className="space-y-2">

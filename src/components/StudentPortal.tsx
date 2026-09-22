@@ -5,6 +5,7 @@ import { User, Attendance } from '../types';
 import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
 import { StudentSelfieAttendanceModal } from './StudentSelfieAttendanceModal';
+import { StudentQRScannerModal } from './StudentQRScannerModal';
 import { AttendanceProofViewerModal } from './AttendanceProofViewerModal';
 import {
   Download,
@@ -20,7 +21,8 @@ import {
   CheckCircle2,
   ExternalLink,
   Eye,
-  RotateCcw
+  RotateCcw,
+  QrCode
 } from 'lucide-react';
 
 interface StudentPortalProps {
@@ -43,6 +45,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
   }
 
   const [showSelfieModal, setShowSelfieModal] = useState<boolean>(false);
+  const [showQRScanModal, setShowQRScanModal] = useState<boolean>(false);
   const [selectedProofAttendance, setSelectedProofAttendance] = useState<Attendance | null>(null);
 
   const report = dbService.getStudentReport(targetStudentId);
@@ -177,15 +180,27 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
                 </div>
               </div>
             ) : !isParent ? (
-              <button
-                type="button"
-                id="btn-open-selfie-attendance"
-                onClick={() => setShowSelfieModal(true)}
-                className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/20 transition transform active:scale-98 cursor-pointer"
-              >
-                <Zap className="w-5 h-5 text-slate-950 fill-current" />
-                <span>⚡ SCAN PRESENSI KILAT SEKARANG</span>
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  id="btn-open-qr-scanner-student"
+                  onClick={() => setShowQRScanModal(true)}
+                  className="w-full sm:w-auto px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-blue-500/20 transition transform active:scale-98 cursor-pointer"
+                >
+                  <QrCode className="w-5 h-5 text-white" />
+                  <span>SCAN QR PROYEKTOR GURU</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-open-selfie-attendance"
+                  onClick={() => setShowSelfieModal(true)}
+                  className="w-full sm:w-auto px-5 py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition transform active:scale-98 cursor-pointer"
+                >
+                  <Zap className="w-5 h-5 text-slate-950 fill-current" />
+                  <span>PRESENSI SELFIE</span>
+                </button>
+              </div>
             ) : (
               <div className="px-4 py-3 bg-rose-500/20 border border-rose-400/30 rounded-2xl text-xs text-rose-200 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
@@ -215,16 +230,27 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {!isParent && (
-              <button
-                type="button"
-                onClick={() => setShowSelfieModal(true)}
-                className="px-4 py-2.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-2 transition cursor-pointer"
-              >
-                <Camera className="w-4 h-4" />
-                Presensi Selfie
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowQRScanModal(true)}
+                  className="px-4 py-2.5 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-2 transition cursor-pointer"
+                >
+                  <QrCode className="w-4 h-4" />
+                  Scan QR Guru
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSelfieModal(true)}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-xl flex items-center gap-2 transition cursor-pointer"
+                >
+                  <Camera className="w-4 h-4" />
+                  Presensi Selfie
+                </button>
+              </>
             )}
 
             <button
@@ -458,6 +484,18 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
           onClose={() => setShowSelfieModal(false)}
           onSuccess={() => {
             setShowSelfieModal(false);
+          }}
+        />
+      )}
+
+      {/* STUDENT QR SCANNER (GURU DYNAMIC QR) MODAL */}
+      {showQRScanModal && (
+        <StudentQRScannerModal
+          isOpen={showQRScanModal}
+          currentUser={student}
+          onClose={() => setShowQRScanModal(false)}
+          onSuccess={() => {
+            setShowQRScanModal(false);
           }}
         />
       )}

@@ -5,6 +5,7 @@ import { AppSettingsManager } from './AppSettingsManager';
 import { BulkUserAccountManager } from './BulkUserAccountManager';
 import { MultiRoleExportImportModal } from './MultiRoleExportImportModal';
 import { ClassManagement } from './ClassManagement';
+import { Pagination } from './Pagination';
 import Swal from 'sweetalert2';
 import {
   UserPlus,
@@ -32,10 +33,19 @@ import {
   CheckSquare,
   Square,
   Users,
-  School
+  School,
+  Clock,
+  AlertCircle,
+  Activity,
+  UserX,
+  CalendarCheck
 } from 'lucide-react';
 
-export const UserManagement: React.FC = () => {
+export interface UserManagementProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+export const UserManagement: React.FC<UserManagementProps> = ({ onNavigateTab }) => {
   const dbService = DatabaseService.getInstance();
   const classes = dbService.getAllClasses();
   const [activeAdminView, setActiveAdminView] = useState<'users' | 'classes' | 'bulk_credentials' | 'settings'>(() => {
@@ -54,6 +64,13 @@ export const UserManagement: React.FC = () => {
     } catch (e) {}
     return 'all';
   });
+  const [activityFilter, setActivityFilter] = useState<'all' | 'active' | 'inactive'>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_USER_ACTIVITY_FILTER');
+      if (saved === 'all' || saved === 'active' || saved === 'inactive') return saved;
+    } catch (e) {}
+    return 'all';
+  });
 
   useEffect(() => {
     try {
@@ -66,6 +83,95 @@ export const UserManagement: React.FC = () => {
       localStorage.setItem('SIMAK_USER_ROLE_FILTER', roleFilter);
     } catch (e) {}
   }, [roleFilter]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_USER_ACTIVITY_FILTER', activityFilter);
+    } catch (e) {}
+  }, [activityFilter]);
+
+  // Helper to determine if an account is considered inactive
+  const isInactiveUser = (user: User) => {
+    if (!user.last_login) return true;
+    const loginTime = new Date(user.last_login).getTime();
+    if (isNaN(loginTime)) return true;
+    const daysDiff = (Date.now() - loginTime) / (1000 * 60 * 60 * 24);
+    return daysDiff > 14; // Tidak login > 14 hari atau belum pernah login
+  };
+
+  // Helper to format last_login timestamp and return relative metadata
+  const formatLastLogin = (lastLogin?: string) => {
+    if (!lastLogin) {
+      return {
+        formatted: 'Belum Pernah',
+        full: 'Pengguna belum pernah login ke sistem',
+        relative: 'Belum Pernah Login',
+        type: 'never' as const
+      };
+    }
+    const date = new Date(lastLogin);
+    if (isNaN(date.getTime())) {
+      return {
+        formatted: 'Belum Pernah',
+        full: 'Pengguna belum pernah login ke sistem',
+        relative: 'Belum Pernah Login',
+        type: 'never' as const
+      };
+    }
+
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    const formattedDate = date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const formattedTime = date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (diffMins < 60) {
+      return {
+        formatted: `${formattedTime} WIB`,
+        full: `${formattedDate}, ${formattedTime} WIB`,
+        relative: diffMins <= 1 ? 'Baru saja' : `${diffMins} mnt lalu`,
+        type: 'recent' as const
+      };
+    } else if (diffHours < 24) {
+      return {
+        formatted: `Hari ini, ${formattedTime}`,
+        full: `${formattedDate}, ${formattedTime} WIB`,
+        relative: `${diffHours} jam lalu`,
+        type: 'recent' as const
+      };
+    } else if (diffDays <= 7) {
+      return {
+        formatted: formattedDate,
+        full: `${formattedDate}, ${formattedTime} WIB`,
+        relative: `${diffDays} hari lalu`,
+        type: 'week' as const
+      };
+    } else if (diffDays <= 30) {
+      return {
+        formatted: formattedDate,
+        full: `${formattedDate}, ${formattedTime} WIB`,
+        relative: `${diffDays} hari lalu`,
+        type: 'month' as const
+      };
+    } else {
+      return {
+        formatted: formattedDate,
+        full: `${formattedDate}, ${formattedTime} WIB`,
+        relative: `${diffDays} hari lalu`,
+        type: 'inactive' as const
+      };
+    }
+  };
 
   // Modal State for Single User Add/Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -117,8 +223,32 @@ export const UserManagement: React.FC = () => {
     }
 
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
-    return matchSearch && matchRole;
+
+    let matchActivity = true;
+    if (activityFilter === 'active') {
+      matchActivity = !isInactiveUser(u);
+    } else if (activityFilter === 'inactive') {
+      matchActivity = isInactiveUser(u);
+    }
+
+    return matchSearch && matchRole && matchActivity;
   });
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, activityFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const paginatedUsers = filteredUsers.slice(
+    (validCurrentPage - 1) * itemsPerPage,
+    validCurrentPage * itemsPerPage
+  );
 
   // Batch Action Selection State
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -131,13 +261,18 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleSelectAllVisible = () => {
-    const selectableUsers = filteredUsers.filter(u => u.role !== 'admin');
+    const selectableUsers = paginatedUsers.filter(u => u.role !== 'admin');
     const allSelected = selectableUsers.length > 0 && selectableUsers.every(u => selectedUserIds.includes(u.id));
     if (allSelected) {
-      setSelectedUserIds([]);
+      setSelectedUserIds(prev => prev.filter(id => !selectableUsers.some(u => u.id === id)));
     } else {
-      setSelectedUserIds(selectableUsers.map(u => u.id));
+      setSelectedUserIds(prev => Array.from(new Set([...prev, ...selectableUsers.map(u => u.id)])));
     }
+  };
+
+  const handleSelectAllFiltered = () => {
+    const selectableUsers = filteredUsers.filter(u => u.role !== 'admin');
+    setSelectedUserIds(selectableUsers.map(u => u.id));
   };
 
   const handleClearSelection = () => {
@@ -348,17 +483,80 @@ export const UserManagement: React.FC = () => {
   };
 
   const renderRoleBadge = (role: UserRole) => {
+    const isFiltered = roleFilter === role;
+    const baseClasses = "text-xs px-2.5 py-0.5 rounded-full font-bold cursor-pointer transition inline-flex items-center gap-1 hover:opacity-90";
+    
     switch (role) {
       case 'admin':
-        return <span className="bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Admin</span>;
+        return (
+          <button
+            type="button"
+            onClick={() => setRoleFilter(isFiltered ? 'all' : 'admin')}
+            title={`Role Admin - Klik untuk ${isFiltered ? 'menghapus filter' : 'filter role ini'}`}
+            className={`${baseClasses} bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border ${
+              isFiltered ? 'border-purple-600 ring-2 ring-purple-400' : 'border-purple-200 dark:border-purple-800'
+            }`}
+          >
+            <span>Admin</span>
+            {isFiltered && <span className="text-[10px] ml-0.5">✓</span>}
+          </button>
+        );
       case 'wali_kelas':
-        return <span className="bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Wali Kelas</span>;
+        return (
+          <button
+            type="button"
+            onClick={() => setRoleFilter(isFiltered ? 'all' : 'wali_kelas')}
+            title={`Role Wali Kelas - Klik untuk ${isFiltered ? 'menghapus filter' : 'filter role ini'}`}
+            className={`${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border ${
+              isFiltered ? 'border-blue-600 ring-2 ring-blue-400' : 'border-blue-200 dark:border-blue-800'
+            }`}
+          >
+            <span>Wali Kelas</span>
+            {isFiltered && <span className="text-[10px] ml-0.5">✓</span>}
+          </button>
+        );
       case 'guru':
-        return <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Guru Mapel</span>;
+        return (
+          <button
+            type="button"
+            onClick={() => setRoleFilter(isFiltered ? 'all' : 'guru')}
+            title={`Role Guru Mapel - Klik untuk ${isFiltered ? 'menghapus filter' : 'filter role ini'}`}
+            className={`${baseClasses} bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border ${
+              isFiltered ? 'border-indigo-600 ring-2 ring-indigo-400' : 'border-indigo-200 dark:border-indigo-800'
+            }`}
+          >
+            <span>Guru Mapel</span>
+            {isFiltered && <span className="text-[10px] ml-0.5">✓</span>}
+          </button>
+        );
       case 'siswa':
-        return <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Siswa</span>;
+        return (
+          <button
+            type="button"
+            onClick={() => setRoleFilter(isFiltered ? 'all' : 'siswa')}
+            title={`Role Siswa - Klik untuk ${isFiltered ? 'menghapus filter' : 'filter role ini'}`}
+            className={`${baseClasses} bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border ${
+              isFiltered ? 'border-emerald-600 ring-2 ring-emerald-400' : 'border-emerald-200 dark:border-emerald-800'
+            }`}
+          >
+            <span>Siswa</span>
+            {isFiltered && <span className="text-[10px] ml-0.5">✓</span>}
+          </button>
+        );
       case 'orang_tua':
-        return <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold">Orang Tua</span>;
+        return (
+          <button
+            type="button"
+            onClick={() => setRoleFilter(isFiltered ? 'all' : 'orang_tua')}
+            title={`Role Orang Tua - Klik untuk ${isFiltered ? 'menghapus filter' : 'filter role ini'}`}
+            className={`${baseClasses} bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border ${
+              isFiltered ? 'border-amber-600 ring-2 ring-amber-400' : 'border-amber-200 dark:border-amber-800'
+            }`}
+          >
+            <span>Orang Tua</span>
+            {isFiltered && <span className="text-[10px] ml-0.5">✓</span>}
+          </button>
+        );
       default:
         return <span className="bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 text-xs px-2.5 py-0.5 rounded-full">{role}</span>;
     }
@@ -367,14 +565,14 @@ export const UserManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Admin Sub-navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3 flex-wrap">
+      <div className="p-1.5 bg-slate-100/90 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveAdminView('users')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
             activeAdminView === 'users'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
           }`}
         >
           <Shield className="w-4 h-4" />
@@ -384,10 +582,10 @@ export const UserManagement: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveAdminView('classes')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
             activeAdminView === 'classes'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
           }`}
         >
           <School className="w-4 h-4" />
@@ -400,10 +598,10 @@ export const UserManagement: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveAdminView('bulk_credentials')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
             activeAdminView === 'bulk_credentials'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
           }`}
         >
           <KeyRound className="w-4 h-4" />
@@ -412,11 +610,17 @@ export const UserManagement: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveAdminView('settings')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+          onClick={() => {
+            if (onNavigateTab) {
+              onNavigateTab('app_settings');
+            } else {
+              setActiveAdminView('settings');
+            }
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap border ${
             activeAdminView === 'settings'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
           }`}
         >
           <Settings className="w-4 h-4" />
@@ -425,7 +629,7 @@ export const UserManagement: React.FC = () => {
       </div>
 
       {activeAdminView === 'settings' ? (
-        <AppSettingsManager />
+        <AppSettingsManager onNavigateTab={onNavigateTab} />
       ) : activeAdminView === 'classes' ? (
         <ClassManagement onRefresh={reload} />
       ) : activeAdminView === 'bulk_credentials' ? (
@@ -519,7 +723,7 @@ export const UserManagement: React.FC = () => {
                   )}
                 </div>
 
-                <div className="sm:w-60">
+                <div className="sm:w-56">
                   <select
                     id="select-filter-role"
                     value={roleFilter}
@@ -534,11 +738,25 @@ export const UserManagement: React.FC = () => {
                     <option value="orang_tua">Orang Tua ({users.filter(u => u.role === 'orang_tua').length})</option>
                   </select>
                 </div>
+
+                {/* Activity & Login Status Filter Dropdown */}
+                <div className="sm:w-56">
+                  <select
+                    id="select-filter-activity"
+                    value={activityFilter}
+                    onChange={e => setActivityFilter(e.target.value as any)}
+                    className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-hidden cursor-pointer"
+                  >
+                    <option value="all">Semua Status Login</option>
+                    <option value="active">Aktif (Login &lt; 14 Hari)</option>
+                    <option value="inactive">Inaktif / Belum Login ({users.filter(isInactiveUser).length})</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Live Search Status & Quick Role Chips */}
+              {/* Live Search Status & Quick Role / Activity Chips */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-slate-500 dark:text-slate-400">
                     Menampilkan <b className="text-purple-600 dark:text-purple-400 font-bold">{filteredUsers.length}</b> dari {users.length} akun pengguna
                   </span>
@@ -547,9 +765,14 @@ export const UserManagement: React.FC = () => {
                       Filter: "{searchQuery}"
                     </span>
                   )}
+                  {activityFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-md text-[11px]">
+                      Status: {activityFilter === 'active' ? 'Aktif' : 'Inaktif / Belum Login'}
+                    </span>
+                  )}
                 </div>
 
-                {/* Quick Role Shortcut Chips */}
+                {/* Quick Role & Inactive Shortcut Chips */}
                 <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-[11px]">
                   <button
                     type="button"
@@ -606,6 +829,23 @@ export const UserManagement: React.FC = () => {
                   >
                     Orang Tua ({users.filter(u => u.role === 'orang_tua').length})
                   </button>
+
+                  <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1" />
+
+                  {/* Inactive Quick Button */}
+                  <button
+                    type="button"
+                    onClick={() => setActivityFilter(activityFilter === 'inactive' ? 'all' : 'inactive')}
+                    title="Filter akun yang belum pernah login atau inaktif >14 hari"
+                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 ${
+                      activityFilter === 'inactive'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/60'
+                    }`}
+                  >
+                    <UserX className="w-3 h-3" />
+                    <span>Inaktif ({users.filter(isInactiveUser).length})</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -623,8 +863,18 @@ export const UserManagement: React.FC = () => {
                     <CheckSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <span>{selectedUserIds.length} Siswa/Pengguna Terpilih</span>
                   </div>
-                  <div className="text-[11px] text-purple-700 dark:text-purple-300">
-                    Eksekusi tindakan massal untuk semua akun yang dicentang
+                  <div className="text-[11px] text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                    <span>Eksekusi tindakan massal untuk semua akun yang dicentang</span>
+                    {filteredUsers.filter(u => u.role !== 'admin').length > selectedUserIds.length && (
+                      <button
+                        type="button"
+                        onClick={handleSelectAllFiltered}
+                        className="px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/60 hover:bg-purple-200 rounded-md transition border border-purple-300 dark:border-purple-700 cursor-pointer"
+                        title="Pilih seluruh akun di semua halaman yang cocok dengan filter saat ini"
+                      >
+                        Pilih Semua Halaman ({filteredUsers.filter(u => u.role !== 'admin').length} Akun)
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -679,7 +929,7 @@ export const UserManagement: React.FC = () => {
 
           {/* User Table */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition mt-4">
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-2">
                 <span>Daftar Akun Pengguna ({filteredUsers.length} Entri)</span>
                 {selectedUserIds.length > 0 && (
@@ -688,8 +938,42 @@ export const UserManagement: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div className="text-xs font-mono text-slate-600 dark:text-slate-400">
-                Node Database: <span className="font-mono">users/&#123;id&#125;</span>
+
+              {/* Table Toolbar Dropdown Filter */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-2xs">
+                  <Filter className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                  <label htmlFor="table-header-role-filter" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    Filter Role:
+                  </label>
+                  <select
+                    id="table-header-role-filter"
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
+                    className="text-xs font-bold bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer pr-1"
+                  >
+                    <option value="all">Semua Peran ({users.length})</option>
+                    <option value="admin">Administrator ({users.filter(u => u.role === 'admin').length})</option>
+                    <option value="wali_kelas">Wali Kelas ({users.filter(u => u.role === 'wali_kelas').length})</option>
+                    <option value="guru">Guru Mapel ({users.filter(u => u.role === 'guru').length})</option>
+                    <option value="siswa">Siswa ({users.filter(u => u.role === 'siswa').length})</option>
+                    <option value="orang_tua">Orang Tua ({users.filter(u => u.role === 'orang_tua').length})</option>
+                  </select>
+                  {roleFilter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setRoleFilter('all')}
+                      className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 ml-1 cursor-pointer flex items-center gap-0.5"
+                      title="Reset filter role ke Semua"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  )}
+                </div>
+                <div className="text-xs font-mono text-slate-500 dark:text-slate-400 hidden sm:block">
+                  Node: <span className="font-mono">users/&#123;id&#125;</span>
+                </div>
               </div>
             </div>
 
@@ -701,30 +985,61 @@ export const UserManagement: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={
-                          filteredUsers.filter(u => u.role !== 'admin').length > 0 &&
-                          filteredUsers.filter(u => u.role !== 'admin').every(u => selectedUserIds.includes(u.id))
+                          paginatedUsers.filter(u => u.role !== 'admin').length > 0 &&
+                          paginatedUsers.filter(u => u.role !== 'admin').every(u => selectedUserIds.includes(u.id))
                         }
                         onChange={handleSelectAllVisible}
                         className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
-                        title="Pilih semua yang dapat diubah"
+                        title="Pilih semua pada halaman ini"
                       />
                     </th>
                     <th className="py-3 px-4 w-12 text-center">No</th>
                     <th className="py-3 px-4">Nama Lengkap & Username</th>
                     <th className="py-3 px-4">Email & WhatsApp</th>
-                    <th className="py-3 px-4 text-center">Peran (Role)</th>
+                    <th className="py-3 px-4 text-center">
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <span>Peran (Role)</span>
+                        <div className="relative inline-flex items-center">
+                          <select
+                            id="table-column-role-filter"
+                            value={roleFilter}
+                            onChange={e => setRoleFilter(e.target.value)}
+                            className={`text-[10px] font-bold py-1 pl-2 pr-6 rounded-lg border outline-none cursor-pointer transition appearance-none ${
+                              roleFilter !== 'all'
+                                ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-200'
+                            }`}
+                            title="Filter daftar berdasarkan peran pengguna"
+                          >
+                            <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Semua ({users.length})</option>
+                            <option value="admin" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Admin ({users.filter(u => u.role === 'admin').length})</option>
+                            <option value="wali_kelas" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Wali Kelas ({users.filter(u => u.role === 'wali_kelas').length})</option>
+                            <option value="guru" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Guru Mapel ({users.filter(u => u.role === 'guru').length})</option>
+                            <option value="siswa" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Siswa ({users.filter(u => u.role === 'siswa').length})</option>
+                            <option value="orang_tua" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Orang Tua ({users.filter(u => u.role === 'orang_tua').length})</option>
+                          </select>
+                          <Filter className={`w-3 h-3 absolute right-1.5 pointer-events-none ${roleFilter !== 'all' ? 'text-white' : 'text-slate-400'}`} />
+                        </div>
+                      </div>
+                    </th>
+                    <th className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                        <span>Terakhir Masuk (Last Login)</span>
+                      </div>
+                    </th>
                     <th className="py-3 px-4 text-center w-28">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
-                        Tidak ada pengguna yang cocok dengan pencarian / filter.
+                      <td colSpan={7} className="py-8 text-center text-slate-600 dark:text-slate-300 font-medium">
+                        Tidak ada pengguna yang cocok dengan pencarian / filter aktif.
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user, idx) => (
+                    paginatedUsers.map((user, idx) => (
                       <tr
                         key={user.id}
                         className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition ${
@@ -746,7 +1061,7 @@ export const UserManagement: React.FC = () => {
                           )}
                         </td>
                         <td className="py-3 px-4 text-center text-xs font-mono font-bold text-slate-700 dark:text-slate-200">
-                          {idx + 1}
+                          {(validCurrentPage - 1) * itemsPerPage + idx + 1}
                         </td>
                         <td className="py-3 px-4">
                           <div className="font-bold text-slate-900 dark:text-slate-100">{user.nama}</div>
@@ -772,6 +1087,64 @@ export const UserManagement: React.FC = () => {
                         <td className="py-3 px-4 text-center">
                           {renderRoleBadge(user.role)}
                         </td>
+                        <td className="py-3 px-4">
+                          {(() => {
+                            const info = formatLastLogin(user.last_login);
+                            if (info.type === 'never') {
+                              return (
+                                <div className="flex flex-col items-start gap-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 px-2 py-0.5 rounded-md">
+                                    <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                                    <span>Belum Pernah</span>
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Akun inaktif / baru</span>
+                                </div>
+                              );
+                            }
+                            if (info.type === 'recent') {
+                              return (
+                                <div className="flex flex-col items-start gap-0.5" title={info.full}>
+                                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-md">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span>{info.relative}</span>
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{info.formatted}</span>
+                                </div>
+                              );
+                            }
+                            if (info.type === 'week') {
+                              return (
+                                <div className="flex flex-col items-start gap-0.5" title={info.full}>
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-md">
+                                    <Clock className="w-3 h-3 text-blue-500 shrink-0" />
+                                    <span>{info.relative}</span>
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{info.formatted}</span>
+                                </div>
+                              );
+                            }
+                            if (info.type === 'month') {
+                              return (
+                                <div className="flex flex-col items-start gap-0.5" title={info.full}>
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-md">
+                                    <Clock className="w-3 h-3 text-amber-500 shrink-0" />
+                                    <span>{info.relative}</span>
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{info.formatted}</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex flex-col items-start gap-0.5" title={info.full}>
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 px-2 py-0.5 rounded-md">
+                                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                                  <span>Inaktif ({info.relative})</span>
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{info.formatted}</span>
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -796,6 +1169,17 @@ export const UserManagement: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={validCurrentPage}
+              totalItems={filteredUsers.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+              itemsPerPageOptions={[10, 25, 50, 100]}
+              itemLabel="pengguna"
+            />
           </div>
         </>
       )}

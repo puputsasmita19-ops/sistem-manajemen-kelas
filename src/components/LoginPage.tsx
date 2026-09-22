@@ -5,6 +5,7 @@ import { User, UserRole, AppSettings } from '../types';
 import { useRealtimeClock } from '../utils/timeUtils';
 import { AppLogo } from './AppLogo';
 import { ThemeToggle } from './ThemeToggle';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 import Swal from 'sweetalert2';
 import {
   Lock,
@@ -123,6 +124,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [isDragging, setIsDragging] = useState(false);
@@ -377,7 +379,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
         setSelectedRole(user.role);
       }
 
-      // Record Activity Log
+      // Record User Last Login & Activity Log
+      dbService.recordUserLogin(user.id);
       dbService.logActivity(
         'login',
         'Autentikasi Pengguna Berhasil',
@@ -401,61 +404,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
   };
 
   const handleForgotPassword = () => {
-    const adminUser = dbService.getAllUsers().find((u) => u.role === 'admin');
-    const adminName = adminUser?.nama || 'Bambang Wijaya, M.Kom';
-    const adminPhone = appSettings.adminPhone || adminUser?.no_wa || '0812-3456-7890';
-    const cleanWa = adminPhone.replace(/\D/g, '').replace(/^0/, '62');
-    const waText = encodeURIComponent(
-      `Halo Administrator ${appSettings.appName}, saya membutuhkan bantuan untuk reset kata sandi akun saya.`
-    );
-    const waUrl = `https://wa.me/${cleanWa}?text=${waText}`;
-
-    Swal.fire({
-      icon: 'info',
-      title: 'Bantuan Akses & Lupa Kata Sandi',
-      html: `
-        <div class="text-left text-xs text-slate-700 dark:text-slate-300 space-y-3">
-          <p class="leading-relaxed">
-            Jika Anda lupa username atau kata sandi akun <strong class="text-slate-900 dark:text-white">${appSettings.appName}</strong>, silakan hubungi kontak Administrator Sistem atau staf Tata Usaha Sekolah berikut:
-          </p>
-
-          <div class="p-3.5 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
-            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-              <span class="text-slate-500 dark:text-slate-400 font-medium">Administrator:</span>
-              <strong class="text-slate-900 dark:text-white">${adminName}</strong>
-            </div>
-            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-              <span class="text-slate-500 dark:text-slate-400 font-medium">Unit / Ruang:</span>
-              <span class="text-slate-800 dark:text-slate-200 font-semibold">Tata Usaha & IT Sekolah</span>
-            </div>
-            <div class="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700">
-              <span class="text-slate-500 dark:text-slate-400 font-medium">Jam Layanan:</span>
-              <span class="text-slate-800 dark:text-slate-200 font-medium">Senin – Jumat (07.30 – 15.00 WIB)</span>
-            </div>
-            <div class="flex items-center justify-between py-1">
-              <span class="text-slate-500 dark:text-slate-400 font-medium">Nomor WhatsApp:</span>
-              <strong class="text-emerald-600 dark:text-emerald-400 font-mono text-sm">${adminPhone}</strong>
-            </div>
-          </div>
-
-          <a
-            href="${waUrl}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-md shadow-emerald-600/20 text-center no-underline cursor-pointer"
-          >
-            <span>💬 Hubungi Admin via WhatsApp (${adminPhone})</span>
-          </a>
-
-          <div class="p-2.5 bg-blue-50 dark:bg-blue-950/50 rounded-xl border border-blue-200 dark:border-blue-800 text-[11px] text-blue-800 dark:text-blue-300 flex items-start gap-2">
-            <span class="font-bold">Tips Default:</span>
-            <span>Anda dapat memilih peran di atas dan mengklik tombol "Default" untuk memulihkan kredensial bawaan.</span>
-          </div>
-        </div>
-      `,
-      confirmButtonText: 'Tutup',
-      confirmButtonColor: '#2563eb'
-    });
+    setIsForgotPasswordOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -466,14 +415,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
   const renderGreetingIcon = (period: 'pagi' | 'siang' | 'sore' | 'malam') => {
     switch (period) {
       case 'pagi':
-        return <Sun className="w-5 h-5 text-amber-500 shrink-0" />;
+        return <Sun className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />;
       case 'siang':
-        return <SunMedium className="w-5 h-5 text-yellow-500 shrink-0" />;
+        return <SunMedium className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />;
       case 'sore':
-        return <Sunset className="w-5 h-5 text-orange-500 shrink-0" />;
+        return <Sunset className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />;
       case 'malam':
       default:
-        return <Moon className="w-5 h-5 text-indigo-500 shrink-0" />;
+        return <Moon className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />;
     }
   };
 
@@ -572,12 +521,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
               title={`Waktu & Tanggal Realtime: ${clock.dateFormatted} • ${clock.timeFormatted}`}
             >
               <div className="flex items-center gap-1 sm:gap-1.5 font-medium text-slate-700 dark:text-slate-300 shrink-0">
-                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-700 dark:text-slate-300 shrink-0" />
                 <span>{clock.dateFormatted}</span>
               </div>
               <span className="text-slate-300 dark:text-slate-600 shrink-0 select-none">•</span>
               <div className="flex items-center gap-1 sm:gap-1.5 font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-700 dark:text-slate-300 shrink-0" />
                 <span>{clock.timeFormatted}</span>
               </div>
             </div>
@@ -648,7 +597,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                                   item.badge
                                 )}`}
                               >
-                                <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                                <Sparkles className="w-2.5 h-2.5 text-slate-700 dark:text-slate-300" />
                                 <span>{item.badge}</span>
                               </span>
                               <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
@@ -708,7 +657,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
               >
                 <div className="flex items-center gap-2.5 truncate">
                   {React.createElement(currentRoleConfig.icon, {
-                    className: 'w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0'
+                    className: 'w-4 h-4 text-slate-800 dark:text-slate-200 shrink-0'
                   })}
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                     {selectedRole === 'admin' ? 'Administrator Sekolah' : currentRoleConfig.label}
@@ -865,8 +814,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
             {/* 5. TULISAN MASUK SEBAGAI ADMINISTRATOR SEKOLAH */}
             <div className="pt-1 text-center">
               {selectedRole === 'admin' ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold text-amber-900 dark:text-amber-200 shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold text-slate-800 dark:text-slate-200 shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200 shrink-0" />
                   <span>Mode Administrator Aktif</span>
                   <button
                     type="button"
@@ -881,9 +830,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
                   type="button"
                   id="btn-login-admin"
                   onClick={() => handleRoleChange('admin')}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 px-3 rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/80 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors py-1 px-3 rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/80 cursor-pointer"
                 >
-                  <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <Shield className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300 shrink-0" />
                   <span>Masuk sebagai Administrator Sekolah</span>
                 </button>
               )}
@@ -892,7 +841,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
 
           {/* DIBUAT OLEH PUPUT SASMITA */}
           <div className="mt-5 pt-3.5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <Code2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <Code2 className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300 shrink-0" />
             <span>
               Dibuat oleh: <strong className="text-slate-800 dark:text-slate-200 font-semibold">{appSettings.creatorName || 'Puput Sasmita'}</strong>
             </span>
@@ -900,6 +849,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
 
         </div>
       </main>
+
+      {/* MODAL LUPA PASSWORD (FIREBASE AUTH RECOVERY) */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        appSettings={appSettings}
+        initialIdentifier={username}
+      />
     </div>
   );
 };

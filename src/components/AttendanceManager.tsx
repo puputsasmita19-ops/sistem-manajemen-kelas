@@ -29,7 +29,9 @@ import {
   Layers
 } from 'lucide-react';
 import { QRScannerSection } from './QRScannerSection';
+import { DynamicQRAttendanceModal } from './DynamicQRAttendanceModal';
 import { AttendanceProofViewerModal } from './AttendanceProofViewerModal';
+import { Pagination } from './Pagination';
 
 interface AttendanceManagerProps {
   currentRole: string;
@@ -76,6 +78,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedMonth, setSelectedMonth] = useState<string>(todayStr.substring(0, 7)); // 'YYYY-MM'
   const [showQRScanner, setShowQRScanner] = useState<boolean>(false);
+  const [showDynamicQRModal, setShowDynamicQRModal] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'table' | 'selfie_gallery'>('table');
   const [selectedProofAttendance, setSelectedProofAttendance] = useState<{
     attendance: Attendance;
@@ -189,6 +192,36 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
       status: r.studentId === studentId ? ('H' as AttendanceStatus) : r.status
     }));
     dbService.saveBulkAttendance(selectedClassId, selectedSubjectId, selectedDate, updated);
+
+    // Audit log for Activity Log module
+    const timeStr = new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    dbService.logActivity(
+      'qr_attendance_scan',
+      'Scan QR Code Presensi Siswa',
+      `Siswa ${nama} (${studentId}) berhasil dipindai Hadir (H) via Pemindai QR Guru untuk Kelas ${selectedClassObj?.nama_kelas || 'Kelas'} pada ${timeStr} WIB.`,
+      `att_${selectedClassId}_${selectedDate}_${studentId}`,
+      {
+        studentId,
+        studentName: nama,
+        classId: selectedClassId,
+        className: selectedClassObj?.nama_kelas,
+        subjectId: selectedSubjectId,
+        date: selectedDate,
+        scannedAt: timeStr,
+        status: 'H',
+        method: 'Pemindai QR Guru'
+      },
+      {
+        id: studentId,
+        nama,
+        role: 'siswa'
+      }
+    );
+
     realtimeNotificationService.notifyActionSuccess(
       'Presensi QR Sukses',
       `${nama} berhasil tercatat Hadir (H).`,
@@ -235,6 +268,24 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   const rangeS = filteredRangeRecords.filter(r => r.status === 'S').length;
   const rangeA = filteredRangeRecords.filter(r => r.status === 'A').length;
   const rangeRate = totalRangeCount > 0 ? Math.round((rangeH / totalRangeCount) * 100) : 0;
+
+  // Range Pagination
+  const [rangeCurrentPage, setRangeCurrentPage] = useState(1);
+  const [rangeItemsPerPage, setRangeItemsPerPage] = useState(25);
+
+  useEffect(() => {
+    setRangeCurrentPage(1);
+  }, [startDate, endDate, selectedClassId, selectedSubjectId, searchStudentName, rangeStatusFilter]);
+
+  const validRangePage = Math.min(
+    Math.max(1, rangeCurrentPage),
+    Math.max(1, Math.ceil(filteredRangeRecords.length / rangeItemsPerPage))
+  );
+
+  const paginatedRangeRecords = filteredRangeRecords.slice(
+    (validRangePage - 1) * rangeItemsPerPage,
+    validRangePage * rangeItemsPerPage
+  );
 
   const handleExportRangeCSV = () => {
     if (filteredRangeRecords.length === 0) {
@@ -311,6 +362,18 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                 <span>Foto Selfie ({studentRows.filter(r => r.attendanceRec?.photoUrl).length})</span>
               </button>
             </div>
+
+            {/* Dynamic QR Code Generator & Projector Button */}
+            <button
+              id="btn-open-dynamic-qr"
+              type="button"
+              onClick={() => setShowDynamicQRModal(true)}
+              className="px-3.5 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white"
+              title="Buat QR Code Presensi Dinamis Kelas dengan batas waktu (misal: 5 menit)"
+            >
+              <Clock className="w-4 h-4 text-amber-300" />
+              <span>QR Dinamis (Batas Waktu)</span>
+            </button>
 
             {/* Toggle Mode QR Scanner */}
             <button
@@ -566,6 +629,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
           students={classStudents}
           onAttendanceMarked={handleQRStudentScanned}
           onClose={() => setShowQRScanner(false)}
+          onOpenDynamicQRModal={() => setShowDynamicQRModal(true)}
         />
       )}
 
@@ -769,10 +833,12 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                 </table>
               </div>
 
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
-                <div>
-                  💡 <span className="font-medium">Relasi NoSQL:</span> Nilai status disimpan dalam path <code className="font-mono bg-slate-200 dark:bg-slate-700 dark:text-slate-200 px-1 py-0.5 rounded">/attendance/&#123;pushId&#125;</code> dengan foreign key <code className="font-mono">student_id</code>, <code className="font-mono">class_id</code>, dan <code className="font-mono">subject_id</code>.
-                </div>
+              <div className={`p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center ${currentRole !== 'wali_kelas' && currentRole !== 'guru_mapel' ? 'justify-between' : 'justify-end'} gap-3 text-xs text-slate-600 dark:text-slate-300`}>
+                {currentRole !== 'wali_kelas' && currentRole !== 'guru_mapel' && (
+                  <div>
+                    💡 <span className="font-medium">Relasi NoSQL:</span> Nilai status disimpan dalam path <code className="font-mono bg-slate-200 dark:bg-slate-700 dark:text-slate-200 px-1 py-0.5 rounded">/attendance/&#123;pushId&#125;</code> dengan foreign key <code className="font-mono">student_id</code>, <code className="font-mono">class_id</code>, dan <code className="font-mono">subject_id</code>.
+                  </div>
+                )}
                 <button
                   onClick={handleSave}
                   className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
@@ -850,7 +916,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                                 {row.nama}
                               </h4>
                               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1 font-mono">
-                                <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
+                                <MapPin className="w-3 h-3 text-slate-800 dark:text-slate-200 shrink-0" />
                                 <span>{rec.distanceMeters || 0}m • GPS: {rec.latitude?.toFixed(4)}, {rec.longitude?.toFixed(4)}</span>
                               </p>
                             </div>
@@ -924,7 +990,27 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchStudentName}
+                    onChange={(e) => setSearchStudentName(e.target.value)}
+                    placeholder="Cari nama / NIS siswa..."
+                    className="pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 outline-none w-48 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {searchStudentName && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchStudentName('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={handleExportRangeCSV}
@@ -978,7 +1064,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                       </td>
                     </tr>
                   ) : (
-                    filteredRangeRecords.map((rec, idx) => {
+                    paginatedRangeRecords.map((rec, idx) => {
                       const subjectName = subjects.find(s => s.id === rec.subject_id)?.nama_mapel || 'Mata Pelajaran';
                       let statusBadge = (
                         <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
@@ -1014,7 +1100,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                       return (
                         <tr key={rec.id || `${rec.studentId}_${rec.date}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
                           <td className="py-3 px-4 text-center text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-                            {idx + 1}
+                            {(validRangePage - 1) * rangeItemsPerPage + idx + 1}
                           </td>
                           <td className="py-3 px-4 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             <div className="font-bold">{rec.date}</div>
@@ -1028,12 +1114,12 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                           </td>
                           <td className="py-3 px-4 text-xs text-slate-700 dark:text-slate-300">
                             <div className="flex items-center gap-1 font-mono">
-                              <Clock className="w-3.5 h-3.5 text-blue-500" />
+                              <Clock className="w-3.5 h-3.5 text-slate-800 dark:text-slate-200" />
                               <span>{rec.timestamp || '07:15 WIB'}</span>
                             </div>
                             {rec.location && (
                               <div className="text-[10px] text-slate-500 flex items-center gap-0.5 mt-0.5">
-                                <MapPin className="w-3 h-3 text-emerald-600" />
+                                <MapPin className="w-3 h-3 text-slate-800 dark:text-slate-200" />
                                 <span>{rec.location.lat.toFixed(4)}, {rec.location.lng.toFixed(4)}</span>
                               </div>
                             )}
@@ -1086,6 +1172,16 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
                 </tbody>
               </table>
             </div>
+
+            <Pagination
+              currentPage={validRangePage}
+              totalItems={filteredRangeRecords.length}
+              itemsPerPage={rangeItemsPerPage}
+              onPageChange={setRangeCurrentPage}
+              onItemsPerPageChange={setRangeItemsPerPage}
+              itemsPerPageOptions={[10, 25, 50, 100]}
+              itemLabel="log presensi"
+            />
           </div>
         </div>
       )}
@@ -1097,6 +1193,24 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
           studentName={selectedProofAttendance.studentName}
           classNameTitle={selectedClassObj?.nama_kelas}
           onClose={() => setSelectedProofAttendance(null)}
+        />
+      )}
+
+      {/* DYNAMIC QR ATTENDANCE MODAL / PROJECTOR */}
+      {showDynamicQRModal && (
+        <DynamicQRAttendanceModal
+          isOpen={showDynamicQRModal}
+          onClose={() => setShowDynamicQRModal(false)}
+          classId={selectedClassId}
+          classNameTitle={selectedClassObj?.nama_kelas || 'Kelas'}
+          subjectId={selectedSubjectId}
+          subjectNameTitle={subjects.find((s) => s.id === selectedSubjectId)?.nama_mapel || 'Mata Pelajaran'}
+          selectedDate={selectedDate}
+          studentsInClass={classStudents}
+          onAttendanceUpdated={() => {
+            // Trigger refresh by updating local state
+            setSelectedDate(prev => `${prev}`);
+          }}
         />
       )}
     </div>

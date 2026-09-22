@@ -190,7 +190,7 @@ const ALL_MENUS: MenuItem[] = [
     num: 12,
     id: 'treasury',
     title: 'Rincian Administrasi Sekolah',
-    desc: 'Buku kas keuangan kelas & iuran kesiswaan',
+    desc: 'Rincian pembayaran SPP, Asrama, Buku, Praktikum & Kesiswaan',
     category: 'Sarana & Keuangan',
     icon: DollarSign,
     color: 'bg-emerald-600 text-white'
@@ -392,20 +392,20 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 text-[10px] font-black uppercase tracking-wider">
                   ADMINISTRASI WALI KELAS
                 </span>
-                <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">18 Fitur Terintegrasi</span>
+                <span className="text-[11px] text-slate-300 font-mono hidden sm:inline">18 Fitur Terintegrasi</span>
               </div>
               <h2 className="text-base sm:text-xl font-black text-white mt-0.5">
                 Ruang Wali Kelas: {currentClassName}
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-400">
-                Wali Kelas: <strong className="text-slate-200">Budi Santoso, S.Pd</strong> • NIP: 198503152010011008
+              <p className="text-[11px] sm:text-xs text-slate-300">
+                Wali Kelas: <strong className="text-white">Budi Santoso, S.Pd</strong> • NIP: 198503152010011008
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-              <label className="text-xs text-slate-300 font-bold whitespace-nowrap hidden sm:inline">Kelas:</label>
+              <label className="text-xs text-slate-200 font-bold whitespace-nowrap hidden sm:inline">Kelas:</label>
               <select
                 value={classId}
                 onChange={e => setClassId(e.target.value)}
@@ -434,7 +434,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
               type="button"
               onClick={handleResetClassData}
               title="Reset data kelas binaan ini ke template awal default"
-              className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl text-[11px] font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 transition cursor-pointer"
+              className="px-2.5 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl text-[11px] font-semibold text-slate-200 hover:text-white flex items-center gap-1.5 transition cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Data</span>
@@ -465,7 +465,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
                 className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
                   viewMode === 'pills'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Pills
@@ -476,7 +476,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
                 className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
                   viewMode === 'grid'
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Grid
@@ -485,7 +485,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
             <input
               type="text"
               value={menuSearch}
@@ -506,7 +506,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
               className={`px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition cursor-pointer border ${
                 selectedCategory === cat.id
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                  : 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               {cat.label}

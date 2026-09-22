@@ -27,7 +27,9 @@ import {
   Clock,
   ExternalLink,
   Layers,
-  FolderLock
+  FolderLock,
+  FileText,
+  CalendarClock
 } from 'lucide-react';
 import { User, AppSettings, UserRole } from '../types';
 import { TourService } from '../services/tourService';
@@ -90,8 +92,8 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'akademik',
       description: 'Ringkasan performa siswa, statistik kehadiran, dan grafik komparasi semester',
       icon: TrendingUp,
-      iconBg: 'bg-blue-100 dark:bg-blue-950/80',
-      iconColor: 'text-blue-600 dark:text-blue-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin', 'wali_kelas', 'guru', 'siswa', 'orang_tua']
     },
     {
@@ -100,10 +102,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'akademik',
       description: 'Lapor kehadiran harian, scanner QR Code, filter rentang tanggal & bukti swafoto',
       icon: CalendarCheck2,
-      iconBg: 'bg-emerald-100 dark:bg-emerald-950/80',
-      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       badge: 'QR Scanner',
-      badgeColor: 'bg-emerald-500 text-white',
+      badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
       allowedRoles: ['admin', 'wali_kelas', 'guru']
     },
     {
@@ -112,10 +114,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'akademik',
       description: 'Input skor tugas/UH/PTS/PAS, ekspor rapor PDF kop sekolah, dan ekspor Excel .xlsx',
       icon: Award,
-      iconBg: 'bg-indigo-100 dark:bg-indigo-950/80',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       badge: 'PDF + Excel',
-      badgeColor: 'bg-indigo-500 text-white',
+      badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
       allowedRoles: ['admin', 'wali_kelas', 'guru']
     },
     {
@@ -124,10 +126,8 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'akademik',
       description: '18 fitur terpadu: rekapitulasi nilai, catatan sikap, bimbingan konseling, dan peringkat kelas',
       icon: School,
-      iconBg: 'bg-violet-100 dark:bg-violet-950/80',
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      badge: '18 Fitur',
-      badgeColor: 'bg-violet-600 text-white',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin', 'wali_kelas']
     },
     {
@@ -136,22 +136,46 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'akademik',
       description: 'Akses kartu hasil studi, riwayat absensi berkala, dan jadwal pembelajaran',
       icon: GraduationCap,
-      iconBg: 'bg-sky-100 dark:bg-sky-950/80',
-      iconColor: 'text-sky-600 dark:text-sky-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['siswa', 'orang_tua']
     },
 
     // 2. KATEGORI MANAJEMEN & ADMINISTRASI
+    {
+      id: 'master_academic',
+      title: 'Master Data Akademik',
+      category: 'manajemen',
+      description: 'Konfigurasi tahun ajaran, kurikulum, jurusan, master mapel, ekskul, dan jam belajar KBM',
+      icon: GraduationCap,
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
+      badge: 'Cloud Sync',
+      badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
+      allowedRoles: ['admin']
+    },
     {
       id: 'users',
       title: 'Manajemen Pengguna (User)',
       category: 'manajemen',
       description: 'Kelola akun siswa, guru, wali murid; batch action hapus & ubah peran massal',
       icon: Users,
-      iconBg: 'bg-amber-100 dark:bg-amber-950/80',
-      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       badge: 'Batch Action',
-      badgeColor: 'bg-amber-500 text-white',
+      badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
+      allowedRoles: ['admin']
+    },
+    {
+      id: 'scheduled_exports',
+      title: 'Jadwal Ekspor & Arsip Cloud',
+      category: 'manajemen',
+      description: 'Otomasi ekspor PDF berkala ke Firebase Storage untuk unduh laporan presensi & nilai',
+      icon: CalendarClock,
+      iconBg: 'bg-indigo-100 dark:bg-indigo-950',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      badge: 'Firebase Storage',
+      badgeColor: 'bg-indigo-600 text-white',
       allowedRoles: ['admin']
     },
     {
@@ -160,8 +184,8 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'manajemen',
       description: 'Integrasi penyimpanan Google Drive untuk foto profil dan arsip digital siswa',
       icon: HardDrive,
-      iconBg: 'bg-orange-100 dark:bg-orange-950/80',
-      iconColor: 'text-orange-600 dark:text-orange-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin']
     },
     {
@@ -170,8 +194,8 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'manajemen',
       description: 'Kelola teks berjalan pada halaman login untuk info penting instansi',
       icon: Megaphone,
-      iconBg: 'bg-teal-100 dark:bg-teal-950/80',
-      iconColor: 'text-teal-600 dark:text-teal-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin']
     },
     {
@@ -180,20 +204,40 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'manajemen',
       description: 'Pengaturan nama instansi, logo kustom, alamat sekolah, dan kop surat rapor',
       icon: Settings,
-      iconBg: 'bg-cyan-100 dark:bg-cyan-950/80',
-      iconColor: 'text-cyan-600 dark:text-cyan-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
+      allowedRoles: ['admin']
+    },
+    {
+      id: 'kop_settings',
+      title: 'Kertas, Kop & Tanda Tangan',
+      category: 'manajemen',
+      description: 'Konfigurasi ukuran kertas cetak, kop surat resmi kedinasan, dan tanda tangan dokumen',
+      icon: FileText,
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin']
     },
 
     // 3. KATEGORI SISTEM & KEAMANAN
     {
       id: 'architecture',
-      title: 'Skema Database & Rules',
+      title: 'Firebase & Database',
       category: 'sistem',
-      description: 'Struktur entitas Firebase Firestore, simulasi snapshot, dan matriks RBAC',
+      description: 'Struktur entitas Firebase Firestore, simulasi snapshot, cadangan data, dan matriks RBAC',
       icon: Database,
-      iconBg: 'bg-purple-100 dark:bg-purple-950/80',
-      iconColor: 'text-purple-600 dark:text-purple-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
+      allowedRoles: ['admin']
+    },
+    {
+      id: 'security_settings',
+      title: 'Keamanan & Anti-Cheat',
+      category: 'sistem',
+      description: 'Proteksi ujian & sistem, anti-cheat inspeksi DevTools, blokir klik kanan, dan notifikasi peringatan',
+      icon: ShieldCheck,
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       allowedRoles: ['admin']
     },
     {
@@ -202,10 +246,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       category: 'sistem',
       description: 'Rekam jejak perubahan data, riwayat login, dan audit keamanan sistem',
       icon: History,
-      iconBg: 'bg-rose-100 dark:bg-rose-950/80',
-      iconColor: 'text-rose-600 dark:text-rose-400',
+      iconBg: 'bg-slate-100 dark:bg-slate-800',
+      iconColor: 'text-black dark:text-white',
       badge: 'Audit',
-      badgeColor: 'bg-rose-500 text-white',
+      badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
       allowedRoles: ['admin']
     }
   ], [currentUser.role]);
@@ -344,10 +388,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id as any)}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${
                       selectedCategory === cat.id
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                   >
                     {cat.label}
@@ -372,10 +416,10 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                     <button
                       key={item.id}
                       onClick={() => handleSelect(item.id)}
-                      className={`w-full p-3 rounded-2xl flex items-center gap-3 text-left transition cursor-pointer ${
+                      className={`w-full p-3 rounded-2xl flex items-center gap-3 text-left transition cursor-pointer border ${
                         isActive
-                          ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 shadow-xs'
-                          : 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 shadow-xs ring-1 ring-blue-500/30'
+                          : 'bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/80 shadow-2xs'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${item.iconBg}`}>
@@ -416,7 +460,7 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition cursor-pointer"
                   title="Ganti Tema Gelap / Terang"
                 >
-                  {effectiveIsDark ? <Sun className="w-4 h-4 text-amber-500 mb-1" /> : <Moon className="w-4 h-4 text-slate-700 mb-1" />}
+                  {effectiveIsDark ? <Sun className="w-4 h-4 text-slate-800 dark:text-slate-200 mb-1" /> : <Moon className="w-4 h-4 text-slate-800 dark:text-slate-200 mb-1" />}
                   <span className="text-[10px] font-semibold">{effectiveIsDark ? 'Terang' : 'Gelap'}</span>
                 </button>
 
@@ -428,7 +472,7 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition cursor-pointer"
                   title="Aktifkan Notifikasi Peramban"
                 >
-                  <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400 mb-1" />
+                  <Bell className="w-4 h-4 text-slate-800 dark:text-slate-200 mb-1" />
                   <span className="text-[10px] font-semibold">Push Notif</span>
                 </button>
 
@@ -448,7 +492,7 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition cursor-pointer"
                   title="Mulai Panduan Aplikasi"
                 >
-                  <HelpCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 mb-1" />
+                  <HelpCircle className="w-4 h-4 text-slate-800 dark:text-slate-200 mb-1" />
                   <span className="text-[10px] font-semibold">Panduan</span>
                 </button>
 

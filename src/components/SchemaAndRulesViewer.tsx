@@ -98,6 +98,12 @@ export const SchemaAndRulesViewer: React.FC = () => {
     announcements: Object.keys(snapshot.announcements || {}).length,
     academic_events: Object.keys(snapshot.academic_events || {}).length,
     activity_logs: Object.keys(snapshot.activity_logs || {}).length,
+    academic_years: Object.keys(snapshot.academic_years || {}).length,
+    curriculums: Object.keys(snapshot.curriculums || {}).length,
+    departments: Object.keys(snapshot.departments || {}).length,
+    master_subjects: Object.keys(snapshot.master_subjects || {}).length,
+    extracurriculars: Object.keys(snapshot.extracurriculars || {}).length,
+    study_schedules: Object.keys(snapshot.study_schedules || {}).length,
   };
 
   const formattedSnapshotJSON = JSON.stringify(snapshot, null, 2);
@@ -343,13 +349,13 @@ async function fetchClassAttendanceWithJoin(classId, targetDate, subjectId) {
         </div>
 
         {/* Sub Navigation */}
-        <div className="flex items-center gap-2 mt-4 border-b border-slate-100 dark:border-slate-700 pb-2 overflow-x-auto">
+        <div className="p-1.5 bg-slate-100/90 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2 mt-4 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveSubTab('schema')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer border ${
               activeSubTab === 'schema'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
             }`}
           >
             <Database className="w-3.5 h-3.5" />
@@ -357,10 +363,10 @@ async function fetchClassAttendanceWithJoin(classId, targetDate, subjectId) {
           </button>
           <button
             onClick={() => setActiveSubTab('rules')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer border ${
               activeSubTab === 'rules'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
@@ -368,10 +374,10 @@ async function fetchClassAttendanceWithJoin(classId, targetDate, subjectId) {
           </button>
           <button
             onClick={() => setActiveSubTab('join')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer border ${
               activeSubTab === 'join'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
             }`}
           >
             <GitBranch className="w-3.5 h-3.5" />
@@ -380,10 +386,10 @@ async function fetchClassAttendanceWithJoin(classId, targetDate, subjectId) {
           <button
             id="tab-db-backup"
             onClick={() => setActiveSubTab('backup')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer border ${
               activeSubTab === 'backup'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 shadow-2xs'
             }`}
           >
             <HardDrive className="w-3.5 h-3.5" />
@@ -489,40 +495,46 @@ async function fetchClassAttendanceWithJoin(classId, targetDate, subjectId) {
           </div>
         </div>
       ) : (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-xl text-slate-100 overflow-x-auto">
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-6 shadow-xl text-slate-100 overflow-hidden">
           {activeSubTab === 'schema' && (
             <div>
-              <div className="text-xs font-mono text-blue-400 mb-3 flex items-center justify-between">
+              <div className="text-xs font-mono text-blue-400 mb-3 flex items-center justify-between border-b border-slate-800 pb-3">
                 <span>// database.schema.json — Struktur Data Normalisasi NoSQL</span>
-                <span className="text-slate-500">7 Node Utama RDBMS</span>
+                <span className="text-slate-400 font-sans text-xs">7 Node Utama RDBMS</span>
               </div>
-              <pre className="font-mono text-xs text-slate-300 leading-relaxed">
-                <code>{schemaJSON}</code>
-              </pre>
+              <div className="max-h-[560px] overflow-auto pr-2">
+                <pre className="font-mono text-xs text-slate-300 leading-relaxed">
+                  <code>{schemaJSON}</code>
+                </pre>
+              </div>
             </div>
           )}
 
           {activeSubTab === 'rules' && (
             <div>
-              <div className="text-xs font-mono text-purple-400 mb-3 flex items-center justify-between">
+              <div className="text-xs font-mono text-purple-400 mb-3 flex items-center justify-between border-b border-slate-800 pb-3">
                 <span>// database.rules.json — Firebase Realtime Database Security Rules</span>
-                <span className="text-slate-500">RBAC: Admin, Wali Kelas, Guru, Siswa, Ortu</span>
+                <span className="text-slate-400 font-sans text-xs">RBAC: Admin, Wali Kelas, Guru, Siswa, Ortu</span>
               </div>
-              <pre className="font-mono text-xs text-slate-300 leading-relaxed">
-                <code>{securityRules}</code>
-              </pre>
+              <div className="max-h-[560px] overflow-auto pr-2">
+                <pre className="font-mono text-xs text-slate-300 leading-relaxed">
+                  <code>{securityRules}</code>
+                </pre>
+              </div>
             </div>
           )}
 
           {activeSubTab === 'join' && (
             <div>
-              <div className="text-xs font-mono text-indigo-400 mb-3 flex items-center justify-between">
+              <div className="text-xs font-mono text-indigo-400 mb-3 flex items-center justify-between border-b border-slate-800 pb-3">
                 <span>// client-join.js — Asynchronous Relational Data Lookup</span>
-                <span className="text-slate-500">Promise.all & Foreign Key Resolving</span>
+                <span className="text-slate-400 font-sans text-xs">Promise.all & Foreign Key Resolving</span>
               </div>
-              <pre className="font-mono text-xs text-slate-300 leading-relaxed">
-                <code>{clientJoinCode}</code>
-              </pre>
+              <div className="max-h-[560px] overflow-auto pr-2">
+                <pre className="font-mono text-xs text-slate-300 leading-relaxed">
+                  <code>{clientJoinCode}</code>
+                </pre>
+              </div>
             </div>
           )}
         </div>

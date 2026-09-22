@@ -13,6 +13,8 @@ import {
   PiketAttendanceRecord,
   AttitudeAssessmentItem,
   ClassTreasuryTransaction,
+  SchoolFeeAdministrationDoc,
+  StudentSchoolFeeRecord,
   ClassJournalItem,
   StudentMutationItem,
   StudentCaseItem,
@@ -579,6 +581,353 @@ export class HomeroomPdfExporter {
     const filename = `Laporan_Kas_Kelas_${className.replace(/\s+/g, '_')}.pdf`;
     doc.save(filename);
     this.notifySuccess('Laporan Keuangan Kas Kelas Berhasil Dicetak!', filename);
+  }
+
+  // 12.B) Menu 12: Rincian Administrasi Sekolah (Format Resmi SPP, Asrama, Buku, Praktikum, Kesiswaan, dll.)
+  public static exportSchoolFeeAdministrationPDF(
+    className: string,
+    docData: SchoolFeeAdministrationDoc
+  ): void {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = 297;
+    const pageHeight = 210;
+
+    // Kop Surat Resmi SMK dr. SOEBANDI
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text('YAYASAN PENDIDIKAN JEMBER INTERNATIONAL SCHOOL', pageWidth / 2, 10, { align: 'center' });
+
+    doc.setFontSize(13);
+    doc.text('SMK dr. SOEBANDI', pageWidth / 2, 15, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.text('TERAKREDITASI (A)', pageWidth / 2, 19.5, { align: 'center' });
+
+    doc.setFontSize(8.5);
+    doc.text('(BAN-PDM) NOMOR : 604/BAN-PDM/SK/2025', pageWidth / 2, 23.5, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('NSS: 342052429294                      NPSN: 60724703', pageWidth / 2, 27.5, { align: 'center' });
+    doc.text('Jl. dr. Soebandi No. 99A, Telp. (0331) 5104296, Jember', pageWidth / 2, 31.5, { align: 'center' });
+    doc.text('E-mail : smkdr.soebandi@gmail.com, Website : www.smkdrsoebandijember.sch.id', pageWidth / 2, 35.5, { align: 'center' });
+
+    // Double Border Line
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.7);
+    doc.line(10, 38, pageWidth - 10, 38);
+    doc.setLineWidth(0.2);
+    doc.line(10, 39, pageWidth - 10, 39);
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.text('RINCIAN ADMINISTRASI SEKOLAH', pageWidth / 2, 45, { align: 'center' });
+    const titleWidth = doc.getTextWidth('RINCIAN ADMINISTRASI SEKOLAH');
+    doc.setLineWidth(0.4);
+    doc.line(pageWidth / 2 - titleWidth / 2, 46, pageWidth / 2 + titleWidth / 2, 46);
+
+    // Metadata Left (Bulan & Kelas)
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Bulan`, 10, 51);
+    doc.text(`: ${docData.month || 'Agustus 2026'}`, 25, 51);
+    doc.text(`Kelas`, 10, 55.5);
+    doc.text(`: ${docData.className || className || 'XI APL'}`, 25, 55.5);
+
+    // Table Data preparation
+    const months = ['juli', 'agustus', 'september', 'oktober', 'november', 'desember', 'januari', 'februari', 'maret', 'april', 'mei', 'juni'] as const;
+
+    let totalPrevAll = 0;
+    let totalAsramaAll = 0;
+    let totalPtsPasAll = 0;
+    let totalBukuAll = 0;
+    let totalPraktikumAll = 0;
+    let totalKesiswaanAll = 0;
+    const sppMonthlyTotals: Record<string, number> = {
+      juli: 0, agustus: 0, september: 0, oktober: 0, november: 0, desember: 0,
+      januari: 0, februari: 0, maret: 0, april: 0, mei: 0, juni: 0
+    };
+    let totalGrandAll = 0;
+
+    const bodyData = docData.records.map((r, idx) => {
+      const prev = Number(r.tagihanKelasX) || 0;
+      const asrama = Number(r.asrama) || 0;
+      const pts = Number(r.ptsPas) || 0;
+      const buku = Number(r.buku) || 0;
+      const prak = Number(r.praktikum) || 0;
+      const kesis = Number(r.kesiswaan) || 0;
+
+      let sppTotalStudent = 0;
+      const sppRowValues = months.map(m => {
+        const val = Number(r.spp?.[m]) || 0;
+        sppMonthlyTotals[m] += val;
+        sppTotalStudent += val;
+        return val > 0 ? val.toLocaleString('id-ID') : '-';
+      });
+
+      const totalStudent = prev + asrama + pts + buku + prak + kesis + sppTotalStudent;
+
+      totalPrevAll += prev;
+      totalAsramaAll += asrama;
+      totalPtsPasAll += pts;
+      totalBukuAll += buku;
+      totalPraktikumAll += prak;
+      totalKesiswaanAll += kesis;
+      totalGrandAll += totalStudent;
+
+      return [
+        String(idx + 1),
+        r.studentName,
+        prev > 0 ? prev.toLocaleString('id-ID') : '-',
+        asrama > 0 ? asrama.toLocaleString('id-ID') : '-',
+        pts > 0 ? pts.toLocaleString('id-ID') : '-',
+        buku > 0 ? buku.toLocaleString('id-ID') : '-',
+        prak > 0 ? prak.toLocaleString('id-ID') : '-',
+        kesis > 0 ? kesis.toLocaleString('id-ID') : '-',
+        ...sppRowValues,
+        totalStudent > 0 ? totalStudent.toLocaleString('id-ID') : '-'
+      ];
+    });
+
+    // Baris Jumlah Rekapitulasi
+    const summaryRow = [
+      '',
+      'JUMLAH',
+      totalPrevAll > 0 ? totalPrevAll.toLocaleString('id-ID') : '-',
+      totalAsramaAll > 0 ? totalAsramaAll.toLocaleString('id-ID') : '-',
+      totalPtsPasAll > 0 ? totalPtsPasAll.toLocaleString('id-ID') : '-',
+      totalBukuAll > 0 ? totalBukuAll.toLocaleString('id-ID') : '-',
+      totalPraktikumAll > 0 ? totalPraktikumAll.toLocaleString('id-ID') : '-',
+      totalKesiswaanAll > 0 ? totalKesiswaanAll.toLocaleString('id-ID') : '-',
+      ...months.map(m => (sppMonthlyTotals[m] > 0 ? sppMonthlyTotals[m].toLocaleString('id-ID') : '-')),
+      totalGrandAll > 0 ? totalGrandAll.toLocaleString('id-ID') : '-'
+    ];
+    bodyData.push(summaryRow);
+
+    const head1 = [
+      [
+        { content: 'NO.', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: 'NAMA SISWA', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: docData.tagihanPreviousHeader || 'TAGIHAN KELAS X', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: docData.asramaHeaderPeriod || 'ASRAMA 2026 - 2027', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: 'PTS - PAS', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: 'BUKU', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: 'PRAKTIKUM 1 TAHUN', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: 'KESISWAAN', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } },
+        { content: docData.sppHeaderPeriod || 'SPP (JULI 2026 - JUNI 2027)', colSpan: 12, styles: { halign: 'center' as const } },
+        { content: 'TOTAL', rowSpan: 2, styles: { halign: 'center' as const, valign: 'middle' as const } }
+      ],
+      [
+        { content: 'JULI', styles: { halign: 'center' as const } },
+        { content: 'AGUSTUS', styles: { halign: 'center' as const } },
+        { content: 'SEPTEMBER', styles: { halign: 'center' as const } },
+        { content: 'OKTOBER', styles: { halign: 'center' as const } },
+        { content: 'NOVEMBER', styles: { halign: 'center' as const } },
+        { content: 'DESEMBER', styles: { halign: 'center' as const } },
+        { content: 'JANUARI', styles: { halign: 'center' as const } },
+        { content: 'FEBRUARI', styles: { halign: 'center' as const } },
+        { content: 'MARET', styles: { halign: 'center' as const } },
+        { content: 'APRIL', styles: { halign: 'center' as const } },
+        { content: 'MEI', styles: { halign: 'center' as const } },
+        { content: 'JUNI', styles: { halign: 'center' as const } }
+      ]
+    ];
+
+    autoTable(doc, {
+      head: head1,
+      body: bodyData,
+      startY: 58,
+      theme: 'grid',
+      styles: {
+        fontSize: 6.5,
+        cellPadding: 1.2,
+        textColor: [15, 23, 42],
+        lineColor: [50, 50, 50],
+        lineWidth: 0.15,
+        font: 'helvetica'
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        lineWidth: 0.2,
+        lineColor: [0, 0, 0]
+      },
+      columnStyles: {
+        0: { cellWidth: 7, halign: 'center' },
+        1: { cellWidth: 42, halign: 'left', fontStyle: 'bold' },
+        2: { cellWidth: 15, halign: 'right' },
+        3: { cellWidth: 15, halign: 'right' },
+        4: { cellWidth: 12, halign: 'right' },
+        5: { cellWidth: 12, halign: 'right' },
+        6: { cellWidth: 16, halign: 'right' },
+        7: { cellWidth: 14, halign: 'right' },
+        8: { cellWidth: 10, halign: 'right' },
+        9: { cellWidth: 10, halign: 'right' },
+        10: { cellWidth: 10, halign: 'right' },
+        11: { cellWidth: 10, halign: 'right' },
+        12: { cellWidth: 10, halign: 'right' },
+        13: { cellWidth: 10, halign: 'right' },
+        14: { cellWidth: 10, halign: 'right' },
+        15: { cellWidth: 10, halign: 'right' },
+        16: { cellWidth: 10, halign: 'right' },
+        17: { cellWidth: 10, halign: 'right' },
+        18: { cellWidth: 10, halign: 'right' },
+        19: { cellWidth: 10, halign: 'right' },
+        20: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
+      },
+      didParseCell: (data) => {
+        // Highlight rows/cells based on record state
+        if (data.section === 'body') {
+          const rowIndex = data.row.index;
+          const isSummary = rowIndex === bodyData.length - 1;
+
+          if (isSummary) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [248, 250, 252];
+            return;
+          }
+
+          const record = docData.records[rowIndex];
+          if (record) {
+            if (record.rowHighlight === 'lunas_full') {
+              data.cell.styles.fillColor = [220, 252, 231]; // light green
+            }
+
+            // Cell specific highlight
+            const colIndex = data.column.index;
+            let status: string | undefined;
+
+            if (colIndex === 2) status = record.cellStatus?.tagihanKelasX;
+            else if (colIndex === 3) status = record.cellStatus?.asrama;
+            else if (colIndex === 4) status = record.cellStatus?.ptsPas;
+            else if (colIndex === 5) status = record.cellStatus?.buku;
+            else if (colIndex === 6) status = record.cellStatus?.praktikum;
+            else if (colIndex === 7) status = record.cellStatus?.kesiswaan;
+            else if (colIndex === 8) status = record.cellStatus?.spp_juli;
+            else if (colIndex === 9) status = record.cellStatus?.spp_agustus;
+            else if (colIndex === 10) status = record.cellStatus?.spp_september;
+            else if (colIndex === 11) status = record.cellStatus?.spp_oktober;
+            else if (colIndex === 12) status = record.cellStatus?.spp_november;
+            else if (colIndex === 13) status = record.cellStatus?.spp_desember;
+            else if (colIndex === 14) status = record.cellStatus?.spp_januari;
+            else if (colIndex === 15) status = record.cellStatus?.spp_februari;
+            else if (colIndex === 16) status = record.cellStatus?.spp_maret;
+            else if (colIndex === 17) status = record.cellStatus?.spp_april;
+            else if (colIndex === 18) status = record.cellStatus?.spp_mei;
+            else if (colIndex === 19) status = record.cellStatus?.spp_juni;
+
+            if (status === 'wajib') {
+              data.cell.styles.fillColor = [234, 88, 12]; // Oranye (#EA580C)
+              data.cell.styles.textColor = [255, 255, 255];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (status === 'cicil') {
+              data.cell.styles.fillColor = [250, 204, 21]; // Kuning (#FACC15)
+              data.cell.styles.textColor = [0, 0, 0];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (status === 'subsidi') {
+              data.cell.styles.fillColor = [56, 189, 248]; // Biru muda (#38BDF8)
+              data.cell.styles.textColor = [0, 0, 0];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      },
+      margin: { left: 10, right: 10 }
+    });
+
+    let currentY = (doc as any).lastAutoTable?.finalY + 4 || 135;
+
+    // Check bottom boundary for footer
+    if (currentY > pageHeight - 55) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    // Wali Kelas Callout Left
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(docData.className || 'XI APL', 10, currentY);
+    doc.text(docData.homeroomTeacherCallName || 'BAPAK PUPUT', 10, currentY + 4.5);
+
+    // Keterangan Legend Status (Kiri Bawah)
+    const legendStartY = currentY + 11;
+    const legendItems = [
+      { label: 'LUNAS', color: [255, 255, 255], border: [150, 150, 150] },
+      { label: 'WAJIB DILUNASI', color: [234, 88, 12], textColor: [255, 255, 255] },
+      { label: 'MOHON DICICIL', color: [250, 204, 21], textColor: [0, 0, 0] },
+      { label: 'SUBSIDI BANTUAN', color: [56, 189, 248], textColor: [0, 0, 0] }
+    ];
+
+    legendItems.forEach((item, lIdx) => {
+      const y = legendStartY + lIdx * 5.5;
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.2);
+      doc.rect(10, y, 40, 5, 'D');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      doc.text(item.label, 12, y + 3.8);
+
+      // Color Box
+      doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+      doc.rect(50, y, 15, 5, 'FD');
+    });
+
+    // Bank Account Info Box (Tengah)
+    const bankBoxX = 75;
+    const bankBoxY = currentY + 11;
+    const bankBoxW = 55;
+    const bankBoxH = 22;
+
+    doc.setFillColor(245, 158, 11); // Amber-500
+    doc.rect(bankBoxX, bankBoxY, bankBoxW, bankBoxH, 'F');
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.3);
+    doc.rect(bankBoxX, bankBoxY, bankBoxW, bankBoxH, 'D');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text(docData.bankName || 'BANK SYARIAH INDONESIA (BSI)', bankBoxX + 3, bankBoxY + 6);
+    doc.setFontSize(9);
+    doc.text(docData.bankAccountNumber || '4444-400-167', bankBoxX + 3, bankBoxY + 12);
+    doc.setFontSize(7.5);
+    doc.text(docData.bankAccountHolder || 'SMK DR SOEBANDI JEMBER', bankBoxX + 3, bankBoxY + 18);
+
+    // Kanan Atas: ACC Bendahara Penerimaan
+    const rightX = 220;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
+    doc.text(docData.dataPerDate || 'Data per Tanggal 15 Agustus 2026', rightX, currentY + 1);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('ACC Bendahara Penerimaan', rightX, currentY + 7);
+    doc.text('Jember, .................... 2026', rightX, currentY + 12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(docData.receivingTreasurerName || 'Agustin Rahmawati', rightX, currentY + 28);
+
+    // Bawah: Tanda Tangan Resmi
+    const sigY = currentY + 36;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Mengetahui,', 10, sigY);
+    doc.text('Bendahara Sekolah', 10, sigY + 4.5);
+
+    doc.text(docData.signDate || 'Jember, 31 Agustus 2026', rightX, sigY);
+    doc.text('Wali Kelas', rightX, sigY + 4.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text(docData.schoolTreasurerName || 'Agustin Rahmawati, A.Md.', 10, sigY + 22);
+    doc.text(docData.homeroomTeacherName || 'Puput Sasmita, S.Pd., Gr.', rightX, sigY + 22);
+
+    const filename = `Rincian_Administrasi_Sekolah_${(docData.className || className).replace(/\s+/g, '_')}_${docData.month.replace(/\s+/g, '_')}.pdf`;
+    doc.save(filename);
+    this.notifySuccess('Rincian Administrasi Sekolah Berhasil Dicetak!', filename);
   }
 
   // 13) Menu 13: Jurnal Agenda Kegiatan Pembelajaran

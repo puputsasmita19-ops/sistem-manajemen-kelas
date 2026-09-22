@@ -9,7 +9,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "admin@sekolah.id",
       password_hash: "admin123", // Dalam produksi menggunakan bcrypt / Firebase Auth UID
       role: "admin",
-      no_wa: "081234567890"
+      no_wa: "081234567890",
+      last_login: "2026-09-21T18:25:00.000Z"
     },
     user_wk1: {
       id: "user_wk1",
@@ -18,7 +19,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "budi.santoso@sekolah.id",
       password_hash: "wali123",
       role: "wali_kelas",
-      no_wa: "081234567891"
+      no_wa: "081234567891",
+      last_login: "2026-09-21T15:40:00.000Z"
     },
     user_guru1: {
       id: "user_guru1",
@@ -27,7 +29,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "siti.rahma@sekolah.id",
       password_hash: "guru123",
       role: "guru",
-      no_wa: "081234567892"
+      no_wa: "081234567892",
+      last_login: "2026-09-20T08:15:00.000Z"
     },
     user_guru2: {
       id: "user_guru2",
@@ -36,7 +39,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "joko.susilo@sekolah.id",
       password_hash: "guru123",
       role: "guru",
-      no_wa: "081234567893"
+      no_wa: "081234567893",
+      last_login: "2026-09-12T10:00:00.000Z"
     },
     user_std1: {
       id: "user_std1",
@@ -45,7 +49,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "ahmad.rizky@siswa.sekolah.id",
       password_hash: "siswa123",
       role: "siswa",
-      no_wa: "082198765431"
+      no_wa: "082198765431",
+      last_login: "2026-09-21T17:10:00.000Z"
     },
     user_std2: {
       id: "user_std2",
@@ -54,7 +59,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "dewi.lestari@siswa.sekolah.id",
       password_hash: "siswa123",
       role: "siswa",
-      no_wa: "082198765432"
+      no_wa: "082198765432",
+      last_login: "2026-09-18T11:20:00.000Z"
     },
     user_std3: {
       id: "user_std3",
@@ -64,6 +70,7 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       password_hash: "siswa123",
       role: "siswa",
       no_wa: "082198765433"
+      // Belum pernah login (inactive)
     },
     user_std4: {
       id: "user_std4",
@@ -72,7 +79,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "nabila.putri@siswa.sekolah.id",
       password_hash: "siswa123",
       role: "siswa",
-      no_wa: "082198765434"
+      no_wa: "082198765434",
+      last_login: "2026-08-15T09:00:00.000Z" // Inaktif (> 30 hari)
     },
     user_std5: {
       id: "user_std5",
@@ -82,6 +90,7 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       password_hash: "siswa123",
       role: "siswa",
       no_wa: "082198765435"
+      // Belum pernah login (inactive)
     },
     user_par1: {
       id: "user_par1",
@@ -90,7 +99,8 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       email: "hendra.pratama@gmail.com",
       password_hash: "ortu123",
       role: "orang_tua",
-      no_wa: "081399887766"
+      no_wa: "081399887766",
+      last_login: "2026-09-21T12:00:00.000Z"
     },
     user_par2: {
       id: "user_par2",
@@ -100,6 +110,7 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       password_hash: "ortu123",
       role: "orang_tua",
       no_wa: "081399887767"
+      // Belum pernah login (inactive)
     }
   },
   classes: {
@@ -408,5 +419,404 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
     logoImageUrl: "",
     creatorName: "Puput Sasmita",
     adminPhone: "0812-3456-7890"
+  },
+  academic_years: {
+    ay_2025_2026: {
+      id: "ay_2025_2026",
+      tahun: "2025/2026",
+      semesterAktif: "Ganjil",
+      status: "Aktif",
+      tanggalMulai: "2025-07-14",
+      tanggalSelesai: "2025-12-20",
+      kepalaSekolah: "Drs. H. Mulyadi, M.Pd",
+      nipKepalaSekolah: "196805121994031005"
+    },
+    ay_2024_2025: {
+      id: "ay_2024_2025",
+      tahun: "2024/2025",
+      semesterAktif: "Genap",
+      status: "Arsip",
+      tanggalMulai: "2024-07-15",
+      tanggalSelesai: "2025-06-25",
+      kepalaSekolah: "Drs. H. Mulyadi, M.Pd",
+      nipKepalaSekolah: "196805121994031005"
+    },
+    ay_2026_2027: {
+      id: "ay_2026_2027",
+      tahun: "2026/2027",
+      semesterAktif: "Ganjil",
+      status: "Mendatang",
+      tanggalMulai: "2026-07-13",
+      tanggalSelesai: "2026-12-19",
+      kepalaSekolah: "Drs. H. Mulyadi, M.Pd",
+      nipKepalaSekolah: "196805121994031005"
+    }
+  },
+  curriculums: {
+    curr_merdeka: {
+      id: "curr_merdeka",
+      kode: "KM-2024",
+      nama: "Kurikulum Merdeka",
+      tingkat: ["Fase E (Kelas X)", "Fase F (Kelas XI)", "Fase F (Kelas XII)"],
+      status: "Aktif",
+      deskripsi: "Kurikulum berbasis pembelajaran intrakurikuler yang beragam dan Proyek Penguatan Profil Pelajar Pancasila (P5)."
+    },
+    curr_k13: {
+      id: "curr_k13",
+      kode: "K13-REV",
+      nama: "Kurikulum 2013 Revisi",
+      tingkat: ["Kelas XII"],
+      status: "Transisi",
+      deskripsi: "Kurikulum berbasis kompetensi dan pendekatan saintifik untuk tingkat akhir."
+    }
+  },
+  departments: {
+    dept_mipa: {
+      id: "dept_mipa",
+      kode: "MIPA",
+      nama: "Matematika dan Ilmu Pengetahuan Alam",
+      kepalaProgram: "Siti Rahmawati, M.Pd",
+      kuota: 144,
+      status: "Aktif"
+    },
+    dept_ips: {
+      id: "dept_ips",
+      kode: "IPS",
+      nama: "Ilmu Pengetahuan Sosial",
+      kepalaProgram: "Budi Santoso, S.Pd",
+      kuota: 144,
+      status: "Aktif"
+    },
+    dept_bahasa: {
+      id: "dept_bahasa",
+      kode: "IBB",
+      nama: "Ilmu Bahasa dan Budaya",
+      kepalaProgram: "Dra. Nurhayati, M.Hum",
+      kuota: 72,
+      status: "Aktif"
+    }
+  },
+  master_subjects: {
+    ms_mat: {
+      id: "ms_mat",
+      kode_mapel: "MP-MAT-01",
+      nama_mapel: "Matematika",
+      kelompok: "Umum / Wajib",
+      kkm: 75,
+      tingkatKelas: "Semua",
+      guru_id: "user_guru1",
+      alokasiJamPerMinggu: 4,
+      status: "Aktif"
+    },
+    ms_ind: {
+      id: "ms_ind",
+      kode_mapel: "MP-BIN-01",
+      nama_mapel: "Bahasa Indonesia",
+      kelompok: "Umum / Wajib",
+      kkm: 78,
+      tingkatKelas: "Semua",
+      guru_id: "user_guru2",
+      alokasiJamPerMinggu: 4,
+      status: "Aktif"
+    },
+    ms_ing: {
+      id: "ms_ing",
+      kode_mapel: "MP-BIG-01",
+      nama_mapel: "Bahasa Inggris",
+      kelompok: "Umum / Wajib",
+      kkm: 75,
+      tingkatKelas: "Semua",
+      guru_id: "user_guru2",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    },
+    ms_fis: {
+      id: "ms_fis",
+      kode_mapel: "MP-FIS-01",
+      nama_mapel: "Fisika",
+      kelompok: "Peminatan / Kejuruan",
+      kkm: 75,
+      tingkatKelas: "Kelas X",
+      guru_id: "user_guru1",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    },
+    ms_bio: {
+      id: "ms_bio",
+      kode_mapel: "MP-BIO-01",
+      nama_mapel: "Biologi",
+      kelompok: "Peminatan / Kejuruan",
+      kkm: 76,
+      tingkatKelas: "Kelas X",
+      guru_id: "user_guru1",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    },
+    ms_inf: {
+      id: "ms_inf",
+      kode_mapel: "MP-INF-01",
+      nama_mapel: "Informatika / TIK",
+      kelompok: "Umum / Wajib",
+      kkm: 80,
+      tingkatKelas: "Semua",
+      guru_id: "user_admin1",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    },
+    ms_pabp: {
+      id: "ms_pabp",
+      kode_mapel: "MP-PAI-01",
+      nama_mapel: "Pendidikan Agama & Budi Pekerti",
+      kelompok: "Umum / Wajib",
+      kkm: 80,
+      tingkatKelas: "Semua",
+      guru_id: "user_wk1",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    },
+    ms_pjok: {
+      id: "ms_pjok",
+      kode_mapel: "MP-PJK-01",
+      nama_mapel: "PJOK",
+      kelompok: "Umum / Wajib",
+      kkm: 75,
+      tingkatKelas: "Semua",
+      guru_id: "user_guru2",
+      alokasiJamPerMinggu: 3,
+      status: "Aktif"
+    }
+  },
+  extracurriculars: {
+    ekskul_1: {
+      id: "ekskul_1",
+      nama: "Pramuka Inti (Gudep 01-02)",
+      pembina: "Budi Santoso, S.Pd",
+      hariLatihan: "Jumat",
+      jamLatihan: "14:30 - 16:30 WIB",
+      lokasi: "Lapangan Utama Sekolah",
+      jumlahAnggota: 48,
+      status: "Aktif"
+    },
+    ekskul_2: {
+      id: "ekskul_2",
+      nama: "PMR & KSR Wira",
+      pembina: "Siti Rahmawati, M.Pd",
+      hariLatihan: "Sabtu",
+      jamLatihan: "08:00 - 11:00 WIB",
+      lokasi: "Ruang UKS & Aula",
+      jumlahAnggota: 32,
+      status: "Aktif"
+    },
+    ekskul_3: {
+      id: "ekskul_3",
+      nama: "Robotika & Programming Club",
+      pembina: "Bambang Wijaya, M.Kom",
+      hariLatihan: "Rabu",
+      jamLatihan: "15:00 - 17:00 WIB",
+      lokasi: "Laboratorium Komputer 1",
+      jumlahAnggota: 26,
+      status: "Aktif"
+    },
+    ekskul_4: {
+      id: "ekskul_4",
+      nama: "Paskibra Sekolah",
+      pembina: "Joko Susilo, M.Pd",
+      hariLatihan: "Selasa & Kamis",
+      jamLatihan: "15:30 - 17:30 WIB",
+      lokasi: "Plaza Upacara",
+      jumlahAnggota: 30,
+      status: "Aktif"
+    }
+  },
+  study_schedules: {
+    slot_0: {
+      id: "slot_0",
+      jamKe: 0,
+      waktuMulai: "06:45",
+      waktuSelesai: "07:15",
+      keterangan: "Apel Pagi / Upacara / Tadarus",
+      isBreak: false
+    },
+    slot_1: {
+      id: "slot_1",
+      jamKe: 1,
+      waktuMulai: "07:15",
+      waktuSelesai: "08:00",
+      keterangan: "Jam KBM Ke-1",
+      isBreak: false
+    },
+    slot_2: {
+      id: "slot_2",
+      jamKe: 2,
+      waktuMulai: "08:00",
+      waktuSelesai: "08:45",
+      keterangan: "Jam KBM Ke-2",
+      isBreak: false
+    },
+    slot_3: {
+      id: "slot_3",
+      jamKe: 3,
+      waktuMulai: "08:45",
+      waktuSelesai: "09:30",
+      keterangan: "Jam KBM Ke-3",
+      isBreak: false
+    },
+    slot_break1: {
+      id: "slot_break1",
+      jamKe: 0,
+      waktuMulai: "09:30",
+      waktuSelesai: "10:00",
+      keterangan: "Istirahat Pertama (Sholat Dhuha & Snack)",
+      isBreak: true
+    },
+    slot_4: {
+      id: "slot_4",
+      jamKe: 4,
+      waktuMulai: "10:00",
+      waktuSelesai: "10:45",
+      keterangan: "Jam KBM Ke-4",
+      isBreak: false
+    },
+    slot_5: {
+      id: "slot_5",
+      jamKe: 5,
+      waktuMulai: "10:45",
+      waktuSelesai: "11:30",
+      keterangan: "Jam KBM Ke-5",
+      isBreak: false
+    },
+    slot_6: {
+      id: "slot_6",
+      jamKe: 6,
+      waktuMulai: "11:30",
+      waktuSelesai: "12:15",
+      keterangan: "Jam KBM Ke-6",
+      isBreak: false
+    },
+    slot_break2: {
+      id: "slot_break2",
+      jamKe: 0,
+      waktuMulai: "12:15",
+      waktuSelesai: "13:00",
+      keterangan: "Istirahat Kedua (ISOMA / Sholat Dzuhur Berjamaah)",
+      isBreak: true
+    },
+    slot_7: {
+      id: "slot_7",
+      jamKe: 7,
+      waktuMulai: "13:00",
+      waktuSelesai: "13:45",
+      keterangan: "Jam KBM Ke-7",
+      isBreak: false
+    },
+    slot_8: {
+      id: "slot_8",
+      jamKe: 8,
+      waktuMulai: "13:45",
+      waktuSelesai: "14:30",
+      keterangan: "Jam KBM Ke-8",
+      isBreak: false
+    }
+  },
+  scheduled_export_configs: {
+    cfg_monthly_attendance: {
+      id: "cfg_monthly_attendance",
+      title: "Rekapitulasi Presensi Lengkap Akhir Bulan",
+      description: "Ekspor otomatis rekap kehadiran seluruh rombel setiap hari terakhir bulan berjalan ke PDF resmi.",
+      reportType: "attendance_recap",
+      frequency: "monthly_end",
+      timeOfDay: "23:59",
+      dayOfMonth: 0,
+      targetClassId: "all",
+      includeSignatures: true,
+      includeKopSurat: true,
+      paperSize: "a4",
+      paperOrientation: "portrait",
+      storageDestination: "firebase_storage",
+      isEnabled: true,
+      lastRunAt: "2026-08-31T23:59:00.000Z",
+      nextRunAt: "2026-09-30T23:59:00.000Z",
+      createdAt: "2026-08-01T08:00:00.000Z",
+      updatedAt: "2026-09-01T08:00:00.000Z"
+    },
+    cfg_weekly_summary: {
+      id: "cfg_weekly_summary",
+      title: "Laporan Evaluasi Mingguan (Jumat Sore)",
+      description: "Ekspor otomatis rekaman presensi mingguan untuk pelaporan guru dan wali kelas.",
+      reportType: "homeroom_summary",
+      frequency: "weekly",
+      timeOfDay: "17:00",
+      dayOfWeek: 5,
+      targetClassId: "all",
+      includeSignatures: true,
+      includeKopSurat: true,
+      paperSize: "a4",
+      paperOrientation: "portrait",
+      storageDestination: "firebase_storage",
+      isEnabled: true,
+      lastRunAt: "2026-09-19T17:00:00.000Z",
+      nextRunAt: "2026-09-26T17:00:00.000Z",
+      createdAt: "2026-08-01T08:00:00.000Z",
+      updatedAt: "2026-09-01T08:00:00.000Z"
+    },
+    cfg_semester_grades: {
+      id: "cfg_semester_grades",
+      title: "Rekapitulasi Nilai & Evaluasi Akhir Semester",
+      description: "Arsip komprehensif rekap nilai Tugas, UTS, dan UAS seluruh mata pelajaran.",
+      reportType: "grades_recap",
+      frequency: "semester_end",
+      timeOfDay: "20:00",
+      targetClassId: "all",
+      includeSignatures: true,
+      includeKopSurat: true,
+      paperSize: "a4",
+      paperOrientation: "landscape",
+      storageDestination: "firebase_storage",
+      isEnabled: true,
+      lastRunAt: "2026-06-25T20:00:00.000Z",
+      nextRunAt: "2026-12-20T20:00:00.000Z",
+      createdAt: "2026-08-01T08:00:00.000Z",
+      updatedAt: "2026-09-01T08:00:00.000Z"
+    }
+  },
+  scheduled_reports: {
+    rep_aug_2026_att: {
+      id: "rep_aug_2026_att",
+      scheduleId: "cfg_monthly_attendance",
+      title: "Laporan Rekapitulasi Presensi Akhir Bulan Agustus 2026",
+      fileName: "Laporan_Presensi_Bulanan_Agustus_2026.pdf",
+      reportType: "attendance_recap",
+      frequencyType: "Akhir Bulan",
+      periodLabel: "01 Agustus 2026 - 31 Agustus 2026",
+      generatedAt: "2026-08-31T23:59:12.000Z",
+      fileSizeBytes: 284500,
+      fileSizeFormatted: "278 KB",
+      storagePath: "automated_reports/2026/08/Laporan_Presensi_Bulanan_Agustus_2026.pdf",
+      downloadUrl: "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0402274970.firebasestorage.app/o/automated_reports%2F2026%2F08%2FLaporan_Presensi_Bulanan_Agustus_2026.pdf?alt=media",
+      status: "completed",
+      generatedBy: "Sistem Otomatis (Cron)",
+      totalRecordsCount: 142,
+      downloadCount: 3,
+      storageProvider: "firebase_storage"
+    },
+    rep_sep_w2_2026: {
+      id: "rep_sep_w2_2026",
+      scheduleId: "cfg_weekly_summary",
+      title: "Laporan Mingguan Presensi & Kedisiplinan Siswa (W2 Sep 2026)",
+      fileName: "Laporan_Mingguan_Presensi_12_Sep_2026.pdf",
+      reportType: "homeroom_summary",
+      frequencyType: "Mingguan",
+      periodLabel: "08 September 2026 - 12 September 2026",
+      generatedAt: "2026-09-12T17:00:05.000Z",
+      fileSizeBytes: 215400,
+      fileSizeFormatted: "210 KB",
+      storagePath: "automated_reports/2026/09/Laporan_Mingguan_Presensi_12_Sep_2026.pdf",
+      downloadUrl: "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0402274970.firebasestorage.app/o/automated_reports%2F2026%2F09%2FLaporan_Mingguan_Presensi_12_Sep_2026.pdf?alt=media",
+      status: "completed",
+      generatedBy: "Sistem Otomatis (Cron)",
+      totalRecordsCount: 96,
+      downloadCount: 1,
+      storageProvider: "firebase_storage"
+    }
   }
 };

@@ -9,6 +9,11 @@ export interface User {
   role: UserRole;
   no_wa: string;
   nis?: string;
+  nip?: string;
+  nisn?: string;
+  jenis_kelamin?: string;
+  alamat?: string;
+  last_login?: string; // ISO 8601 timestamp e.g. "2026-09-21T18:30:00.000Z"
 }
 
 export interface RunningTextItem {
@@ -41,6 +46,45 @@ export interface AppSettings {
   antiCheatBlockDevTools?: boolean; // default: true (blokir F12, Inspect Element)
   antiCheatBlockRightClick?: boolean; // default: true (blokir menu klik kanan & long press)
   antiCheatBlockCopyPaste?: boolean; // default: true (blokir penyalinan teks antarmuka)
+  // Pengaturan Kertas Dokumen Cetak / PDF
+  paperSize?: 'a4' | 'f4' | 'letter' | 'legal'; // default: 'a4'
+  paperOrientation?: 'portrait' | 'landscape'; // default: 'portrait'
+  paperMarginTop?: number; // default: 15 mm
+  paperMarginBottom?: number; // default: 15 mm
+  paperMarginLeft?: number; // default: 15 mm
+  paperMarginRight?: number; // default: 15 mm
+  paperPageNumbering?: boolean; // default: true
+  // Pengaturan Kop Surat Resmi Kedinasan
+  kopEnabled?: boolean; // default: true
+  kopInstansiUtama?: string; // default: 'PEMERINTAH PROVINSI DAERAH KHUSUS IBUKOTA JAKARTA'
+  kopDinas?: string; // default: 'DINAS PENDIDIKAN DAN KEBUDAYAAN'
+  kopNamaSekolah?: string; // default: 'SMA NEGERI UNGGULAN INDONESIA'
+  kopSubHeading?: string; // default: 'SEKOLAH PENGGERAK • STATUS AKREDITASI A (UNGGUL)'
+  kopAlamat?: string; // default: 'Jl. Pendidikan Nasional No. 45, Kompleks Edukasi, Jakarta'
+  kopKontak?: string; // default: 'Telp: (021) 7890123 • Email: info@sekolah.sch.id • Web: www.sekolah.sch.id'
+  kopKodePos?: string; // default: 'Kode Pos: 12345'
+  kopLogoUrl?: string; // logo khusus kop surat (opsional, jika kosong pakai logo sekolah)
+  kopLogoPosition?: 'left' | 'both' | 'center'; // default: 'left'
+  kopBorderType?: 'double' | 'single' | 'none'; // default: 'double'
+  // Pengaturan Tanda Tangan & Legalisasi Dokumen
+  signatureEnabled?: boolean; // default: true
+  signatureKota?: string; // default: 'Jakarta'
+  signatureTanggalOtomatis?: boolean; // default: true (mengikuti tanggal cetak sistem)
+  signatureTanggalManual?: string; // default: '' (diisi jika tanggal manual dipilih)
+  signatureJabatanKiri?: string; // default: 'Wali Kelas / Petugas Administrasi'
+  signatureNamaKiri?: string; // default: 'Dra. Hj. Siti Rahmawati, M.Pd'
+  signatureNipKiri?: string; // default: 'NIP. 19780512 200312 2 001'
+  signatureLeftImageUrl?: string; // Tanda tangan digital resmi petugas / wali kelas (PNG/JPG transparan)
+  signatureJabatanKanan?: string; // default: 'Kepala Sekolah'
+  signatureNamaKanan?: string; // default: 'Dr. H. Bambang Sudarsono, M.Si'
+  signatureNipKanan?: string; // default: 'NIP. 19690415 199403 1 004'
+  signatureRightImageUrl?: string; // Tanda tangan digital resmi Kepala Sekolah (PNG/JPG transparan)
+  signatureStampUrl?: string; // stempel digital resmi instansi (opsional)
+  signatureQrVerification?: boolean; // default: true (QR Code verifikasi keaslian dokumen digital)
+  // Drag-and-drop interactive layout positions
+  signaturePosKiri?: 'left_signer' | 'right_signer' | 'empty'; // default: 'left_signer'
+  signaturePosTengah?: 'left_signer' | 'right_signer' | 'empty'; // default: 'empty'
+  signaturePosKanan?: 'left_signer' | 'right_signer' | 'empty'; // default: 'right_signer'
 }
 
 export interface ClassEntity {
@@ -135,9 +179,72 @@ export interface AcademicEvent {
   isHoliday?: boolean;
 }
 
+// Master Data Akademik Model Definitions
+export interface AcademicYear {
+  id: string;
+  tahun: string; // e.g., "2025/2026"
+  semesterAktif: 'Ganjil' | 'Genap';
+  status: 'Aktif' | 'Arsip' | 'Mendatang';
+  tanggalMulai: string; // YYYY-MM-DD
+  tanggalSelesai: string; // YYYY-MM-DD
+  kepalaSekolah: string;
+  nipKepalaSekolah: string;
+}
+
+export interface Curriculum {
+  id: string;
+  kode: string; // e.g., "KM-2024"
+  nama: string; // e.g., "Kurikulum Merdeka"
+  tingkat: string[]; // e.g., ["Fase E (Kelas X)", "Fase F (Kelas XI)", "Fase F (Kelas XII)"]
+  status: 'Aktif' | 'Transisi' | 'Nonaktif';
+  deskripsi: string;
+}
+
+export interface Department {
+  id: string;
+  kode: string; // e.g., "MIPA", "IPS", "RPL", "TKJ"
+  nama: string; // e.g., "Matematika & Ilmu Pengetahuan Alam"
+  kepalaProgram: string;
+  kuota: number;
+  status: 'Aktif' | 'Nonaktif';
+}
+
+export interface MasterSubject {
+  id: string;
+  kode_mapel: string; // e.g., "MP-MAT-01"
+  nama_mapel: string;
+  kelompok: 'Umum / Wajib' | 'Peminatan / Kejuruan' | 'Muatan Lokal' | 'Pilihan';
+  kkm: number; // e.g., 75
+  tingkatKelas: string; // e.g., "Semua" | "Kelas X" | "Kelas XI" | "Kelas XII"
+  guru_id: string; // FK -> users.id
+  alokasiJamPerMinggu: number;
+  status: 'Aktif' | 'Nonaktif';
+}
+
+export interface Extracurricular {
+  id: string;
+  nama: string;
+  pembina: string;
+  hariLatihan: string;
+  jamLatihan: string;
+  lokasi: string;
+  jumlahAnggota: number;
+  status: 'Aktif' | 'Nonaktif';
+}
+
+export interface StudyScheduleSlot {
+  id: string;
+  jamKe: number;
+  waktuMulai: string; // e.g., "07:00"
+  waktuSelesai: string; // e.g., "07:45"
+  keterangan: string; // e.g., "Upacara / Apel Pagi", "KBM 1", "Istirahat 1"
+  isBreak: boolean;
+}
+
 export type ActivityActionType =
   | 'login'
   | 'logout'
+  | 'password_reset_request'
   | 'grade_input'
   | 'grade_update'
   | 'user_create'
@@ -146,13 +253,81 @@ export type ActivityActionType =
   | 'user_batch_delete'
   | 'user_batch_role_change'
   | 'attendance_input'
+  | 'qr_attendance_scan'
+  | 'qr_session_create'
   | 'announcement_create'
   | 'announcement_delete'
   | 'settings_update'
   | 'export_pdf'
   | 'export_data'
   | 'import_data'
-  | 'bulk_action';
+  | 'bulk_action'
+  | 'master_academic_create'
+  | 'master_academic_update'
+  | 'master_academic_delete'
+  | 'master_academic_sync'
+  | 'scheduled_export_run'
+  | 'scheduled_export_config_update'
+  | 'scheduled_export_delete';
+
+export type ScheduledReportType =
+  | 'attendance_recap'
+  | 'grades_recap'
+  | 'comprehensive_academic'
+  | 'homeroom_summary';
+
+export type ScheduleFrequency =
+  | 'monthly_end'
+  | 'weekly'
+  | 'daily'
+  | 'semester_end'
+  | 'custom_day';
+
+export interface ScheduledExportConfig {
+  id: string;
+  title: string;
+  description?: string;
+  reportType: ScheduledReportType;
+  frequency: ScheduleFrequency;
+  timeOfDay: string; // HH:mm e.g. "23:59" or "17:00"
+  dayOfMonth?: number; // 1-31 (or 0 for last day of month)
+  dayOfWeek?: number; // 0: Sunday, 1: Monday ... 5: Friday, 6: Saturday
+  targetClassId: string; // 'all' or class ID
+  targetSubjectId?: string; // 'all' or subject ID
+  includeSignatures: boolean;
+  includeKopSurat: boolean;
+  paperSize: 'a4' | 'f4' | 'letter' | 'legal';
+  paperOrientation: 'portrait' | 'landscape';
+  storageDestination: 'firebase_storage' | 'cloud_and_local';
+  isEnabled: boolean;
+  lastRunAt?: string;
+  nextRunAt?: string;
+  lastError?: string;
+  lastErrorAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledExportReport {
+  id: string;
+  scheduleId?: string;
+  title: string;
+  fileName: string;
+  reportType: ScheduledReportType;
+  frequencyType: string;
+  periodLabel: string;
+  generatedAt: string; // ISO string
+  fileSizeBytes: number;
+  fileSizeFormatted: string;
+  storagePath: string;
+  downloadUrl: string;
+  pdfBase64?: string;
+  status: 'completed' | 'failed' | 'processing';
+  generatedBy: string;
+  totalRecordsCount?: number;
+  downloadCount?: number;
+  storageProvider: 'firebase_storage' | 'cloud_synced';
+}
 
 export interface ActivityLog {
   id: string;
@@ -169,6 +344,33 @@ export interface ActivityLog {
   syncedToFirebase?: boolean;
 }
 
+export interface DynamicQRAttendee {
+  studentId: string;
+  nama: string;
+  scannedAt: string;
+  method?: string;
+  deviceInfo?: string;
+}
+
+export interface DynamicQRSession {
+  sessionId: string;
+  classId: string;
+  subjectId: string;
+  classNameTitle: string;
+  subjectNameTitle: string;
+  date: string;
+  validDurationMinutes: number; // e.g. 1, 3, 5, 10, 15, 30
+  createdAt: string; // ISO
+  expiresAt: string; // ISO
+  token: string;
+  otpCode: string;
+  autoRotateSeconds: number; // 0 = off, 15, 30
+  rotateIndex: number;
+  status: 'active' | 'expired' | 'locked';
+  createdBy?: string;
+  scannedStudents: DynamicQRAttendee[];
+}
+
 export interface DatabaseSnapshot {
   users: Record<string, User>;
   classes: Record<string, ClassEntity>;
@@ -181,4 +383,13 @@ export interface DatabaseSnapshot {
   academic_events?: Record<string, AcademicEvent>;
   activity_logs?: Record<string, ActivityLog>;
   app_settings?: AppSettings;
+  academic_years?: Record<string, AcademicYear>;
+  curriculums?: Record<string, Curriculum>;
+  departments?: Record<string, Department>;
+  master_subjects?: Record<string, MasterSubject>;
+  extracurriculars?: Record<string, Extracurricular>;
+  study_schedules?: Record<string, StudyScheduleSlot>;
+  scheduled_export_configs?: Record<string, ScheduledExportConfig>;
+  scheduled_reports?: Record<string, ScheduledExportReport>;
+  dynamic_qr_sessions?: Record<string, DynamicQRSession>;
 }

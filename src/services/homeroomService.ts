@@ -12,6 +12,8 @@ import {
   PiketAttendanceRecord,
   AttitudeAssessmentItem,
   ClassTreasuryTransaction,
+  SchoolFeeAdministrationDoc,
+  StudentSchoolFeeRecord,
   ClassJournalItem,
   StudentMutationItem,
   StudentCaseItem,
@@ -64,6 +66,7 @@ export class HomeroomService {
         parsed.piketAttendanceLogs = Array.isArray(parsed.piketAttendanceLogs) ? parsed.piketAttendanceLogs : (template?.piketAttendanceLogs || []);
         parsed.attitudeAssessments = Array.isArray(parsed.attitudeAssessments) ? parsed.attitudeAssessments : (template?.attitudeAssessments || []);
         parsed.treasuryTransactions = Array.isArray(parsed.treasuryTransactions) ? parsed.treasuryTransactions : (template?.treasuryTransactions || []);
+        parsed.schoolFeeAdministration = parsed.schoolFeeAdministration || template?.schoolFeeAdministration;
         parsed.classJournals = Array.isArray(parsed.classJournals) ? parsed.classJournals : (template?.classJournals || []);
         parsed.studentMutations = Array.isArray(parsed.studentMutations) ? parsed.studentMutations : (template?.studentMutations || []);
         parsed.studentCases = Array.isArray(parsed.studentCases) ? parsed.studentCases : (template?.studentCases || []);
@@ -349,6 +352,83 @@ export class HomeroomService {
     }
     this.saveClassData(classId, data);
     realtimeNotificationService.notifyActionInfo('Transaksi Dihapus', 'Catatan kas kelas telah dihapus dan saldo disesuaikan.');
+  }
+
+  // 12.B) Rincian Administrasi Pembayaran Sekolah (Format Resmi SPP, Asrama, Buku, Praktikum, dll.)
+  public getSchoolFeeAdministration(classId: string): SchoolFeeAdministrationDoc {
+    const data = this.getClassHomeroomData(classId);
+    if (!data.schoolFeeAdministration) {
+      const template = INITIAL_HOMEROOM_DATA[classId]?.schoolFeeAdministration || INITIAL_HOMEROOM_DATA['class_10_ipa1']?.schoolFeeAdministration;
+      if (template) {
+        data.schoolFeeAdministration = JSON.parse(JSON.stringify(template));
+        data.schoolFeeAdministration!.class_id = classId;
+      } else {
+        data.schoolFeeAdministration = {
+          class_id: classId,
+          className: 'XI APL',
+          month: 'Agustus 2026',
+          academicYear: '2026 - 2027',
+          tagihanPreviousHeader: 'TAGIHAN KELAS X',
+          asramaHeaderPeriod: 'ASRAMA 2026 - 2027',
+          sppHeaderPeriod: 'SPP (JULI 2026 - JUNI 2027)',
+          dataPerDate: 'Data per Tanggal 15 Agustus 2026',
+          signDate: 'Jember, 31 Agustus 2026',
+          homeroomTeacherName: 'Puput Sasmita, S.Pd., Gr.',
+          homeroomTeacherCallName: 'BAPAK PUPUT',
+          schoolTreasurerName: 'Agustin Rahmawati, A.Md.',
+          receivingTreasurerName: 'Agustin Rahmawati',
+          bankName: 'BANK SYARIAH INDONESIA (BSI)',
+          bankAccountNumber: '4444-400-167',
+          bankAccountHolder: 'SMK DR SOEBANDI JEMBER',
+          records: [],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      this.saveClassData(classId, data);
+    }
+    return data.schoolFeeAdministration!;
+  }
+
+  public saveSchoolFeeAdministration(classId: string, doc: SchoolFeeAdministrationDoc): void {
+    const data = this.getClassHomeroomData(classId);
+    doc.updatedAt = new Date().toISOString();
+    data.schoolFeeAdministration = doc;
+    this.saveClassData(classId, data);
+    realtimeNotificationService.notifyActionSuccess(
+      'Administrasi Disimpan',
+      'Data rincian administrasi pembayaran sekolah berhasil disimpan.'
+    );
+  }
+
+  public updateStudentFeeRecord(classId: string, record: StudentSchoolFeeRecord): void {
+    const doc = this.getSchoolFeeAdministration(classId);
+    const index = doc.records.findIndex(r => r.id === record.id);
+    if (index >= 0) {
+      doc.records[index] = record;
+    } else {
+      doc.records.push(record);
+    }
+    this.saveSchoolFeeAdministration(classId, doc);
+  }
+
+  public addStudentFeeRecord(classId: string, item: Omit<StudentSchoolFeeRecord, 'id'>): void {
+    const doc = this.getSchoolFeeAdministration(classId);
+    const newRecord: StudentSchoolFeeRecord = {
+      ...item,
+      id: `fee_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`
+    };
+    doc.records.push(newRecord);
+    this.saveSchoolFeeAdministration(classId, doc);
+  }
+
+  public deleteStudentFeeRecord(classId: string, id: string): void {
+    const doc = this.getSchoolFeeAdministration(classId);
+    doc.records = doc.records.filter(r => r.id !== id);
+    this.saveSchoolFeeAdministration(classId, doc);
+    realtimeNotificationService.notifyActionInfo(
+      'Data Siswa Dihapus',
+      'Rincian pembayaran siswa telah dihapus dari lembar administrasi.'
+    );
   }
 
   // 13) Class Journals
