@@ -43,6 +43,23 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
   const classes = dbService.getAllClasses();
   const subjects = dbService.getAllSubjects();
 
+  // Differentiate attendance scope: 'harian_wali_kelas' vs 'mapel_kbm'
+  const [attendanceScope, setAttendanceScope] = useState<'harian_wali_kelas' | 'mapel_kbm'>(() => {
+    try {
+      const saved = localStorage.getItem('SIMAK_ATTENDANCE_SCOPE');
+      if (saved === 'harian_wali_kelas' || saved === 'mapel_kbm') return saved;
+    } catch (e) {}
+    if (currentRole === 'wali_kelas') return 'harian_wali_kelas';
+    if (currentRole === 'guru') return 'mapel_kbm';
+    return 'harian_wali_kelas';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('SIMAK_ATTENDANCE_SCOPE', attendanceScope);
+    } catch (e) {}
+  }, [attendanceScope]);
+
   // Determine default class
   const homeroom = dbService.getHomeroomClass(currentUserId);
   const [selectedClassId, setSelectedClassId] = useState<string>(() => {
@@ -61,6 +78,10 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
     } catch (e) {}
     return teacherSubjects[0]?.id || (subjects[0]?.id || '');
   });
+
+  // Active subject ID depends on scope
+  const activeSubjectId = attendanceScope === 'harian_wali_kelas' ? 'HOMEROOM' : selectedSubjectId;
+  const [lessonTopic, setLessonTopic] = useState<string>('Pembahasan Materi & Sesi Tatap Muka');
 
   useEffect(() => {
     try {
@@ -108,7 +129,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
 
   const loadData = () => {
     if (!selectedClassId) return;
-    const records = dbService.getAttendanceByClassAndDate(selectedClassId, selectedDate, selectedSubjectId);
+    const records = dbService.getAttendanceByClassAndDate(selectedClassId, selectedDate, activeSubjectId);
     const enriched = records.map(r => {
       const fullRec = dbService.getStudentTodayAttendance(r.studentId, selectedDate);
       return {
@@ -121,7 +142,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
 
   useEffect(() => {
     loadData();
-  }, [selectedClassId, selectedDate, selectedSubjectId]);
+  }, [selectedClassId, selectedDate, activeSubjectId, attendanceScope]);
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
     setStudentRows(prev =>
@@ -145,7 +166,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
     try {
       dbService.saveBulkAttendance(
         selectedClassId,
-        selectedSubjectId,
+        activeSubjectId,
         selectedDate,
         studentRows.map(r => ({ studentId: r.studentId, status: r.status }))
       );
@@ -172,7 +193,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
       'Mengunduh Rekap Harian',
       `Dokumen PDF presensi tanggal ${selectedDate} sedang diproses untuk diunduh.`
     );
-    dbService.exportAttendancePDF(selectedClassId, selectedDate, selectedSubjectId);
+    dbService.exportAttendancePDF(selectedClassId, selectedDate, activeSubjectId);
   };
 
   const handleExportMonthlyReport = () => {
@@ -191,7 +212,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
       studentId: r.studentId,
       status: r.studentId === studentId ? ('H' as AttendanceStatus) : r.status
     }));
-    dbService.saveBulkAttendance(selectedClassId, selectedSubjectId, selectedDate, updated);
+    dbService.saveBulkAttendance(selectedClassId, activeSubjectId, selectedDate, updated);
 
     // Audit log for Activity Log module
     const timeStr = new Date().toLocaleTimeString('id-ID', {
@@ -209,7 +230,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
         studentName: nama,
         classId: selectedClassId,
         className: selectedClassObj?.nama_kelas,
-        subjectId: selectedSubjectId,
+        subjectId: activeSubjectId,
         date: selectedDate,
         scannedAt: timeStr,
         status: 'H',
@@ -321,16 +342,104 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
 
   return (
     <div className="space-y-6">
+      {/* SCOPE SEPARATOR BAR: WALI KELAS VS GURU MAPEL */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-700/80">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 border border-white/15">
+                Kategori Manajemen Presensi
+              </span>
+              <span className="text-xs text-slate-300">Pemisahan Wewenang SIMAK</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-400" />
+              Pilih Jenis Presensi yang Dikelola
+            </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Bedakan presensi kehadiran utama harian sekolah dan presensi sesi tatap muka mata pelajaran.
+            </p>
+          </div>
+
+          {/* Segmented Scope Switch Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full lg:w-auto bg-black/40 p-1.5 rounded-xl border border-white/10">
+            <button
+              type="button"
+              id="btn-scope-homeroom"
+              onClick={() => setAttendanceScope('harian_wali_kelas')}
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                attendanceScope === 'harian_wali_kelas'
+                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Users className="w-4 h-4 text-blue-200" />
+              <div className="text-left">
+                <div className="font-extrabold">Presensi Harian Siswa</div>
+                <div className="text-[10px] opacity-80 font-normal">Kontrol & Validasi Wali Kelas</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              id="btn-scope-subject"
+              onClick={() => setAttendanceScope('mapel_kbm')}
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                attendanceScope === 'mapel_kbm'
+                  ? 'bg-purple-600 text-white shadow-md ring-2 ring-purple-400/50'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 text-purple-200" />
+              <div className="text-left">
+                <div className="font-extrabold">Presensi Jam KBM Mapel</div>
+                <div className="text-[10px] opacity-80 font-normal">Pembelajaran Guru Pengampu</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Context Explanatory Banner */}
+        <div className="mt-3.5 pt-3 border-t border-white/10 flex items-center gap-2.5 text-xs">
+          {attendanceScope === 'harian_wali_kelas' ? (
+            <div className="flex items-center gap-2 text-blue-200 bg-blue-950/70 border border-blue-500/30 rounded-lg px-3 py-1.5 w-full">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>Mode Aktif: Presensi Harian / Induk Sekolah.</strong> Digunakan Wali Kelas untuk mendata kehadiran pagi, surat sakit/izin, rekap absensi rapor, dan persentase kehadiran bulanan.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-purple-200 bg-purple-950/70 border border-purple-500/30 rounded-lg px-3 py-1.5 w-full">
+              <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>
+                <strong>Mode Aktif: Presensi Pembelajaran Guru Mapel.</strong> Digunakan Guru Pengampu untuk mencatat kehadiran per jam sesi mata pelajaran, scan QR Proyektor kelas dinamis, dan sinkron ke Jurnal KBM.
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Top Filter Controls */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition-colors">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Manajemen Presensi Harian (Bulk Input & QR Scanner)
-            </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-              Catat dan verifikasi kehadiran seluruh siswa per kelas dengan input manual atau scan kartu QR otomatis.
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              {attendanceScope === 'harian_wali_kelas' ? (
+                <>
+                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span>Daftar Presensi Harian Siswa (Wali Kelas)</span>
+                </>
+              ) : (
+                <>
+                  <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  <span>Daftar Presensi Jam KBM: {subjects.find(s => s.id === selectedSubjectId)?.nama_mapel || 'Mata Pelajaran'}</span>
+                </>
+              )}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+              {attendanceScope === 'harian_wali_kelas'
+                ? 'Input kehadiran harian seluruh siswa kelas, validasi selfie masuk, dan cetak rekap resmi wali kelas.'
+                : 'Catat presensi siswa di jam tatap muka pelajaran, aktifkan QR dinamis proyektor, atau input manual.'}
             </p>
           </div>
 
@@ -368,11 +477,19 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
               id="btn-open-dynamic-qr"
               type="button"
               onClick={() => setShowDynamicQRModal(true)}
-              className="px-3.5 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white"
-              title="Buat QR Code Presensi Dinamis Kelas dengan batas waktu (misal: 5 menit)"
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer flex-1 sm:flex-initial text-white ${
+                attendanceScope === 'harian_wali_kelas'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
+                  : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500'
+              }`}
+              title={
+                attendanceScope === 'harian_wali_kelas'
+                  ? 'Tampilkan QR Presensi Harian Datang Siswa di Layar / Proyektor'
+                  : 'Tampilkan QR Presensi Sesi Pembelajaran Mapel di Proyektor Kelas'
+              }
             >
               <Clock className="w-4 h-4 text-amber-300" />
-              <span>QR Dinamis (Batas Waktu)</span>
+              <span>QR Proyektor {attendanceScope === 'harian_wali_kelas' ? 'Harian' : 'Jam KBM'}</span>
             </button>
 
             {/* Toggle Mode QR Scanner */}
@@ -390,25 +507,27 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
               <span>{showQRScanner ? 'Tutup Scanner' : 'Scanner QR'}</span>
             </button>
 
-            {/* Monthly Report PDF Trigger */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600 flex-1 sm:flex-initial">
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none px-1.5 cursor-pointer w-full sm:w-auto"
-                title="Pilih Bulan Rekapitulasi"
-              />
-              <button
-                id="btn-export-monthly-pdf"
-                onClick={handleExportMonthlyReport}
-                className="px-2.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black rounded-lg flex items-center gap-1 transition shadow-xs whitespace-nowrap cursor-pointer"
-                title="Cetak Laporan Bulanan Resmi Wali Kelas"
-              >
-                <FileText className="w-3.5 h-3.5 text-amber-400" />
-                <span>Rekap Bulanan</span>
-              </button>
-            </div>
+            {/* Monthly Report PDF Trigger (Only for Homeroom mode) */}
+            {attendanceScope === 'harian_wali_kelas' && (
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600 flex-1 sm:flex-initial">
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 dark:text-slate-100 outline-none px-1.5 cursor-pointer w-full sm:w-auto"
+                  title="Pilih Bulan Rekapitulasi"
+                />
+                <button
+                  id="btn-export-monthly-pdf"
+                  onClick={handleExportMonthlyReport}
+                  className="px-2.5 py-1.5 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black rounded-lg flex items-center gap-1 transition shadow-xs whitespace-nowrap cursor-pointer"
+                  title="Cetak Laporan Bulanan Resmi Wali Kelas"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Rekap Bulanan WK</span>
+                </button>
+              </div>
+            )}
 
             {/* CSV Log Export Button */}
             <button
@@ -518,21 +637,35 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5" /> Mata Pelajaran
-            </label>
-            <select
-              id="select-attendance-subject"
-              value={selectedSubjectId}
-              onChange={e => setSelectedSubjectId(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              {subjects.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.nama_mapel}
-                </option>
-              ))}
-            </select>
+            {attendanceScope === 'harian_wali_kelas' ? (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-500" /> Tipe Presensi
+                </label>
+                <div className="w-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/70 rounded-lg px-3 py-2 text-sm text-blue-900 dark:text-blue-200 font-bold flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                  <span>Presensi Harian / Induk Sekolah</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5 text-purple-500" /> Mata Pelajaran KBM
+                </label>
+                <select
+                  id="select-attendance-subject"
+                  value={selectedSubjectId}
+                  onChange={e => setSelectedSubjectId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-purple-500 outline-none font-medium"
+                >
+                  {subjects.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.nama_mapel}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {dateFilterMode === 'single' ? (
@@ -1203,13 +1336,16 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
           onClose={() => setShowDynamicQRModal(false)}
           classId={selectedClassId}
           classNameTitle={selectedClassObj?.nama_kelas || 'Kelas'}
-          subjectId={selectedSubjectId}
-          subjectNameTitle={subjects.find((s) => s.id === selectedSubjectId)?.nama_mapel || 'Mata Pelajaran'}
+          subjectId={activeSubjectId}
+          subjectNameTitle={
+            attendanceScope === 'harian_wali_kelas'
+              ? 'Presensi Harian Siswa (Wali Kelas)'
+              : subjects.find((s) => s.id === selectedSubjectId)?.nama_mapel || 'Mata Pelajaran'
+          }
           selectedDate={selectedDate}
           studentsInClass={classStudents}
           onAttendanceUpdated={() => {
-            // Trigger refresh by updating local state
-            setSelectedDate(prev => `${prev}`);
+            loadData();
           }}
         />
       )}

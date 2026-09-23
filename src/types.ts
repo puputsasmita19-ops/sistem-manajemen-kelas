@@ -108,6 +108,8 @@ export interface ClassMember {
 
 export type AttendanceStatus = 'H' | 'I' | 'S' | 'A'; // Hadir, Izin, Sakit, Alpa
 
+export type AttendanceType = 'harian_wali_kelas' | 'mapel_kbm';
+
 export type TimeRangeFilter = 'mingguan' | 'bulanan' | 'semester';
 
 export interface Attendance {
@@ -117,6 +119,8 @@ export interface Attendance {
   date: string; // YYYY-MM-DD
   student_id: string; // FK -> users.id
   status: AttendanceStatus;
+  attendanceType?: AttendanceType; // 'harian_wali_kelas' (kontrol wali kelas) | 'mapel_kbm' (guru mapel)
+  topicOrMeeting?: string; // Topik materi atau pertemuan ke-X jika presensi mapel
   note?: string;
   notes?: string;
   // Realtime Selfie & Geolocation validation metadata
@@ -152,6 +156,15 @@ export interface ParentStudentRelation {
 
 export type AnnouncementCategory = 'Penting' | 'Akademik' | 'Kegiatan' | 'Libur';
 
+export type AnnouncementScope =
+  | 'school_wide' // Seluruh Sekolah
+  | 'homeroom_to_class' // Wali Kelas -> Siswa & Orang Tua di kelas binaannya
+  | 'homeroom_to_teachers' // Wali Kelas -> Seluruh Guru Pengampu di kelasnya
+  | 'homeroom_to_both' // Wali Kelas -> Siswa, Ortu & Guru Pengampu
+  | 'teacher_to_class' // Guru Pengampu -> Siswa & Ortu di kelas yang diampu
+  | 'teacher_to_homeroom' // Guru Pengampu -> Wali Kelas
+  | 'teacher_to_both'; // Guru Pengampu -> Siswa, Ortu & Wali Kelas
+
 export interface SchoolAnnouncement {
   id: string;
   title: string;
@@ -161,8 +174,16 @@ export interface SchoolAnnouncement {
   category: AnnouncementCategory;
   author: string;
   authorRole: UserRole;
+  authorId?: string;
   priority: 'high' | 'normal';
   targetRole: 'all' | 'siswa' | 'guru' | 'wali_kelas' | 'orang_tua';
+  // Target Kelas & Sasaran Spesifik (Wali Kelas & Guru Pengampu)
+  scope?: AnnouncementScope;
+  targetClassId?: string; // ID kelas target (misal: 'class_10_ipa1')
+  targetClassName?: string;
+  targetSubjectId?: string; // ID mapel jika dibuat oleh guru pengampu
+  targetSubjectName?: string;
+  audienceLabel?: string; // Label visual penerima (e.g. "Khusus Kelas X MIPA 1 & Guru Pengampu")
 }
 
 export type AcademicEventCategory = 'ujian' | 'libur' | 'kegiatan' | 'rapat' | 'rapor';

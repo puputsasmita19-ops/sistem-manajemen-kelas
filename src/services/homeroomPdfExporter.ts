@@ -930,6 +930,183 @@ export class HomeroomPdfExporter {
     this.notifySuccess('Rincian Administrasi Sekolah Berhasil Dicetak!', filename);
   }
 
+  /**
+   * Cetak Rincian Tagihan & Perkembangan Administrasi Siswa Individual (Privasi Orang Tua)
+   */
+  public static exportSingleStudentFeeReport(
+    docData: SchoolFeeAdministrationDoc,
+    record: StudentSchoolFeeRecord,
+    className: string
+  ): void {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = 210;
+    const startY = this.addOfficialHeader(
+      doc,
+      'SURAT PEMBERITAHUAN RINCIAN BIAYA ADMINISTRASI SISWA',
+      `Tahun Ajaran ${docData.academicYear || '2026/2027'} - Periode ${docData.month || 'Agustus 2026'}`,
+      className,
+      'portrait'
+    );
+
+    // Privacy Notice Box
+    doc.setFillColor(238, 242, 255); // indigo-50
+    doc.setDrawColor(99, 102, 241); // indigo-500
+    doc.setLineWidth(0.3);
+    doc.roundedRect(12, startY + 2, pageWidth - 24, 9, 1.5, 1.5, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(67, 56, 202); // indigo-700
+    doc.text('DOKUMEN PRIVAT: Informasi keuangan ini bersifat rahasia dan diterbitkan khusus untuk Wali Murid ananda.', 16, startY + 7.5);
+
+    // Student Info Panel
+    const infoY = startY + 16;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(30, 41, 59);
+    doc.text('DATA SISWA & KELAS:', 12, infoY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`Nama Lengkap   : ${record.studentName}`, 12, infoY + 5.5);
+    doc.text(`Kelas / Rombel : ${docData.className || className}`, 12, infoY + 10.5);
+    doc.text(`Wali Kelas     : ${docData.homeroomTeacherName || 'Puput Sasmita, S.Pd., Gr.'}`, 12, infoY + 15.5);
+
+    doc.text(`Status Data    : ${docData.dataPerDate || 'Data per Tanggal 15 Agustus 2026'}`, 120, infoY + 5.5);
+    doc.text(`Dicetak Pada   : ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, 120, infoY + 10.5);
+
+    // Table of fees
+    const formatRp = (val: number) => (val === 0 ? 'Rp 0 (LUNAS)' : `Rp ${val.toLocaleString('id-ID')}`);
+
+    // Compute SPP details
+    const months = [
+      { key: 'juli', label: 'Juli' },
+      { key: 'agustus', label: 'Agustus' },
+      { key: 'september', label: 'September' },
+      { key: 'oktober', label: 'Oktober' },
+      { key: 'november', label: 'November' },
+      { key: 'desember', label: 'Desember' },
+      { key: 'januari', label: 'Januari' },
+      { key: 'februari', label: 'Februari' },
+      { key: 'maret', label: 'Maret' },
+      { key: 'april', label: 'April' },
+      { key: 'mei', label: 'Mei' },
+      { key: 'juni', label: 'Juni' }
+    ];
+
+    let sppTotal = 0;
+    const unpaidSppMonths: string[] = [];
+    const paidSppMonths: string[] = [];
+
+    months.forEach(m => {
+      const nominal = (record.spp as any)[m.key] || 0;
+      sppTotal += nominal;
+      if (nominal > 0) {
+        unpaidSppMonths.push(`${m.label} (${formatRp(nominal)})`);
+      } else {
+        paidSppMonths.push(m.label);
+      }
+    });
+
+    const rows = [
+      ['1', 'Tagihan Tingkat Sebelumnya (Kelas X)', formatRp(record.tagihanKelasX || 0), record.tagihanKelasX === 0 ? 'LUNAS' : 'Belum Lunas', '-'],
+      ['2', 'Biaya Asrama & Pondok Santri', formatRp(record.asrama || 0), record.asrama === 0 ? 'LUNAS / Bebas' : 'Belum Lunas', '-'],
+      ['3', 'Penilaian Tengah / Akhir Semester (PTS/PAS)', formatRp(record.ptsPas || 0), record.ptsPas === 0 ? 'LUNAS' : 'Belum Lunas', 'Biaya Asesmen Terpadu'],
+      ['4', 'Buku Paket Pelajaran & Modul LKS', formatRp(record.buku || 0), record.cellStatus?.buku === 'cicil' ? 'Dapat Dicicil' : record.buku === 0 ? 'LUNAS' : 'Belum Lunas', 'Pengambilan di Koperasi'],
+      ['5', 'Biaya Praktikum Kejuruan & Lab Kimia', formatRp(record.praktikum || 0), record.praktikum === 0 ? 'LUNAS' : 'Belum Lunas', 'Bahan & Reagen Praktik'],
+      ['6', 'Kegiatan Kesiswaan & OSIS', formatRp(record.kesiswaan || 0), record.cellStatus?.kesiswaan === 'cicil' ? 'Dapat Dicicil' : record.kesiswaan === 0 ? 'LUNAS' : 'Belum Lunas', 'Ekstrakurikuler & LDKS'],
+      [
+        '7',
+        'SPP Bulanan (Tahun Ajaran Berjalan)',
+        formatRp(sppTotal),
+        sppTotal === 0 ? 'LUNAS PENUH' : `${unpaidSppMonths.length} Bulan Belum Lunas`,
+        sppTotal === 0
+          ? 'Lunas 12 Bulan'
+          : `Tunggakan: ${unpaidSppMonths.slice(0, 3).join(', ')}${unpaidSppMonths.length > 3 ? '...' : ''}`
+      ]
+    ];
+
+    const grandTotal =
+      (record.tagihanKelasX || 0) +
+      (record.asrama || 0) +
+      (record.ptsPas || 0) +
+      (record.buku || 0) +
+      (record.praktikum || 0) +
+      (record.kesiswaan || 0) +
+      sppTotal;
+
+    autoTable(doc, {
+      head: [['No', 'Uraian Komponen Administrasi', 'Kewajiban Tagihan', 'Status Pembayaran', 'Catatan / Dispensasi']],
+      body: rows,
+      startY: infoY + 22,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 70, fontStyle: 'bold' },
+        2: { cellWidth: 35, halign: 'right' },
+        3: { cellWidth: 32, halign: 'center' },
+        4: { cellWidth: 39 }
+      }
+    });
+
+    let currentY = (doc as any).lastAutoTable?.finalY + 5 || 150;
+
+    // Total Summary Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(12, currentY, pageWidth - 24, 20, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 58, 138);
+    doc.text(`TOTAL KEWAJIBAN ADMINISTRASI SAAT INI: Rp ${grandTotal.toLocaleString('id-ID')}`, 16, currentY + 7);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Catatan Khusus Wali Kelas: "${record.notes || 'Pembayaran dapat diangsur secara berkala melalui kasir bendahara atau transfer bank.'}"`, 16, currentY + 14);
+
+    // Bank Account Info
+    currentY += 25;
+    doc.setFillColor(254, 243, 199); // amber-100
+    doc.setDrawColor(245, 158, 11);
+    doc.roundedRect(12, currentY, pageWidth - 24, 22, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(180, 83, 9);
+    doc.text('INFORMASI REKENING RESMI PEMBAYARAN SEKOLAH:', 16, currentY + 6);
+
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${docData.bankName || 'BANK SYARIAH INDONESIA (BSI)'} - No. Rekening: ${docData.bankAccountNumber || '4444-400-167'}`, 16, currentY + 12);
+    doc.setFontSize(8);
+    doc.text(`Atas Nama: ${docData.bankAccountHolder || 'SMK DR SOEBANDI JEMBER'} | Konfirmasi Pembayaran: Bendahara Sekolah (${docData.receivingTreasurerName || 'Agustin Rahmawati'})`, 16, currentY + 17);
+
+    // Signature
+    currentY += 30;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(15, 23, 42);
+
+    doc.text('Mengetahui,', 20, currentY);
+    doc.text('Bendahara Penerimaan Sekolah,', 20, currentY + 4.5);
+
+    doc.text(docData.signDate || 'Jember, 31 Agustus 2026', 130, currentY);
+    doc.text('Wali Kelas,', 130, currentY + 4.5);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text(docData.receivingTreasurerName || 'Agustin Rahmawati', 20, currentY + 22);
+    doc.text(docData.homeroomTeacherName || 'Puput Sasmita, S.Pd., Gr.', 130, currentY + 22);
+
+    const safeName = record.studentName.replace(/\s+/g, '_');
+    const filename = `Tagihan_Administrasi_${safeName}.pdf`;
+    doc.save(filename);
+    this.notifySuccess(`Rincian Tagihan ${record.studentName} Berhasil Dicetak!`, filename);
+  }
+
   // 13) Menu 13: Jurnal Agenda Kegiatan Pembelajaran (Dengan Kolom Validasi Wali Kelas)
   public static exportJournalPDF(className: string, journals: ClassJournalItem[]): void {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });

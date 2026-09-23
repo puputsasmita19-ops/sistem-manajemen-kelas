@@ -53,6 +53,7 @@ import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 interface HomeroomDashboardProps {
   currentClassId?: string;
   userRole?: string;
+  currentUserId?: string;
   currentUserName?: string;
   studentList?: Array<{ id: string; nama: string }>;
 }
@@ -255,6 +256,7 @@ const ALL_MENUS: MenuItem[] = [
 export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
   currentClassId = 'class_10_ipa1',
   userRole = 'wali_kelas',
+  currentUserId = 'user_wk1',
   currentUserName = 'Puput Sasmita, S.Pd., Gr.',
   studentList: propStudents
 }) => {
@@ -736,6 +738,9 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
             className={currentClassName}
             transactions={dataPackage.treasuryTransactions}
             studentList={studentList}
+            userRole={userRole}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
             onRefresh={refreshData}
           />
         )}

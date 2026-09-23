@@ -389,6 +389,57 @@ export class HomeroomService {
     return data.schoolFeeAdministration!;
   }
 
+  public getStudentFeeRecord(
+    classId: string,
+    studentId: string,
+    studentName?: string
+  ): { doc: SchoolFeeAdministrationDoc; record: StudentSchoolFeeRecord } {
+    const doc = this.getSchoolFeeAdministration(classId);
+    let record = doc.records.find(
+      (r) =>
+        r.studentId === studentId ||
+        (studentName && r.studentName.toLowerCase().trim() === studentName.toLowerCase().trim())
+    );
+
+    if (!record) {
+      // Buat entri default jika siswa baru terdaftar
+      record = {
+        id: `fee_${studentId || Date.now()}`,
+        studentId: studentId || 'std_unknown',
+        studentName: studentName || 'Siswa',
+        tagihanKelasX: 0,
+        asrama: 0,
+        ptsPas: 400000,
+        buku: 700000,
+        praktikum: 2000000,
+        kesiswaan: 500000,
+        spp: {
+          juli: 200000,
+          agustus: 200000,
+          september: 200000,
+          oktober: 200000,
+          november: 200000,
+          desember: 200000,
+          januari: 200000,
+          februari: 200000,
+          maret: 200000,
+          april: 200000,
+          mei: 200000,
+          juni: 200000
+        },
+        cellStatus: {
+          spp_juli: 'lunas',
+          spp_agustus: 'lunas',
+          spp_september: 'wajib'
+        },
+        rowHighlight: 'none',
+        notes: 'Data rincian biaya administrasi siswa aktif.'
+      };
+    }
+
+    return { doc, record };
+  }
+
   public saveSchoolFeeAdministration(classId: string, doc: SchoolFeeAdministrationDoc): void {
     const data = this.getClassHomeroomData(classId);
     doc.updatedAt = new Date().toISOString();
@@ -697,3 +748,5 @@ export class HomeroomService {
     realtimeNotificationService.notifyActionWarning('Cache Dihapus', 'Data memori lokal kelas telah dibersihkan.');
   }
 }
+
+export const homeroomService = HomeroomService.getInstance();

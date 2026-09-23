@@ -41,6 +41,9 @@ interface HomeroomTreasuryProps {
   className: string;
   transactions: ClassTreasuryTransaction[];
   studentList?: Array<{ id: string; nama: string }>;
+  userRole?: string;
+  currentUserId?: string;
+  currentUserName?: string;
   onRefresh: () => void;
 }
 

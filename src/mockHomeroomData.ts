@@ -555,6 +555,72 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
       updatedAt: '2026-08-15T08:00:00.000Z',
       records: [
         {
+          id: 'fee_ahmad_rizky',
+          studentId: 'user_std1',
+          studentName: 'Ahmad Rizky Pratama',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 700000,
+          praktikum: 2000000,
+          kesiswaan: 500000,
+          spp: {
+            juli: 200000,
+            agustus: 200000,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {
+            buku: 'cicil',
+            kesiswaan: 'cicil',
+            spp_juli: 'lunas',
+            spp_agustus: 'lunas',
+            spp_september: 'wajib'
+          },
+          rowHighlight: 'none',
+          notes: 'SPP Juli & Agustus LUNAS. SPP September jatuh tempo tgl 10. Angsuran buku paket disetujui 2x.'
+        },
+        {
+          id: 'fee_dewi_lestari',
+          studentId: 'user_std2',
+          studentName: 'Dewi Lestari',
+          tagihanKelasX: 0,
+          asrama: 0,
+          ptsPas: 400000,
+          buku: 700000,
+          praktikum: 2000000,
+          kesiswaan: 500000,
+          spp: {
+            juli: 200000,
+            agustus: 200000,
+            september: 200000,
+            oktober: 200000,
+            november: 200000,
+            desember: 200000,
+            januari: 200000,
+            februari: 200000,
+            maret: 200000,
+            april: 200000,
+            mei: 200000,
+            juni: 200000
+          },
+          cellStatus: {
+            spp_juli: 'lunas',
+            spp_agustus: 'lunas',
+            spp_september: 'lunas'
+          },
+          rowHighlight: 'none',
+          notes: 'Pembayaran administrasi dan SPP triwulan 1 telah tuntas lunas.'
+        },
+        {
           id: 'fee_1',
           studentId: 'std_01',
           studentName: 'ALIRA DIDIK SALSA BHITA',

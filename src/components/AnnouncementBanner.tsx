@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { realtimeNotificationService } from '../services/realtimeNotificationService';
-import { SchoolAnnouncement, UserRole } from '../types';
+import { SchoolAnnouncement, UserRole, User, AnnouncementScope, AnnouncementCategory } from '../types';
 import Swal from 'sweetalert2';
 import {
   Bell,
@@ -16,18 +16,23 @@ import {
   Info,
   CheckCircle2,
   Tag,
-  ArrowLeft
+  ArrowLeft,
+  Users,
+  School,
+  BookOpen
 } from 'lucide-react';
 import { navigationBackService } from '../services/navigationBackService';
 
 interface AnnouncementBannerProps {
   currentUserRole: UserRole;
   currentUserName: string;
+  currentUser?: User;
 }
 
 export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   currentUserRole,
-  currentUserName
+  currentUserName,
+  currentUser
 }) => {
   const dbService = DatabaseService.getInstance();
   const [announcements, setAnnouncements] = useState<SchoolAnnouncement[]>([]);
@@ -35,16 +40,33 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<SchoolAnnouncement | null>(null);
 
+  const classes = dbService.getAllClasses();
+  const myHomeroom = currentUser && currentUser.role === 'wali_kelas' ? dbService.getHomeroomClass(currentUser.id) : null;
+
   // Form State for creating new announcement
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
-  const [newCategory, setNewCategory] = useState<'Penting' | 'Akademik' | 'Kegiatan' | 'Libur'>('Akademik');
+  const [newCategory, setNewCategory] = useState<AnnouncementCategory>('Akademik');
   const [newPriority, setNewPriority] = useState<'high' | 'normal'>('normal');
   const [newTargetRole, setNewTargetRole] = useState<'all' | 'siswa' | 'guru' | 'wali_kelas' | 'orang_tua'>('all');
+  const [newScope, setNewScope] = useState<AnnouncementScope>(() => {
+    if (currentUserRole === 'wali_kelas') return 'homeroom_to_class';
+    if (currentUserRole === 'guru') return 'teacher_to_class';
+    return 'school_wide';
+  });
+  const [newTargetClassId, setNewTargetClassId] = useState<string>(() => {
+    if (myHomeroom) return myHomeroom.id;
+    return classes[0]?.id || 'class_10_ipa1';
+  });
 
   const loadAnnouncements = () => {
-    const list = dbService.getAnnouncementsForRole(currentUserRole);
-    setAnnouncements(list);
+    if (currentUser) {
+      const list = dbService.getAnnouncementsForUser(currentUser);
+      setAnnouncements(list);
+    } else {
+      const list = dbService.getAnnouncementsForRole(currentUserRole);
+      setAnnouncements(list);
+    }
   };
 
   useEffect(() => {
@@ -69,7 +91,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [currentUserRole]);
+  }, [currentUser, currentUserRole]);
 
   // Auto-rotate ticker if multiple announcements
   useEffect(() => {
@@ -107,14 +129,35 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
       return;
     }
 
+    const targetCls = classes.find(c => c.id === newTargetClassId);
+    let audienceLabel = 'Seluruh Sekolah';
+    if (newScope === 'homeroom_to_class') {
+      audienceLabel = `Khusus Siswa & Ortu ${targetCls?.nama_kelas || 'Kelas'}`;
+    } else if (newScope === 'homeroom_to_teachers') {
+      audienceLabel = `Khusus Guru Pengampu ${targetCls?.nama_kelas || 'Kelas'}`;
+    } else if (newScope === 'homeroom_to_both') {
+      audienceLabel = `Siswa & Guru Pengampu ${targetCls?.nama_kelas || 'Kelas'}`;
+    } else if (newScope === 'teacher_to_class') {
+      audienceLabel = `Siswa ${targetCls?.nama_kelas || 'Kelas'}`;
+    } else if (newScope === 'teacher_to_homeroom') {
+      audienceLabel = `Wali Kelas ${targetCls?.nama_kelas || 'Kelas'}`;
+    } else if (newScope === 'teacher_to_both') {
+      audienceLabel = `Siswa & Wali Kelas ${targetCls?.nama_kelas || 'Kelas'}`;
+    }
+
     dbService.createAnnouncement({
-      title: newTitle,
-      content: newContent,
+      title: newTitle.trim(),
+      content: newContent.trim(),
       category: newCategory,
       priority: newPriority,
       author: currentUserName,
       authorRole: currentUserRole,
-      targetRole: newTargetRole
+      authorId: currentUser?.id,
+      targetRole: newTargetRole,
+      scope: newScope,
+      targetClassId: newTargetClassId,
+      targetClassName: targetCls?.nama_kelas,
+      audienceLabel
     });
 
     setIsModalOpen(false);
@@ -125,7 +168,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     Swal.fire({
       icon: 'success',
       title: 'Pengumuman Diterbitkan!',
-      text: 'Informasi telah disiarkan secara realtime ke seluruh pengguna terkait.',
+      text: `Informasi telah disiarkan ke ${audienceLabel}.`,
       timer: 2000,
       showConfirmButton: false
     });
@@ -158,12 +201,13 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     });
   };
 
-  if (announcements.length === 0 && currentUserRole !== 'admin' && currentUserRole !== 'wali_kelas') {
+  const canManage = currentUserRole === 'admin' || currentUserRole === 'wali_kelas' || currentUserRole === 'guru';
+
+  if (announcements.length === 0 && !canManage) {
     return null;
   }
 
   const currentAnn = announcements[activeIdx] || announcements[0];
-  const canManage = currentUserRole === 'admin' || currentUserRole === 'wali_kelas';
 
   return (
     <div className="space-y-3">
@@ -349,6 +393,13 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                     {currentAnn.category}
                   </span>
 
+                  {currentAnn.audienceLabel && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                      <Users className="w-2.5 h-2.5" />
+                      {currentAnn.audienceLabel}
+                    </span>
+                  )}
+
                   <span className="text-xs font-bold truncate text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                     {currentAnn.title}
                   </span>
@@ -476,7 +527,12 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
                   {selectedAnnouncement.time} WIB
                 </span>
-                <span>• Oleh: {selectedAnnouncement.author}</span>
+                <span>• Oleh: <strong className="text-slate-900 dark:text-white">{selectedAnnouncement.author}</strong> ({selectedAnnouncement.authorRole})</span>
+                {selectedAnnouncement.audienceLabel && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold">
+                    <Users className="w-3 h-3" /> {selectedAnnouncement.audienceLabel}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -586,22 +642,83 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                 </div>
               )}
 
+              {/* Lingkup Sasaran Khusus (Wali Kelas & Guru Pengampu) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Target Sasaran
+                  Jangkauan Penerima (Scope Pengumuman)
                 </label>
                 <select
-                  value={newTargetRole}
-                  onChange={(e: any) => setNewTargetRole(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={newScope}
+                  onChange={(e: any) => setNewScope(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="all">Semua Pengguna</option>
-                  <option value="siswa">Khusus Siswa</option>
-                  <option value="guru">Khusus Guru</option>
-                  <option value="wali_kelas">Khusus Wali Kelas</option>
-                  <option value="orang_tua">Khusus Orang Tua</option>
+                  {currentUserRole === 'wali_kelas' && (
+                    <>
+                      <option value="homeroom_to_class">🏫 Khusus Kelas Saya (Siswa & Orang Tua)</option>
+                      <option value="homeroom_to_teachers">👨‍🏫 Khusus Guru Pengampu Mapel di Kelas Saya</option>
+                      <option value="homeroom_to_both">👥 Siswa, Orang Tua & Seluruh Guru Pengampu Kelas</option>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                    </>
+                  )}
+
+                  {currentUserRole === 'guru' && (
+                    <>
+                      <option value="teacher_to_class">👨‍🎓 Siswa di Kelas yang Saya Ampu</option>
+                      <option value="teacher_to_homeroom">📋 Wali Kelas dari Kelas yang Saya Ampu</option>
+                      <option value="teacher_to_both">🤝 Siswa & Wali Kelas yang Saya Ampu</option>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                    </>
+                  )}
+
+                  {currentUserRole === 'admin' && (
+                    <>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                      <option value="homeroom_to_class">🏫 Khusus Siswa & Orang Tua Kelas Tertentu</option>
+                      <option value="homeroom_to_teachers">👨‍🏫 Khusus Guru Pengampu Kelas Tertentu</option>
+                      <option value="homeroom_to_both">👥 Siswa & Guru Pengampu Kelas Tertentu</option>
+                    </>
+                  )}
                 </select>
               </div>
+
+              {/* Pemilihan Kelas Target jika jangkauan berbasis kelas */}
+              {newScope !== 'school_wide' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Pilih Kelas Sasaran
+                  </label>
+                  <select
+                    value={newTargetClassId}
+                    onChange={(e) => setNewTargetClassId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nama_kelas} {myHomeroom?.id === c.id ? '(Kelas Binaan Anda)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {newScope === 'school_wide' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Target Role Pengguna
+                  </label>
+                  <select
+                    value={newTargetRole}
+                    onChange={(e: any) => setNewTargetRole(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="all">Semua Pengguna</option>
+                    <option value="siswa">Khusus Siswa</option>
+                    <option value="guru">Khusus Guru</option>
+                    <option value="wali_kelas">Khusus Wali Kelas</option>
+                    <option value="orang_tua">Khusus Orang Tua</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">

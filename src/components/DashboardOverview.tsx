@@ -122,6 +122,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       <AnnouncementBanner
         currentUserRole={currentUser.role}
         currentUserName={currentUser.nama}
+        currentUser={currentUser}
       />
 
       {/* QUICK ACTIONS & PRESENSI HARI INI (Khusus Admin & Tenaga Pendidik / Guru) */}

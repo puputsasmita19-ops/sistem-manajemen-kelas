@@ -260,15 +260,20 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
     },
     ann_2: {
       id: "ann_2",
-      title: "Undangan Pertemuan Konsultasi Wali Murid Kelas X MIPA",
-      content: "Pertemuan pembagian laporan progres belajar tengah semester dan evaluasi kedisiplinan siswa akan dilaksanakan secara hybrid pada Sabtu mendatang.",
+      title: "Pemberitahuan Wali Kelas: Kelengkapan Berkas & Jadwal Pembinaan",
+      content: "Kepada seluruh siswa, orang tua, dan Bapak/Ibu Guru Pengampu kelas X MIPA 1: Mulai pekan depan evaluasi berkas portofolio dan presensi kehadiran harian kelas akan ditutup setiap hari Jumat pukul 14:00. Mohon koordinasi yang baik.",
       date: "2026-09-16",
       time: "10:30",
       category: "Penting",
       author: "Budi Santoso, S.Pd",
       authorRole: "wali_kelas",
+      authorId: "user_wk1",
       priority: "high",
-      targetRole: "orang_tua"
+      targetRole: "all",
+      scope: "homeroom_to_both",
+      targetClassId: "class_10_ipa1",
+      targetClassName: "X MIPA 1",
+      audienceLabel: "Kelas X MIPA 1 & Guru Pengampu"
     },
     ann_3: {
       id: "ann_3",
@@ -280,7 +285,28 @@ export const INITIAL_DATABASE: DatabaseSnapshot = {
       author: "Bambang Wijaya, M.Kom",
       authorRole: "admin",
       priority: "normal",
-      targetRole: "siswa"
+      targetRole: "siswa",
+      scope: "school_wide",
+      audienceLabel: "Seluruh Siswa"
+    },
+    ann_4: {
+      id: "ann_4",
+      title: "Informasi Guru Fisika: Praktikum & Remidi Dinamika Partikel",
+      content: "Diberitahukan kepada siswa kelas X MIPA 1 dan Bapak Budi Santoso (Wali Kelas): Praktikum Fisika bab Dinamika Partikel akan dilaksanakan hari Kamis di Lab Fisika. Bagi siswa yang nilai kuisnya belum tuntas mohon hadir 15 menit lebih awal.",
+      date: "2026-09-18",
+      time: "09:45",
+      category: "Akademik",
+      author: "Joko Susilo, M.Pd",
+      authorRole: "guru",
+      authorId: "user_guru2",
+      priority: "high",
+      targetRole: "all",
+      scope: "teacher_to_both",
+      targetClassId: "class_10_ipa1",
+      targetClassName: "X MIPA 1",
+      targetSubjectId: "subj_fis",
+      targetSubjectName: "Fisika Dasar",
+      audienceLabel: "Siswa X MIPA 1 & Wali Kelas"
     }
   },
   academic_events: {

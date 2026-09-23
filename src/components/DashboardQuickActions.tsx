@@ -17,7 +17,7 @@ import {
   BookOpen,
   School
 } from 'lucide-react';
-import { User, ClassEntity, Subject, AttendanceStatus } from '../types';
+import { User, ClassEntity, Subject, AttendanceStatus, AnnouncementScope } from '../types';
 import { DatabaseService } from '../services/databaseService';
 import { QuickActionTooltip } from './QuickActionTooltip';
 import Swal from 'sweetalert2';
@@ -54,6 +54,11 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementContent, setAnnouncementContent] = useState('');
   const [announcementCategory, setAnnouncementCategory] = useState<'Penting' | 'Akademik' | 'Kegiatan' | 'Libur'>('Penting');
+  const [announcementScope, setAnnouncementScope] = useState<AnnouncementScope>(() => {
+    if (currentUser.role === 'wali_kelas') return 'homeroom_to_class';
+    if (currentUser.role === 'guru') return 'teacher_to_class';
+    return 'school_wide';
+  });
 
   // Roster of students in selected class
   const classStudents = useMemo(() => {
@@ -167,14 +172,36 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
       return;
     }
 
+    const cls = classes.find(c => c.id === selectedClassId);
+    let audienceLabel = 'Seluruh Sekolah';
+    if (announcementScope === 'homeroom_to_class') {
+      audienceLabel = `Khusus Siswa & Ortu ${cls?.nama_kelas || 'Kelas'}`;
+    } else if (announcementScope === 'homeroom_to_teachers') {
+      audienceLabel = `Khusus Guru Pengampu ${cls?.nama_kelas || 'Kelas'}`;
+    } else if (announcementScope === 'homeroom_to_both') {
+      audienceLabel = `Siswa & Guru Pengampu ${cls?.nama_kelas || 'Kelas'}`;
+    } else if (announcementScope === 'teacher_to_class') {
+      audienceLabel = `Siswa ${cls?.nama_kelas || 'Kelas'}`;
+    } else if (announcementScope === 'teacher_to_homeroom') {
+      audienceLabel = `Wali Kelas ${cls?.nama_kelas || 'Kelas'}`;
+    } else if (announcementScope === 'teacher_to_both') {
+      audienceLabel = `Siswa & Wali Kelas ${cls?.nama_kelas || 'Kelas'}`;
+    }
+
     dbService.createAnnouncement({
       title: announcementTitle.trim(),
       content: announcementContent.trim(),
       category: announcementCategory,
       author: currentUser.nama,
       authorRole: currentUser.role,
+      authorId: currentUser.id,
       priority: 'high',
-      targetRole: 'all'
+      targetRole: 'all',
+      scope: announcementScope,
+      targetClassId: selectedClassId,
+      targetClassName: cls?.nama_kelas,
+      targetSubjectId: selectedSubjectId !== 'HOMEROOM' ? selectedSubjectId : undefined,
+      audienceLabel
     });
 
     setShowAnnouncementModal(false);
@@ -184,7 +211,7 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
     Swal.fire({
       icon: 'success',
       title: 'Pengumuman Diterbitkan!',
-      text: 'Pengumuman telah disiarkan secara realtime ke seluruh pengguna.',
+      text: `Pengumuman telah disiarkan ke ${audienceLabel}.`,
       timer: 2000,
       showConfirmButton: false
     });
@@ -577,6 +604,44 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
             </div>
 
             <form onSubmit={handleCreateAnnouncement} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Jangkauan Penerima (Scope)
+                </label>
+                <select
+                  value={announcementScope}
+                  onChange={(e) => setAnnouncementScope(e.target.value as any)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  {currentUser.role === 'wali_kelas' && (
+                    <>
+                      <option value="homeroom_to_class">🏫 Khusus Kelas Saya (Siswa & Orang Tua)</option>
+                      <option value="homeroom_to_teachers">👨‍🏫 Khusus Guru Pengampu Mapel di Kelas Saya</option>
+                      <option value="homeroom_to_both">👥 Siswa, Orang Tua & Seluruh Guru Pengampu</option>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                    </>
+                  )}
+
+                  {currentUser.role === 'guru' && (
+                    <>
+                      <option value="teacher_to_class">👨‍🎓 Siswa di Kelas Ini ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                      <option value="teacher_to_homeroom">📋 Wali Kelas dari Kelas Ini ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                      <option value="teacher_to_both">🤝 Siswa & Wali Kelas ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                    </>
+                  )}
+
+                  {currentUser.role === 'admin' && (
+                    <>
+                      <option value="school_wide">🌐 Seluruh Sekolah (Umum)</option>
+                      <option value="homeroom_to_class">🏫 Khusus Siswa & Ortu ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                      <option value="homeroom_to_teachers">👨‍🏫 Khusus Guru Pengampu ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                      <option value="homeroom_to_both">👥 Siswa & Guru Pengampu ({selectedClass?.nama_kelas || 'Kelas'})</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Kategori

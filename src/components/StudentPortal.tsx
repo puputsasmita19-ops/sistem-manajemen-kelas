@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { realtimeNotificationService } from '../services/realtimeNotificationService';
+import { homeroomService } from '../services/homeroomService';
+import { HomeroomPdfExporter } from '../services/homeroomPdfExporter';
 import { User, Attendance } from '../types';
 import { ChartAttendance } from './ChartAttendance';
 import { ChartGrades } from './ChartGrades';
@@ -22,7 +24,10 @@ import {
   ExternalLink,
   Eye,
   RotateCcw,
-  QrCode
+  QrCode,
+  CreditCard,
+  FileText,
+  DollarSign
 } from 'lucide-react';
 
 interface StudentPortalProps {
@@ -68,6 +73,49 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
       `File rapor digital ${student.nama} sedang disiapkan dan diunduh ke perangkat Anda.`
     );
     dbService.exportStudentReportPDF(targetStudentId);
+  };
+
+  // School Fee & Administration data for current student
+  const classId = studentClass?.id || 'class_10_ipa1';
+  const { doc: feeDoc, record: feeRecord } = homeroomService.getStudentFeeRecord(
+    classId,
+    targetStudentId,
+    student.nama
+  );
+
+  const sppTotal =
+    ((feeRecord?.spp as any)?.juli || 0) +
+    ((feeRecord?.spp as any)?.agustus || 0) +
+    ((feeRecord?.spp as any)?.september || 0) +
+    ((feeRecord?.spp as any)?.oktober || 0) +
+    ((feeRecord?.spp as any)?.november || 0) +
+    ((feeRecord?.spp as any)?.desember || 0) +
+    ((feeRecord?.spp as any)?.januari || 0) +
+    ((feeRecord?.spp as any)?.februari || 0) +
+    ((feeRecord?.spp as any)?.maret || 0) +
+    ((feeRecord?.spp as any)?.april || 0) +
+    ((feeRecord?.spp as any)?.mei || 0) +
+    ((feeRecord?.spp as any)?.juni || 0);
+
+  const totalKewajiban =
+    (feeRecord?.tagihanKelasX || 0) +
+    (feeRecord?.asrama || 0) +
+    (feeRecord?.ptsPas || 0) +
+    (feeRecord?.buku || 0) +
+    (feeRecord?.praktikum || 0) +
+    (feeRecord?.kesiswaan || 0) +
+    sppTotal;
+
+  const handleDownloadFeeReport = () => {
+    realtimeNotificationService.notifyActionSuccess(
+      'Mencetak Rincian Administrasi',
+      `Surat tagihan & bukti perkembangan administrasi ananda ${student.nama} sedang diproses.`
+    );
+    HomeroomPdfExporter.exportSingleStudentFeeReport(
+      feeDoc,
+      feeRecord,
+      studentClass?.nama_kelas || 'Kelas X MIPA 1'
+    );
   };
 
   return (
@@ -474,6 +522,140 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ currentUser }) => 
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* INFORMASI ADMINISTRASI KEUANGAN & STATUS TAGIHAN SISWA */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors">
+        <div className="px-5 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-white/10 text-indigo-300">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-black tracking-tight text-white flex items-center gap-2">
+                <span>Rincian Biaya & Perkembangan Administrasi Sekolah</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-bold">
+                  Transparansi
+                </span>
+              </h3>
+              <p className="text-xs text-slate-300">
+                Data resmi dari Bagian Keuangan & Buku Kendali Wali Kelas ({feeDoc.homeroomTeacherName || 'Wali Kelas'}).
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="btn-download-fee-report-student"
+            onClick={handleDownloadFeeReport}
+            className="px-3.5 py-2 text-xs font-bold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-xl flex items-center gap-1.5 transition shadow-sm cursor-pointer whitespace-nowrap"
+            title="Unduh Surat Rincian Tagihan & Administrasi Individual PDF"
+          >
+            <Download className="w-4 h-4 text-slate-950" />
+            <span>Unduh Surat Tagihan PDF</span>
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Total Kewajiban Saat Ini
+              </div>
+              <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+                {totalKewajiban === 0 ? (
+                  <span className="text-emerald-600 dark:text-emerald-400">Rp 0 (LUNAS)</span>
+                ) : (
+                  <span>Rp {totalKewajiban.toLocaleString('id-ID')}</span>
+                )}
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                {feeDoc.dataPerDate || 'Data per Agustus 2026'}
+              </div>
+            </div>
+
+            <div className="bg-blue-50/70 dark:bg-blue-950/30 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60">
+              <div className="text-[11px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
+                Status SPP Bulanan
+              </div>
+              <div className="text-sm font-bold text-blue-900 dark:text-blue-100 mt-1 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Juli & Agustus Terbayar</span>
+              </div>
+              <div className="text-[10px] text-blue-700 dark:text-blue-300 mt-0.5">
+                September s.d Juni berjalan normal
+              </div>
+            </div>
+
+            <div className="bg-amber-50/70 dark:bg-amber-950/30 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/60">
+              <div className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                Catatan Wali Kelas
+              </div>
+              <div className="text-xs text-amber-950 dark:text-amber-100 font-medium mt-1 line-clamp-2">
+                "{feeRecord?.notes || 'Pembayaran dapat diangsur secara berkala melalui kasir bendahara atau transfer bank.'}"
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown Grid of specific components */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Buku & Modul LKS</div>
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
+                Rp {(feeRecord?.buku || 0).toLocaleString('id-ID')}
+              </div>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+                {feeRecord?.cellStatus?.buku === 'cicil' ? 'Dapat Dicicil' : feeRecord?.buku === 0 ? 'Lunas' : 'Tercatat'}
+              </span>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Praktikum & Lab</div>
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
+                Rp {(feeRecord?.praktikum || 0).toLocaleString('id-ID')}
+              </div>
+              <span className="text-[10px] text-slate-500 font-semibold">Bahan Uji Lab</span>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Penilaian PTS/PAS</div>
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
+                Rp {(feeRecord?.ptsPas || 0).toLocaleString('id-ID')}
+              </div>
+              <span className="text-[10px] text-slate-500 font-semibold">Asesmen Semester</span>
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Kegiatan OSIS/Ekskul</div>
+              <div className="font-bold text-slate-900 dark:text-white mt-0.5">
+                Rp {(feeRecord?.kesiswaan || 0).toLocaleString('id-ID')}
+              </div>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+                {feeRecord?.cellStatus?.kesiswaan === 'cicil' ? 'Dapat Dicicil' : 'Tercatat'}
+              </span>
+            </div>
+          </div>
+
+          {/* Official Bank Account Information */}
+          <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/70 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <span className="font-bold text-indigo-900 dark:text-indigo-200">
+                Rekening Resmi: {feeDoc.bankName || 'BANK SYARIAH INDONESIA (BSI)'} No. {feeDoc.bankAccountNumber || '4444-400-167'}
+              </span>
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">
+                a.n. {feeDoc.bankAccountHolder || 'SMK DR SOEBANDI JEMBER'} • Konfirmasi via Bendahara ({feeDoc.receivingTreasurerName || 'Agustin Rahmawati'})
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadFeeReport}
+              className="text-xs font-bold text-indigo-700 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-white underline flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <FileText className="w-3.5 h-3.5" /> Cetak Bukti & Rincian Lengkap
+            </button>
+          </div>
         </div>
       </div>
 

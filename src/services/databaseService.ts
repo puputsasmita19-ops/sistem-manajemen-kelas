@@ -1792,6 +1792,83 @@ export class DatabaseService {
     return all.filter(a => a.targetRole === 'all' || a.targetRole === role);
   }
 
+  public getAnnouncementsForUser(user: User): SchoolAnnouncement[] {
+    const all = this.getAllAnnouncements();
+    if (user.role === 'admin') return all;
+
+    const userClass = user.role === 'siswa'
+      ? this.getStudentClass(user.id)
+      : user.role === 'wali_kelas'
+        ? this.getHomeroomClass(user.id)
+        : null;
+
+    const children = user.role === 'orang_tua' ? this.getChildrenOfParent(user.id) : [];
+    const childClassIds = children.map(c => this.getStudentClass(c.id)?.id).filter(Boolean) as string[];
+
+    return all.filter(ann => {
+      // 1. Dibuat oleh pengguna sendiri
+      if (ann.authorId && ann.authorId === user.id) return true;
+
+      // 2. Pengumuman Seluruh Sekolah (school_wide atau tanpa scope legacy)
+      if (!ann.scope || ann.scope === 'school_wide') {
+        return ann.targetRole === 'all' || ann.targetRole === user.role;
+      }
+
+      // 3. Khusus Wali Kelas
+      if (user.role === 'wali_kelas') {
+        if (userClass && ann.targetClassId === userClass.id) {
+          // Dari guru pengampu untuk wali kelas atau untuk keduanya
+          if (ann.scope === 'teacher_to_homeroom' || ann.scope === 'teacher_to_both') return true;
+          // Dari wali kelas untuk kelas binaannya
+          if (ann.scope === 'homeroom_to_class' || ann.scope === 'homeroom_to_teachers' || ann.scope === 'homeroom_to_both') return true;
+        } else if (!ann.targetClassId) {
+          return true;
+        }
+      }
+
+      // 4. Khusus Guru Pengampu
+      if (user.role === 'guru') {
+        // Pengumuman dari Wali Kelas untuk Guru Pengampu di kelasnya
+        if (ann.scope === 'homeroom_to_teachers' || ann.scope === 'homeroom_to_both') {
+          return true;
+        }
+        // Pengumuman yang dikirim oleh guru ini
+        if (ann.authorId === user.id) return true;
+        if (ann.targetRole === 'all' || ann.targetRole === 'guru') return true;
+      }
+
+      // 5. Khusus Siswa
+      if (user.role === 'siswa') {
+        if (userClass && ann.targetClassId === userClass.id) {
+          if (
+            ann.scope === 'homeroom_to_class' ||
+            ann.scope === 'homeroom_to_both' ||
+            ann.scope === 'teacher_to_class' ||
+            ann.scope === 'teacher_to_both'
+          ) {
+            return true;
+          }
+        }
+      }
+
+      // 6. Khusus Orang Tua / Wali Murid
+      if (user.role === 'orang_tua') {
+        if (ann.targetClassId && childClassIds.includes(ann.targetClassId)) {
+          if (
+            ann.scope === 'homeroom_to_class' ||
+            ann.scope === 'homeroom_to_both' ||
+            ann.scope === 'teacher_to_class' ||
+            ann.scope === 'teacher_to_both'
+          ) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+  }
+
   public createAnnouncement(data: Omit<SchoolAnnouncement, 'id' | 'date' | 'time'>): SchoolAnnouncement {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];

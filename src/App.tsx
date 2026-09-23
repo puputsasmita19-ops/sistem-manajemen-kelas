@@ -721,6 +721,7 @@ export default function App() {
               <HomeroomDashboard
                 currentClassId="class_10_ipa1"
                 userRole={currentUser.role}
+                currentUserId={currentUser.id}
                 currentUserName={currentUser.nama}
                 studentList={students.map(s => ({ id: s.id, nama: s.nama }))}
               />
