@@ -24,7 +24,8 @@ import {
   Layers,
   Code2,
   FileText,
-  CalendarClock
+  CalendarClock,
+  Cloud
 } from 'lucide-react';
 import { AppSettings, User, UserRole } from '../types';
 import { AppLogo } from './AppLogo';

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DatabaseService } from '../services/databaseService';
 import { GoogleDriveService, DrivePhotoRecord } from '../services/googleDriveService';
+import { imageCompressionService, CompressedImageResult } from '../services/imageCompressionService';
 import {
   googleSignIn,
   logoutGoogle,
@@ -26,7 +27,9 @@ import {
   Sparkles,
   ShieldCheck,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  Cpu,
+  Globe
 } from 'lucide-react';
 
 interface DrivePhotoManagerProps {
@@ -71,6 +74,8 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
   const [uploadCaption, setUploadCaption] = useState<string>('Pasfoto Resmi Siswa 3x4');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [compressionStats, setCompressionStats] = useState<CompressedImageResult | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -157,17 +162,35 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
     return matchStudent && matchSearch;
   });
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       Swal.fire({ icon: 'warning', title: 'Format Tidak Sesuai', text: 'Berkas harus berupa gambar (JPG, PNG, WebP).' });
       return;
     }
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setPreviewDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
+
+    setIsCompressing(true);
+    try {
+      // Kompresi sisi klien (Browser HP/Laptop) sebelum dikirim
+      const compressed = await imageCompressionService.compressImageSource(file, {
+        maxWidth: 720,
+        maxHeight: 960,
+        quality: 0.78,
+        mimeType: 'image/jpeg'
+      });
+      setSelectedFile(compressed.file);
+      setPreviewDataUrl(compressed.dataUrl);
+      setCompressionStats(compressed);
+    } catch (err) {
+      console.warn('Compression fallback to original file:', err);
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setPreviewDataUrl(reader.result as string);
+      reader.readAsDataURL(file);
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleExecuteUpload = async (e: React.FormEvent) => {
@@ -191,14 +214,26 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
       setIsUploadModalOpen(false);
       setSelectedFile(null);
       setPreviewDataUrl(null);
+      setCompressionStats(null);
       reloadPhotos();
 
       Swal.fire({
         icon: 'success',
         title: 'Foto Berhasil Disimpan ke Google Drive!',
-        text: `Berkas "${selectedFile.name}" berhasil diunggah ke database penyimpanan Google Drive & Firebase.`,
-        timer: 2000,
-        showConfirmButton: false
+        html: `
+          <div class="text-left text-xs space-y-2 mt-2">
+            <p>Berkas <strong>"${selectedFile.name}"</strong> berhasil diunggah ke Google Drive dengan hak akses publik otomatis.</p>
+            ${
+              compressionStats
+                ? `<div class="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-800 dark:text-emerald-200">
+                    <div>⚡ <strong>Kompresi Sisi Perangkat:</strong></div>
+                    <div>${compressionStats.originalSizeKB} KB ➔ ${compressionStats.compressedSizeKB} KB (Hemat <strong>${compressionStats.savedPercentage}%</strong> Kuota)</div>
+                  </div>`
+                : ''
+            }
+          </div>
+        `,
+        confirmButtonColor: '#2563eb'
       });
     } catch (err: any) {
       setIsUploading(false);
@@ -533,7 +568,18 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
                         className="w-24 h-24 object-cover mx-auto rounded-xl border border-slate-300 shadow-xs"
                       />
                       <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{selectedFile?.name}</div>
+                      {compressionStats && (
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[10px] font-bold">
+                          <Cpu className="w-3 h-3" />
+                          <span>{compressionStats.originalSizeKB}KB ➔ {compressionStats.compressedSizeKB}KB (Hemat {compressionStats.savedPercentage}%)</span>
+                        </div>
+                      )}
                       <div className="text-[11px] text-blue-600">Klik untuk mengganti foto</div>
+                    </div>
+                  ) : isCompressing ? (
+                    <div className="py-4 space-y-2">
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+                      <div className="text-xs font-bold text-slate-700 dark:text-slate-200">Mengompresi di perangkat...</div>
                     </div>
                   ) : (
                     <div>
@@ -541,10 +587,16 @@ export const DrivePhotoManager: React.FC<DrivePhotoManagerProps> = ({ currentRol
                       <div className="text-xs font-bold text-slate-700 dark:text-slate-200">
                         Klik untuk memilih berkas foto
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, atau WebP (Maks 5MB)</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, atau WebP (Otomatis Dikompresi)</div>
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Public permissions guarantee info */}
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl flex items-start gap-2 text-[11px] text-blue-900 dark:text-blue-200">
+                <Globe className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <span>Sistem secara otomatis menetapkan hak akses <strong>Publik (Anyone with link)</strong> pada Google Drive sehingga foto tidak akan rusak (broken link).</span>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-700">

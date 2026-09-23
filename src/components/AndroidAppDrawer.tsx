@@ -30,7 +30,8 @@ import {
   Layers,
   FolderLock,
   FileText,
-  CalendarClock
+  CalendarClock,
+  Cloud
 } from 'lucide-react';
 import { User, AppSettings, UserRole } from '../types';
 import { TourService } from '../services/tourService';

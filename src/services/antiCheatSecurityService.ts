@@ -317,7 +317,7 @@ export class AntiCheatSecurityService {
    * Validasi Integritas Lokasi GPS & Deteksi Mock / Fake GPS
    */
   public validateLocationIntegrity(
-    currentCoords: GeolocationCoordinates,
+    currentCoords: { latitude: number; longitude: number; accuracy?: number | null } | GeolocationCoordinates,
     schoolLat: number,
     schoolLng: number,
     allowedRadiusMeters: number
@@ -335,7 +335,7 @@ export class AntiCheatSecurityService {
     if (currentCoords.accuracy === 0) {
       warnings.push('Akurasi sensor GPS 0m mencurigakan (Diduga aplikasi Mock Location).');
       isMockSuspected = true;
-    } else if (currentCoords.accuracy > 500) {
+    } else if (currentCoords.accuracy != null && currentCoords.accuracy > 500) {
       warnings.push(`Sinyal GPS kurang akurat (Toleransi ±${Math.round(currentCoords.accuracy)}m). Pastikan berada di ruang terbuka.`);
     }
 

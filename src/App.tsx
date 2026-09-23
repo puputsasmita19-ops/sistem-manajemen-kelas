@@ -5,7 +5,7 @@ import { User, UserRole, AppSettings } from './types';
 import { AttendanceManager } from './components/AttendanceManager';
 import { GradeManager } from './components/GradeManager';
 import { UserManagement } from './components/UserManagement';
-import { AppSettingsManager } from './components/AppSettingsManager';
+import { AppSettingsManager, AppSettingsSubTab } from './components/AppSettingsManager';
 import { AppLogo } from './components/AppLogo';
 import { StudentPortal } from './components/StudentPortal';
 import { SchemaAndRulesViewer } from './components/SchemaAndRulesViewer';
@@ -212,7 +212,7 @@ export default function App() {
   // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
   const [tabResetKey, setTabResetKey] = useState<number>(0);
-  const [appSettingsSubTab, setAppSettingsSubTab] = useState<'general' | 'logo' | 'running_text' | 'kop_signature' | 'security'>(() => {
+  const [appSettingsSubTab, setAppSettingsSubTab] = useState<AppSettingsSubTab>(() => {
     try {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
       if (hash === 'running_text') return 'running_text';
@@ -231,7 +231,7 @@ export default function App() {
   });
 
   // Handler navigasi terpadu yang menyinkronkan sub-tab dan highlight menu sidebar
-  const handleSelectTab = (tab: string, subTab?: 'general' | 'logo' | 'running_text' | 'kop_signature' | 'security') => {
+  const handleSelectTab = (tab: string, subTab?: AppSettingsSubTab) => {
     if (tab === 'app_settings') {
       setAppSettingsSubTab(subTab || 'general');
     } else if (tab === 'running_text') {
