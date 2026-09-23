@@ -277,7 +277,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                     type="text"
                     value={itemCode}
                     onChange={e => setItemCode(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-mono"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-mono"
                     required
                   />
                 </div>
@@ -286,7 +286,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   <select
                     value={source}
                     onChange={e => setSource(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Sekolah">Sekolah</option>
                     <option value="BOS">BOS</option>
@@ -303,7 +303,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   value={itemName}
                   onChange={e => setItemName(e.target.value)}
                   placeholder="Contoh: Kipas Angin Dinding Tornado"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -316,7 +316,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                     min={1}
                     value={quantity}
                     onChange={e => setQuantity(Number(e.target.value))}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -327,7 +327,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                     value={unit}
                     onChange={e => setUnit(e.target.value)}
                     placeholder="Buah, Set, Unit"
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -336,7 +336,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   <select
                     value={condition}
                     onChange={e => setCondition(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Baik">Baik</option>
                     <option value="Rusak Ringan">Rusak Ringan</option>
@@ -352,7 +352,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Keterangan spesifikasi / letak penempatan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -402,7 +402,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                     min={1}
                     value={editingItem.quantity}
                     onChange={e => setEditingItem({ ...editingItem, quantity: Number(e.target.value) })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -411,7 +411,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   <select
                     value={editingItem.condition}
                     onChange={e => setEditingItem({ ...editingItem, condition: e.target.value as any })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Baik">Baik</option>
                     <option value="Rusak Ringan">Rusak Ringan</option>
@@ -426,7 +426,7 @@ export const HomeroomInventory: React.FC<HomeroomInventoryProps> = ({
                   type="text"
                   value={editingItem.notes}
                   onChange={e => setEditingItem({ ...editingItem, notes: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

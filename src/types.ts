@@ -281,7 +281,8 @@ export type ScheduleFrequency =
   | 'weekly'
   | 'daily'
   | 'semester_end'
-  | 'custom_day';
+  | 'custom_day'
+  | 'custom_month_range';
 
 export interface ScheduledExportConfig {
   id: string;
@@ -300,6 +301,11 @@ export interface ScheduledExportConfig {
   paperOrientation: 'portrait' | 'landscape';
   storageDestination: 'firebase_storage' | 'cloud_and_local';
   isEnabled: boolean;
+  // Rentang bulan spesifik untuk ekspor
+  startMonth?: number; // 1-12
+  startYear?: number;
+  endMonth?: number; // 1-12
+  endYear?: number;
   lastRunAt?: string;
   nextRunAt?: string;
   lastError?: string;

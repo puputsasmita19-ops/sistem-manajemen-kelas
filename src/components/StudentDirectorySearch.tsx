@@ -398,7 +398,7 @@ export const StudentDirectorySearch: React.FC<StudentDirectorySearchProps> = ({
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700 text-slate-700 dark:text-slate-300">
                     {studentModalReport.gradeDetails.length > 0 ? (
                       studentModalReport.gradeDetails.map((row: any) => (
-                        <tr key={row.subjectId} className="hover:bg-slate-50 dark:hover:bg-slate-750">
+                        <tr key={row.subjectId} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
                           <td className="py-2 px-3 font-semibold">{row.subjectName}</td>
                           <td className="py-2 px-2 text-center">{row.tugas}</td>
                           <td className="py-2 px-2 text-center">{row.uts}</td>

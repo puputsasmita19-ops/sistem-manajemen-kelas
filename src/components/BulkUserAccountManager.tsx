@@ -357,7 +357,7 @@ export const BulkUserAccountManager: React.FC<BulkUserAccountManagerProps> = ({ 
       </div>
 
       {/* Target Filtering & Search Card */}
-      <div className="bg-white dark:bg-slate-850 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3.5 shadow-2xs">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3.5 shadow-2xs">
         <div className="flex items-center justify-between">
           <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-purple-600" />
@@ -463,7 +463,7 @@ export const BulkUserAccountManager: React.FC<BulkUserAccountManagerProps> = ({ 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         {/* Column 1: Bulk Password Generator */}
-        <div className="bg-white dark:bg-slate-850 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 shadow-2xs">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <KeyRound className="w-4 h-4 text-purple-600" />
@@ -514,7 +514,7 @@ export const BulkUserAccountManager: React.FC<BulkUserAccountManagerProps> = ({ 
         </div>
 
         {/* Column 2: Bulk Username Generator */}
-        <div className="bg-white dark:bg-slate-850 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 shadow-2xs">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3 shadow-2xs">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <UserCheck className="w-4 h-4 text-indigo-600" />
@@ -566,7 +566,7 @@ export const BulkUserAccountManager: React.FC<BulkUserAccountManagerProps> = ({ 
       </div>
 
       {/* Changes Status Bar & Action Controls */}
-      <div className="bg-white dark:bg-slate-850 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
             {proposedChanges.size}
@@ -630,7 +630,7 @@ export const BulkUserAccountManager: React.FC<BulkUserAccountManagerProps> = ({ 
       </div>
 
       {/* Interactive Accounts Table */}
-      <div className="bg-white dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-2xs">
         <div className="p-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-purple-600" />

@@ -291,7 +291,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -302,7 +302,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                     value={studentName}
                     onChange={e => setStudentName(e.target.value)}
                     placeholder="Nama siswa..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="hv-students"
                     required
                   />
@@ -322,7 +322,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                     value={parentOrGuardianMet}
                     onChange={e => setParentOrGuardianMet(e.target.value)}
                     placeholder="Contoh: Ibu Siti (Ibu Kandung)"
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -331,7 +331,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   <select
                     value={reasonForVisit}
                     onChange={e => setReasonForVisit(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Silaturahmi Rutin">Silaturahmi Rutin</option>
                     <option value="Ketidakhadiran Berturut-turut">Ketidakhadiran Berturut-turut</option>
@@ -349,7 +349,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   value={address}
                   onChange={e => setAddress(e.target.value)}
                   placeholder="Alamat lengkap rumah siswa..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -362,7 +362,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   value={discussionSummary}
                   onChange={e => setDiscussionSummary(e.target.value)}
                   placeholder="Temuan suasana keluarga, kendala belajar di rumah..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -375,7 +375,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   value={parentCommitment}
                   onChange={e => setParentCommitment(e.target.value)}
                   placeholder="Pernyataan dan komitmen orang tua..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -388,7 +388,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   value={followUpPlan}
                   onChange={e => setFollowUpPlan(e.target.value)}
                   placeholder="Pendampingan guru BK, cek presensi mingguan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -399,7 +399,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                     type="text"
                     value={visitingTeachers}
                     onChange={e => setVisitingTeachers(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
                 <div>
@@ -407,7 +407,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                   <select
                     value={status}
                     onChange={e => setStatus(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Selesai">Selesai</option>
                     <option value="Perlu Kunjungan Lanjutan">Perlu Kunjungan Lanjutan</option>
@@ -464,7 +464,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                       status: e.target.value as any
                     })
                   }
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 >
                   <option value="Selesai">Selesai</option>
                   <option value="Perlu Kunjungan Lanjutan">Perlu Kunjungan Lanjutan</option>
@@ -485,7 +485,7 @@ export const HomeroomHomeVisits: React.FC<HomeroomHomeVisitsProps> = ({
                       followUpPlan: e.target.value
                     })
                   }
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

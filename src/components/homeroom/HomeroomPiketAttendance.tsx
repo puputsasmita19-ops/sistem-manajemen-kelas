@@ -233,7 +233,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -242,7 +242,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                   <select
                     value={day}
                     onChange={e => setDay(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Senin">Senin</option>
                     <option value="Selasa">Selasa</option>
@@ -262,7 +262,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                     value={student1}
                     onChange={e => setStudent1(e.target.value)}
                     placeholder="Nama siswa..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="piket-students"
                     required
                   />
@@ -272,7 +272,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                   <select
                     value={status1}
                     onChange={e => setStatus1(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Melaksanakan">Melaksanakan</option>
                     <option value="Tidak Melaksanakan">Tidak Melaksanakan</option>
@@ -290,7 +290,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                     value={student2}
                     onChange={e => setStudent2(e.target.value)}
                     placeholder="Nama siswa (opsional)..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="piket-students"
                   />
                 </div>
@@ -299,7 +299,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                   <select
                     value={status2}
                     onChange={e => setStatus2(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Melaksanakan">Melaksanakan</option>
                     <option value="Tidak Melaksanakan">Tidak Melaksanakan</option>
@@ -323,7 +323,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                     max={100}
                     value={cleanlinessScore}
                     onChange={e => setCleanlinessScore(Number(e.target.value))}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -333,7 +333,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                     type="text"
                     value={inspectorName}
                     onChange={e => setInspectorName(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -346,7 +346,7 @@ export const HomeroomPiketAttendance: React.FC<HomeroomPiketAttendanceProps> = (
                   value={evaluationNotes}
                   onChange={e => setEvaluationNotes(e.target.value)}
                   placeholder="Kondisi papan tulis, jendela, aroma ruangan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

@@ -270,7 +270,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -279,7 +279,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   <select
                     value={guidanceType}
                     onChange={e => setGuidanceType(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Akademik / Belajar">Akademik / Belajar</option>
                     <option value="Pribadi">Pribadi</option>
@@ -296,7 +296,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   value={studentName}
                   onChange={e => setStudentName(e.target.value)}
                   placeholder="Ketik nama siswa..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   list="guidance-students"
                   required
                 />
@@ -316,7 +316,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   value={problemDescription}
                   onChange={e => setProblemDescription(e.target.value)}
                   placeholder="Jelaskan pokok permasalahan yang dialami peserta didik..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -330,7 +330,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   value={counselingGiven}
                   onChange={e => setCounselingGiven(e.target.value)}
                   placeholder="Solusi, nasehat, atau teknik pembimbingan yang dilakukan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -343,7 +343,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                     value={followUpPlan}
                     onChange={e => setFollowUpPlan(e.target.value)}
                     placeholder="Rencana monitoring selanjutnya..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
                 <div>
@@ -351,7 +351,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   <select
                     value={status}
                     onChange={e => setStatus(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Dalam Proses">Dalam Proses</option>
                     <option value="Perlu Monitoring">Perlu Monitoring</option>
@@ -404,7 +404,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                 <select
                   value={editingItem.status}
                   onChange={e => setEditingItem({ ...editingItem, status: e.target.value as any })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 >
                   <option value="Dalam Proses">Dalam Proses</option>
                   <option value="Perlu Monitoring">Perlu Monitoring</option>
@@ -419,7 +419,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   rows={2}
                   value={editingItem.counselingGiven}
                   onChange={e => setEditingItem({ ...editingItem, counselingGiven: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -429,7 +429,7 @@ export const HomeroomGuidance: React.FC<HomeroomGuidanceProps> = ({
                   type="text"
                   value={editingItem.followUpPlan}
                   onChange={e => setEditingItem({ ...editingItem, followUpPlan: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

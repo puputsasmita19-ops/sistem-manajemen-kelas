@@ -930,10 +930,10 @@ export class HomeroomPdfExporter {
     this.notifySuccess('Rincian Administrasi Sekolah Berhasil Dicetak!', filename);
   }
 
-  // 13) Menu 13: Jurnal Agenda Kegiatan Pembelajaran
+  // 13) Menu 13: Jurnal Agenda Kegiatan Pembelajaran (Dengan Kolom Validasi Wali Kelas)
   public static exportJournalPDF(className: string, journals: ClassJournalItem[]): void {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const startY = this.addOfficialHeader(doc, 'JURNAL AGENDA PEMBELAJARAN & KBM HARIAN', 'Catatan Materi, Guru Pengajar & Kehadiran', className);
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const startY = this.addOfficialHeader(doc, 'JURNAL AGENDA PEMBELAJARAN & KBM HARIAN', 'Diinput Guru Mapel • Divalidasi & Diparaf Wali Kelas', className);
 
     const body = journals.map((item, idx) => [
       String(idx + 1),
@@ -941,21 +941,36 @@ export class HomeroomPdfExporter {
       item.period,
       item.subjectName,
       item.teacherName,
-      item.competencyOrTopic,
-      item.attendanceNote
+      item.competencyOrTopic + '\n' + item.materialsSummary,
+      item.attendanceNote,
+      item.validationStatus === 'Terverifikasi'
+        ? `TERVERIFIKASI (ACC)\n${item.validatedByWaliName || 'Wali Kelas'}`
+        : item.validationStatus === 'Perlu Revisi'
+        ? `PERLU REVISI\n(${item.validationNotes || 'Periksa Catatan'})`
+        : 'MENUNGGU VALIDASI'
     ]);
 
     autoTable(doc, {
-      head: [['No', 'Tanggal', 'Jam KBM', 'Mata Pelajaran', 'Guru Pengajar', 'Materi / Topik Pembelajaran', 'Presensi']],
+      head: [['No', 'Tanggal', 'Jam KBM', 'Mata Pelajaran', 'Guru Pengajar', 'Materi / Topik KBM', 'Presensi', 'Status Validasi Wali Kelas']],
       body,
       startY,
       theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
-      styles: { fontSize: 8, cellPadding: 2.5 }
+      headStyles: { fillColor: [109, 40, 217], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 22, halign: 'center' },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 35, fontStyle: 'bold' },
+        4: { cellWidth: 35 },
+        5: { cellWidth: 80 },
+        6: { cellWidth: 32 },
+        7: { cellWidth: 35, halign: 'center' }
+      }
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY || startY + 50;
-    this.addOfficialSignatures(doc, finalY);
+    this.addOfficialSignatures(doc, finalY, 'Puput Sasmita, S.Pd., Gr.', 'landscape', 'Wali Kelas & Verifikator KBM,');
 
     const filename = `Jurnal_Agenda_KBM_${className.replace(/\s+/g, '_')}.pdf`;
     doc.save(filename);

@@ -359,13 +359,13 @@ export const MultiRoleExportImportModal: React.FC<MultiRoleExportImportModalProp
       case 'orang_tua':
         return <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Orang Tua</span>;
       default:
-        return <span className="bg-slate-100 text-slate-800 dark:bg-slate-800 text-[10px] px-2 py-0.5 rounded-full">{role}</span>;
+        return <span className="bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[10px] px-2 py-0.5 rounded-full font-bold">{role}</span>;
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-slate-850 rounded-2xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150 my-auto flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150 my-auto flex flex-col max-h-[92vh]">
         
         {/* Header Modal */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">

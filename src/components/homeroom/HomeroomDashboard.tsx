@@ -53,6 +53,7 @@ import { HomeroomPdfExporter } from '../../services/homeroomPdfExporter';
 interface HomeroomDashboardProps {
   currentClassId?: string;
   userRole?: string;
+  currentUserName?: string;
   studentList?: Array<{ id: string; nama: string }>;
 }
 
@@ -254,6 +255,7 @@ const ALL_MENUS: MenuItem[] = [
 export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
   currentClassId = 'class_10_ipa1',
   userRole = 'wali_kelas',
+  currentUserName = 'Puput Sasmita, S.Pd., Gr.',
   studentList: propStudents
 }) => {
   const service = HomeroomService.getInstance();
@@ -491,7 +493,7 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
               value={menuSearch}
               onChange={e => setMenuSearch(e.target.value)}
               placeholder="Cari menu 1-18 atau nama..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
             />
           </div>
         </div>
@@ -743,6 +745,8 @@ export const HomeroomDashboard: React.FC<HomeroomDashboardProps> = ({
             classId={classId}
             className={currentClassName}
             journals={dataPackage.classJournals}
+            userRole={userRole}
+            currentUserName={currentUserName}
             onRefresh={refreshData}
           />
         )}

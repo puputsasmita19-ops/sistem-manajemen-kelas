@@ -431,17 +431,64 @@ export class HomeroomService {
     );
   }
 
-  // 13) Class Journals
+  // 13) Class Journals (Input Guru Mapel & Validasi Wali Kelas)
   public addClassJournal(classId: string, item: Omit<ClassJournalItem, 'id' | 'class_id'>): void {
     const data = this.getClassHomeroomData(classId);
+    const validationStatus = item.validationStatus || (item.submittedByRole === 'wali_kelas' ? 'Terverifikasi' : 'Menunggu Validasi');
     const newItem: ClassJournalItem = {
       ...item,
       id: `jrnl_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      class_id: classId
+      class_id: classId,
+      submittedByRole: item.submittedByRole || 'guru_mapel',
+      validationStatus
     };
     data.classJournals.unshift(newItem);
     this.saveClassData(classId, data);
-    realtimeNotificationService.notifyActionSuccess('Agenda Kelas Dicatat', `Jurnal KBM ${item.subjectName || 'Mata Pelajaran'} (${item.date}) berhasil disimpan.`);
+    const notifMsg = validationStatus === 'Menunggu Validasi'
+      ? `Jurnal KBM ${item.subjectName} telah diajukan dan menunggu validasi Wali Kelas.`
+      : `Jurnal KBM ${item.subjectName} (${item.date}) berhasil disimpan.`;
+    realtimeNotificationService.notifyActionSuccess('Jurnal KBM Dicatat', notifMsg);
+  }
+
+  public updateClassJournal(classId: string, item: ClassJournalItem): void {
+    const data = this.getClassHomeroomData(classId);
+    const idx = data.classJournals.findIndex(j => j.id === item.id);
+    if (idx >= 0) {
+      data.classJournals[idx] = item;
+      this.saveClassData(classId, data);
+      realtimeNotificationService.notifyActionSuccess(
+        'Jurnal KBM Diperbarui',
+        `Perubahan jurnal ${item.subjectName} (${item.date}) berhasil disimpan.`
+      );
+    }
+  }
+
+  public validateClassJournal(
+    classId: string,
+    journalId: string,
+    status: 'Terverifikasi' | 'Perlu Revisi',
+    validatedBy: string,
+    notes?: string
+  ): void {
+    const data = this.getClassHomeroomData(classId);
+    const journal = data.classJournals.find(j => j.id === journalId);
+    if (journal) {
+      journal.validationStatus = status;
+      journal.validationDate = new Date().toISOString().split('T')[0];
+      journal.validatedByWaliName = validatedBy;
+      if (notes !== undefined) {
+        journal.validationNotes = notes;
+      }
+      if (status === 'Terverifikasi') {
+        journal.teacherSign = true;
+      }
+      this.saveClassData(classId, data);
+      const title = status === 'Terverifikasi' ? 'Jurnal Terverifikasi' : 'Catatan Revisi Dikirim';
+      const msg = status === 'Terverifikasi'
+        ? `Jurnal ${journal.subjectName} telah divalidasi dan diparaf resmi oleh Wali Kelas (${validatedBy}).`
+        : `Catatan perbaikan untuk jurnal ${journal.subjectName} telah dikirimkan ke guru mapel.`;
+      realtimeNotificationService.notifyActionSuccess(title, msg);
+    }
   }
 
   public deleteClassJournal(classId: string, id: string): void {
@@ -449,6 +496,35 @@ export class HomeroomService {
     data.classJournals = data.classJournals.filter(j => j.id !== id);
     this.saveClassData(classId, data);
     realtimeNotificationService.notifyActionInfo('Agenda Dihapus', 'Catatan agenda kegiatan kelas telah dihapus.');
+  }
+
+  public getTeacherJournalsAcrossClasses(teacherNameOrId: string): Array<{ classId: string; className: string; journal: ClassJournalItem }> {
+    const classIds = ['class_10_ipa1', 'class_10_ipa2', 'class_11_ipa1', 'class_12_ipa1'];
+    const classLabels: Record<string, string> = {
+      class_10_ipa1: 'XI APL (SMK dr. Soebandi)',
+      class_10_ipa2: 'X APL',
+      class_11_ipa1: 'XII APL',
+      class_12_ipa1: 'X AKL'
+    };
+
+    const results: Array<{ classId: string; className: string; journal: ClassJournalItem }> = [];
+    classIds.forEach(cId => {
+      const d = this.getClassHomeroomData(cId);
+      d.classJournals.forEach(j => {
+        if (
+          !teacherNameOrId ||
+          j.teacherId === teacherNameOrId ||
+          j.teacherName.toLowerCase().includes(teacherNameOrId.toLowerCase())
+        ) {
+          results.push({
+            classId: cId,
+            className: classLabels[cId] || cId,
+            journal: j
+          });
+        }
+      });
+    });
+    return results;
   }
 
   // 14) Mutations

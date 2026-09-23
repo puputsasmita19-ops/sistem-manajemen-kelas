@@ -208,8 +208,8 @@ export const MasterAcademicData: React.FC<MasterAcademicDataProps> = ({ currentU
           title: 'Cadangan Google Drive Tersimpan',
           html: `
             <p class="text-sm text-slate-600 mb-2">Master Data Akademik berhasil diarsipkan ke Google Drive dalam format file <b>${filename}</b>.</p>
-            <div class="mt-3 text-xs bg-slate-100 p-2.5 rounded-lg border text-left text-slate-700">
-              <span class="font-semibold block text-slate-900">ID Berkas Drive:</span> ${res.fileId || 'SIMAK_DRIVE_ARCHIVE'}
+            <div class="mt-3 text-xs bg-slate-100 dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-left text-slate-700 dark:text-slate-200">
+              <span class="font-semibold block text-slate-900 dark:text-white">ID Berkas Drive:</span> ${res.fileId || 'SIMAK_DRIVE_ARCHIVE'}
             </div>
           `,
           confirmButtonColor: '#2563eb'

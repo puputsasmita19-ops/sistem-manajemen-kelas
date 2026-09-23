@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { realtimeNotificationService } from '../services/realtimeNotificationService';
 
 export type ThemeMode = 'light' | 'dark';
 const THEME_STORAGE_KEY = 'simak-theme';
@@ -128,10 +127,6 @@ export function useTheme() {
     const isCurrentlyDark = document.documentElement.classList.contains('dark');
     const next = isCurrentlyDark ? 'light' : 'dark';
     setGlobalTheme(next);
-    realtimeNotificationService.notifyActionInfo(
-      next === 'dark' ? 'Mode Gelap Aktif' : 'Mode Terang Aktif',
-      `Tampilan disesuaikan ke mode ${next === 'dark' ? 'gelap (ramah mata)' : 'terang'}.`
-    );
   };
 
   const setTheme = (t: ThemeMode) => {

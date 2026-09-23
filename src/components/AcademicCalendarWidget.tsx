@@ -441,7 +441,7 @@ export const AcademicCalendarWidget: React.FC<AcademicCalendarWidgetProps> = ({
               <button
                 type="button"
                 onClick={handlePrevMonth}
-                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 flex items-center justify-center text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 transition cursor-pointer"
                 title="Bulan Sebelumnya"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -449,7 +449,7 @@ export const AcademicCalendarWidget: React.FC<AcademicCalendarWidgetProps> = ({
               <button
                 type="button"
                 onClick={handleNextMonth}
-                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 flex items-center justify-center text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 transition cursor-pointer"
                 title="Bulan Berikutnya"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -495,7 +495,7 @@ export const AcademicCalendarWidget: React.FC<AcademicCalendarWidgetProps> = ({
                       ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60 text-slate-800 dark:text-slate-200'
                       : hasEvents
                       ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-400 text-slate-800 dark:text-slate-200'
-                      : 'bg-white dark:bg-slate-800/60 border-slate-100 dark:border-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300'
+                      : 'bg-white dark:bg-slate-800/60 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">

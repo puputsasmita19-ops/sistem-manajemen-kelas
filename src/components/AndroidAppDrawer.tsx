@@ -5,6 +5,7 @@ import {
   CalendarCheck2,
   Award,
   School,
+  BookOpen,
   HardDrive,
   Users,
   Settings,
@@ -118,6 +119,18 @@ export const AndroidAppDrawer: React.FC<AndroidAppDrawerProps> = ({
       iconColor: 'text-black dark:text-white',
       badge: 'PDF + Excel',
       badgeColor: 'bg-slate-800 text-white dark:bg-slate-700',
+      allowedRoles: ['admin', 'wali_kelas', 'guru']
+    },
+    {
+      id: 'teacher_journal',
+      title: 'Jurnal Mengajar Guru Mapel',
+      category: 'akademik',
+      description: 'Input aktivitas KBM, materi pokok, dan presensi jam mapel serta pelacakan validasi Wali Kelas',
+      icon: BookOpen,
+      iconBg: 'bg-blue-100 dark:bg-blue-950',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      badge: 'Validasi Wali',
+      badgeColor: 'bg-blue-800 text-white dark:bg-blue-700',
       allowedRoles: ['admin', 'wali_kelas', 'guru']
     },
     {

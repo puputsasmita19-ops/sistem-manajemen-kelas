@@ -299,7 +299,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   <select
                     value={type}
                     onChange={e => setType(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Masuk">Masuk (Pindahan Masuk)</option>
                     <option value="Keluar">Keluar (Pindah ke Sekolah Lain)</option>
@@ -311,7 +311,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -324,7 +324,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   value={studentName}
                   onChange={e => setStudentName(e.target.value)}
                   placeholder="Nama lengkap siswa..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -337,7 +337,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                     value={nisn}
                     onChange={e => setNisn(e.target.value)}
                     placeholder="NISN (10 Digit)..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
                 <div>
@@ -345,7 +345,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   <select
                     value={gender}
                     onChange={e => setGender(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="L">Laki-laki</option>
                     <option value="P">Perempuan</option>
@@ -362,7 +362,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   value={schoolDestinationOrOrigin}
                   onChange={e => setSchoolDestinationOrOrigin(e.target.value)}
                   placeholder="Nama sekolah asal / tujuan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -374,7 +374,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   value={reason}
                   onChange={e => setReason(e.target.value)}
                   placeholder="Alasan mutasi..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -388,7 +388,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                     value={letterNumber}
                     onChange={e => setLetterNumber(e.target.value)}
                     placeholder="Nomor surat resmi..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-mono"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-mono"
                   />
                 </div>
                 <div>
@@ -398,7 +398,7 @@ export const HomeroomMutation: React.FC<HomeroomMutationProps> = ({
                   <select
                     value={statusDocument}
                     onChange={e => setStatusDocument(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Lengkap">Lengkap</option>
                     <option value="Menunggu Berkas">Menunggu Berkas</option>

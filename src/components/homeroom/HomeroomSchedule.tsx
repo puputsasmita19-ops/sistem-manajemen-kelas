@@ -109,14 +109,14 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 text-xs font-black">
-              MENU 1
+              MENU 1 • WALI KELAS
             </span>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
               Daftar Pelajaran ({className})
             </h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Jadwal kegiatan belajar mengajar mingguan kelas reguler tahun ajaran aktif
+            Dikelola mandiri oleh Wali Kelas untuk mengatur alokasi jam KBM guru mapel dan ruang belajar
           </p>
         </div>
 
@@ -142,6 +142,14 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
         </div>
       </div>
 
+      {/* Info notice about decentralized flow */}
+      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-2xl p-3 flex items-start gap-2.5 text-xs text-blue-900 dark:text-blue-200">
+        <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+        <div>
+          <strong>Pengaturan Jadwal Pelajaran:</strong> Wali Kelas menginput dan memperbarui jadwal pelajaran kelasnya masing-masing. Jadwal ini langsung tersinkronisasi secara real-time ke Portal Siswa dan Portal Guru Mapel.
+        </div>
+      </div>
+
       {/* Filter Tabs & Search */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -151,7 +159,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               activeDay === 'Semua'
                 ? 'bg-blue-600 text-white shadow-2xs'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-700'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
             }`}
           >
             Semua Hari ({schedules.length})
@@ -166,7 +174,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
                   activeDay === d
                     ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-700'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <span>{d}</span>
@@ -290,7 +298,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                   <select
                     value={day}
                     onChange={e => setDay(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     {DAYS.map(d => (
                       <option key={d} value={d}>{d}</option>
@@ -306,7 +314,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                     max={12}
                     value={periodNumber}
                     onChange={e => setPeriodNumber(Number(e.target.value))}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>
@@ -318,7 +326,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                   value={timeRange}
                   onChange={e => setTimeRange(e.target.value)}
                   placeholder="Contoh: 07:15 - 08:45"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -330,7 +338,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                   value={subjectName}
                   onChange={e => setSubjectName(e.target.value)}
                   placeholder="Contoh: Fisika, Matematika Peminatan"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -342,7 +350,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                   value={teacherName}
                   onChange={e => setTeacherName(e.target.value)}
                   placeholder="Contoh: Siti Rahmawati, M.Pd"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -354,7 +362,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                   value={room}
                   onChange={e => setRoom(e.target.value)}
                   placeholder="Contoh: R. 10 MIPA 1 / Lab Fisika"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -363,7 +371,7 @@ export const HomeroomSchedule: React.FC<HomeroomScheduleProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl font-semibold"
+                  className="px-3 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl font-semibold transition"
                 >
                   Batal
                 </button>

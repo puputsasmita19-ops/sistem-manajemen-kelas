@@ -248,7 +248,7 @@ export const HomeroomAgreement: React.FC<HomeroomAgreementProps> = ({
                   value={ruleTitle}
                   onChange={e => setRuleTitle(e.target.value)}
                   placeholder="Contoh: Menjaga Kerapian Seragam Sekolah"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -258,7 +258,7 @@ export const HomeroomAgreement: React.FC<HomeroomAgreementProps> = ({
                 <select
                   value={category}
                   onChange={e => setCategory(e.target.value as any)}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 >
                   <option value="Kedisiplinan">Kedisiplinan</option>
                   <option value="Kebersihan">Kebersihan</option>
@@ -277,7 +277,7 @@ export const HomeroomAgreement: React.FC<HomeroomAgreementProps> = ({
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Jelaskan detail norma yang disepakati bersama..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -291,7 +291,7 @@ export const HomeroomAgreement: React.FC<HomeroomAgreementProps> = ({
                   value={consequence}
                   onChange={e => setConsequence(e.target.value)}
                   placeholder="Tindakan pembinaan atau perbaikan jika melanggar..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

@@ -211,7 +211,7 @@ export const HomeroomSeating: React.FC<HomeroomSeatingProps> = ({
                   value={student1}
                   onChange={e => setStudent1(e.target.value)}
                   placeholder="Ketik nama siswa atau pilih..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   list="students-datalist"
                 />
               </div>
@@ -225,7 +225,7 @@ export const HomeroomSeating: React.FC<HomeroomSeatingProps> = ({
                   value={student2}
                   onChange={e => setStudent2(e.target.value)}
                   placeholder="Ketik nama siswa rekan sebangku..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   list="students-datalist"
                 />
               </div>

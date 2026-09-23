@@ -262,7 +262,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.president}
                     onChange={e => setFormData({ ...formData, president: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -272,7 +272,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.vicePresident}
                     onChange={e => setFormData({ ...formData, vicePresident: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -285,7 +285,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.secretary1}
                     onChange={e => setFormData({ ...formData, secretary1: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -295,7 +295,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.secretary2}
                     onChange={e => setFormData({ ...formData, secretary2: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>
@@ -307,7 +307,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.treasurer1}
                     onChange={e => setFormData({ ...formData, treasurer1: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -317,7 +317,7 @@ export const HomeroomStructure: React.FC<HomeroomStructureProps> = ({
                     type="text"
                     value={formData.treasurer2}
                     onChange={e => setFormData({ ...formData, treasurer2: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>

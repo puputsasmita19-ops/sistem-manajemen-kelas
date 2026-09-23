@@ -213,7 +213,7 @@ export const HomeroomPiket: React.FC<HomeroomPiketProps> = ({
                   value={editNames}
                   onChange={e => setEditNames(e.target.value)}
                   placeholder="Contoh: Ahmad Rizky, Dewi Lestari, Bayu Saputra"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -227,7 +227,7 @@ export const HomeroomPiket: React.FC<HomeroomPiketProps> = ({
                   value={editZone}
                   onChange={e => setEditZone(e.target.value)}
                   placeholder="Contoh: Menyapu lantai, bersihkan papan tulis & jendela"
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>

@@ -659,7 +659,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Cari nama siswa atau catatan..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-emerald-500 dark:text-white"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-500 dark:text-white"
               />
             </div>
 
@@ -736,7 +736,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
                   <span>: {docData.className || className || 'XI APL'}</span>
                 </div>
               </div>
-              <div className="text-slate-500 text-[11px] mt-1 sm:mt-0">
+              <div className="text-slate-500 dark:text-slate-400 text-[11px] mt-1 sm:mt-0">
                 {docData.dataPerDate || 'Data per Tanggal 15 Agustus 2026'}
               </div>
             </div>
@@ -774,7 +774,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
                     <th colSpan={12} className="border-r border-slate-300 dark:border-slate-600 p-1.5 text-center bg-slate-200/80 dark:bg-slate-700">
                       {docData.sppHeaderPeriod || 'SPP (JULI 2026 - JUNI 2027)'}
                     </th>
-                    <th rowSpan={2} className="border-r border-slate-300 dark:border-slate-600 p-2 text-center min-w-[100px] bg-slate-200/60 dark:bg-slate-750">
+                    <th rowSpan={2} className="border-r border-slate-300 dark:border-slate-600 p-2 text-center min-w-[100px] bg-slate-200/60 dark:bg-slate-700">
                       TOTAL
                     </th>
                     <th rowSpan={2} className="p-2 text-center w-16 no-print">
@@ -1020,7 +1020,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
                     {docData.dataPerDate || 'Data per Tanggal 15 Agustus 2026'}
                   </div>
                   <div className="font-bold">ACC Bendahara Penerimaan</div>
-                  <div className="text-[11px] text-slate-500">Jember, .................... 2026</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">Jember, .................... 2026</div>
                   <div className="h-10"></div>
                   <div className="font-black underline">{docData.receivingTreasurerName || 'Agustin Rahmawati'}</div>
                 </div>
@@ -1045,7 +1045,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                 Buku Mutasi Kas Kelas & Iuran Rutin Mingguan
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Catatan kas operasional kelas, kebersihan, infaq sosial, dan transparansi saldo
               </p>
             </div>
@@ -1106,7 +1106,7 @@ export const HomeroomTreasury: React.FC<HomeroomTreasuryProps> = ({
                 <div className="p-8 text-center text-xs text-slate-400">Belum ada mutasi transaksi kas kelas.</div>
               ) : (
                 transactions.map(item => (
-                  <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-750">
+                  <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-xl shrink-0 ${item.type === 'Pemasukan' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'}`}>
                         {item.type === 'Pemasukan' ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}

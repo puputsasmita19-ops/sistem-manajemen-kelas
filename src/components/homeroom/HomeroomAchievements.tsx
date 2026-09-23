@@ -308,7 +308,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -319,7 +319,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                     value={studentName}
                     onChange={e => setStudentName(e.target.value)}
                     placeholder="Nama siswa..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="achievement-students"
                     required
                   />
@@ -338,7 +338,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                   value={achievementTitle}
                   onChange={e => setAchievementTitle(e.target.value)}
                   placeholder="Contoh: Olimpiade Sains Nasional (OSN) Bidang Fisika..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -349,7 +349,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                   <select
                     value={field}
                     onChange={e => setField(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Sains / Olimpiade">Sains / OSN</option>
                     <option value="Akademik">Akademik</option>
@@ -364,7 +364,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                   <select
                     value={competitionLevel}
                     onChange={e => setCompetitionLevel(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Sekolah">Sekolah</option>
                     <option value="Kecamatan">Kecamatan</option>
@@ -379,7 +379,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                   <select
                     value={rank}
                     onChange={e => setRank(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Juara 1">Juara 1</option>
                     <option value="Juara 2">Juara 2</option>
@@ -398,7 +398,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                   value={organizer}
                   onChange={e => setOrganizer(e.target.value)}
                   placeholder="Contoh: Kemendikbudristek RI / PUSPRESNAS..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -410,7 +410,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                     value={coachTeacher}
                     onChange={e => setCoachTeacher(e.target.value)}
                     placeholder="Nama guru pembimbing..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
                 <div>
@@ -420,7 +420,7 @@ export const HomeroomAchievements: React.FC<HomeroomAchievementsProps> = ({
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="Contoh: Medali Emas..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>

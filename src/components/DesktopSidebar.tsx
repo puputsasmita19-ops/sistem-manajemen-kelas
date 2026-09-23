@@ -5,6 +5,7 @@ import {
   CalendarCheck2,
   Award,
   School,
+  BookOpen,
   HardDrive,
   Users,
   Settings,
@@ -144,6 +145,14 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
           id: 'grades',
           label: 'Nilai & Rapor',
           icon: Award,
+          allowedRoles: ['admin', 'wali_kelas', 'guru']
+        },
+        {
+          id: 'teacher_journal',
+          label: 'Jurnal Mengajar Guru',
+          icon: BookOpen,
+          badge: role === 'guru' ? 'Input KBM' : undefined,
+          badgeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800',
           allowedRoles: ['admin', 'wali_kelas', 'guru']
         },
         {

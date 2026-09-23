@@ -219,7 +219,7 @@ export const FirebaseStatusBadge: React.FC<FirebaseStatusBadgeProps> = ({ curren
               {/* 2 Proportional Columns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 items-stretch">
                 {/* 1. Firebase Firestore Status & Metrics Card */}
-                <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 space-y-4 flex flex-col justify-between shadow-xs">
+                <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 space-y-4 flex flex-col justify-between shadow-xs">
                   <div>
                     <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-slate-100 dark:border-slate-800">
                       <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2.5 text-sm">
@@ -310,7 +310,7 @@ export const FirebaseStatusBadge: React.FC<FirebaseStatusBadgeProps> = ({ curren
                 </div>
 
                 {/* 2. Google Drive Storage & Auto-Replication Card */}
-                <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 space-y-4 flex flex-col justify-between shadow-xs">
+                <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 space-y-4 flex flex-col justify-between shadow-xs">
                   <div className="space-y-3.5">
                     <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-slate-100 dark:border-slate-800">
                       <span className="font-bold text-slate-900 dark:text-white flex items-center gap-2.5 text-sm">

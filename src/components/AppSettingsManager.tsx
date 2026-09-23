@@ -1504,7 +1504,7 @@ export const AppSettingsManager: React.FC<AppSettingsManagerProps> = ({
                               className={`text-[10px] px-1.5 py-0.5 rounded border transition cursor-pointer ${
                                 item.badge === bp
                                   ? 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/60 dark:text-blue-200'
-                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                               }`}
                             >
                               {bp}

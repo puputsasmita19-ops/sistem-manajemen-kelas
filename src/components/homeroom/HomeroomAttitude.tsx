@@ -287,7 +287,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   value={studentName}
                   onChange={e => setStudentName(e.target.value)}
                   placeholder="Ketik atau pilih siswa..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   list="attitude-students"
                   required
                 />
@@ -304,7 +304,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   <select
                     value={spiritualScore}
                     onChange={e => setSpiritualScore(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="SB">SB (Sangat Baik)</option>
                     <option value="B">B (Baik)</option>
@@ -317,7 +317,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   <select
                     value={socialScore}
                     onChange={e => setSocialScore(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="SB">SB (Sangat Baik)</option>
                     <option value="B">B (Baik)</option>
@@ -336,7 +336,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Catatan perkembangan karakter dan perilaku siswa..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -384,7 +384,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   <select
                     value={editingItem.spiritualScore}
                     onChange={e => setEditingItem({ ...editingItem, spiritualScore: e.target.value as any })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="SB">SB</option>
                     <option value="B">B</option>
@@ -397,7 +397,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   <select
                     value={editingItem.socialScore}
                     onChange={e => setEditingItem({ ...editingItem, socialScore: e.target.value as any })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="SB">SB</option>
                     <option value="B">B</option>
@@ -413,7 +413,7 @@ export const HomeroomAttitude: React.FC<HomeroomAttitudeProps> = ({
                   rows={3}
                   value={editingItem.specialNotes || ''}
                   onChange={e => setEditingItem({ ...editingItem, specialNotes: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

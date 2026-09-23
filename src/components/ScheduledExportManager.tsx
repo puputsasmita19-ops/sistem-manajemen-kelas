@@ -25,7 +25,9 @@ import {
   X,
   Sparkles,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  Calendar,
+  CalendarRange
 } from 'lucide-react';
 import { ScheduledExportService } from '../services/scheduledExportService';
 import { DatabaseService } from '../services/databaseService';
@@ -37,6 +39,13 @@ import {
   ClassEntity
 } from '../types';
 import Swal from 'sweetalert2';
+
+const MONTH_NAMES = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+const AVAILABLE_YEARS = [2024, 2025, 2026, 2027, 2028];
 
 export const ScheduledExportManager: React.FC = () => {
   const exportService = ScheduledExportService.getInstance();
@@ -51,6 +60,8 @@ export const ScheduledExportManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [selectedFrequencyFilter, setSelectedFrequencyFilter] = useState<string>('all');
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
+  const [selectedYearFilter, setSelectedYearFilter] = useState<string>('all');
 
   // Loading & Processing states
   const [isExecuting, setIsExecuting] = useState(false);
@@ -61,6 +72,11 @@ export const ScheduledExportManager: React.FC = () => {
   const [editingSchedule, setEditingSchedule] = useState<ScheduledExportConfig | null>(null);
   const [previewReport, setPreviewReport] = useState<ScheduledExportReport | null>(null);
   const [isQuickTriggerModalOpen, setIsQuickTriggerModalOpen] = useState(false);
+
+  // Date defaults based on current date
+  const nowObj = new Date();
+  const currentMonthNum = nowObj.getMonth() + 1; // 1-12
+  const currentYearNum = nowObj.getFullYear();
 
   // Form State for Schedule Modal
   const [formTitle, setFormTitle] = useState('');
@@ -74,12 +90,21 @@ export const ScheduledExportManager: React.FC = () => {
   const [formIncludeKopSurat, setFormIncludeKopSurat] = useState(true);
   const [formPaperSize, setFormPaperSize] = useState<'a4' | 'f4' | 'letter' | 'legal'>('a4');
   const [formPaperOrientation, setFormPaperOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [formStartMonth, setFormStartMonth] = useState<number>(currentMonthNum);
+  const [formStartYear, setFormStartYear] = useState<number>(currentYearNum);
+  const [formEndMonth, setFormEndMonth] = useState<number>(currentMonthNum);
+  const [formEndYear, setFormEndYear] = useState<number>(currentYearNum);
 
   // Quick Trigger State
-  const [quickTitle, setQuickTitle] = useState('Rekapitulasi Presensi Akhir Bulan');
+  const [quickTitle, setQuickTitle] = useState('Rekapitulasi Presensi Lengkap (September 2026)');
   const [quickReportType, setQuickReportType] = useState<ScheduledReportType>('attendance_recap');
   const [quickFrequency, setQuickFrequency] = useState<ScheduleFrequency>('monthly_end');
   const [quickTargetClassId, setQuickTargetClassId] = useState('all');
+  const [quickPeriodMode, setQuickPeriodMode] = useState<'month_range' | 'preset'>('month_range');
+  const [quickStartMonth, setQuickStartMonth] = useState<number>(currentMonthNum);
+  const [quickStartYear, setQuickStartYear] = useState<number>(currentYearNum);
+  const [quickEndMonth, setQuickEndMonth] = useState<number>(currentMonthNum);
+  const [quickEndYear, setQuickEndYear] = useState<number>(currentYearNum);
 
   const refreshData = () => {
     setSchedules(exportService.getSchedules());
@@ -102,6 +127,104 @@ export const ScheduledExportManager: React.FC = () => {
     await exportService.triggerRealtimeFailureNotification(sched, errorMsg);
   };
 
+  // Helper: Judul otomatis berdasarkan jenis dan rentang bulan
+  const getAutoTitleForMonthRange = (
+    reportType: ScheduledReportType,
+    sMonth: number,
+    sYear: number,
+    eMonth: number,
+    eYear: number
+  ) => {
+    let typeName = 'Rekapitulasi Presensi Lengkap';
+    if (reportType === 'grades_recap') typeName = 'Rekapitulasi Nilai Akademik';
+    else if (reportType === 'homeroom_summary') typeName = 'Laporan Presensi & Evaluasi';
+    else if (reportType === 'comprehensive_academic') typeName = 'Laporan Akademik Terpadu';
+
+    let rangeStr = '';
+    if (sYear === eYear && sMonth === eMonth) {
+      rangeStr = `${MONTH_NAMES[sMonth - 1]} ${sYear}`;
+    } else if (sYear === eYear) {
+      rangeStr = `${MONTH_NAMES[sMonth - 1]} - ${MONTH_NAMES[eMonth - 1]} ${sYear}`;
+    } else {
+      rangeStr = `${MONTH_NAMES[sMonth - 1]} ${sYear} - ${MONTH_NAMES[eMonth - 1]} ${eYear}`;
+    }
+
+    return `${typeName} (${rangeStr})`;
+  };
+
+  const applyQuickMonthPreset = (preset: 'this_month' | 'last_month' | 'quarter_3m' | 'semester_ganjil' | 'semester_genap') => {
+    const curM = nowObj.getMonth() + 1;
+    const curY = nowObj.getFullYear();
+    let sM = curM;
+    let sY = curY;
+    let eM = curM;
+    let eY = curY;
+
+    if (preset === 'this_month') {
+      sM = curM;
+      eM = curM;
+      sY = curY;
+      eY = curY;
+    } else if (preset === 'last_month') {
+      if (curM === 1) {
+        sM = 12;
+        eM = 12;
+        sY = curY - 1;
+        eY = curY - 1;
+      } else {
+        sM = curM - 1;
+        eM = curM - 1;
+        sY = curY;
+        eY = curY;
+      }
+    } else if (preset === 'quarter_3m') {
+      if (curM >= 3) {
+        sM = curM - 2;
+        eM = curM;
+        sY = curY;
+        eY = curY;
+      } else if (curM === 2) {
+        sM = 12;
+        sY = curY - 1;
+        eM = 2;
+        eY = curY;
+      } else {
+        sM = 11;
+        sY = curY - 1;
+        eM = 1;
+        eY = curY;
+      }
+    } else if (preset === 'semester_ganjil') {
+      sM = 7;
+      eM = 12;
+      sY = curY;
+      eY = curY;
+    } else if (preset === 'semester_genap') {
+      sM = 1;
+      eM = 6;
+      sY = curY;
+      eY = curY;
+    }
+
+    setQuickStartMonth(sM);
+    setQuickStartYear(sY);
+    setQuickEndMonth(eM);
+    setQuickEndYear(eY);
+    setQuickTitle(getAutoTitleForMonthRange(quickReportType, sM, sY, eM, eY));
+  };
+
+  const handleOpenQuickTriggerModal = () => {
+    setQuickPeriodMode('month_range');
+    const curM = nowObj.getMonth() + 1;
+    const curY = nowObj.getFullYear();
+    setQuickStartMonth(curM);
+    setQuickStartYear(curY);
+    setQuickEndMonth(curM);
+    setQuickEndYear(curY);
+    setQuickTitle(getAutoTitleForMonthRange(quickReportType, curM, curY, curM, curY));
+    setIsQuickTriggerModalOpen(true);
+  };
+
   // Filtered reports
   const filteredReports = reports.filter((r) => {
     const q = searchQuery.toLowerCase().trim();
@@ -117,9 +240,20 @@ export const ScheduledExportManager: React.FC = () => {
       selectedFrequencyFilter === 'all' ||
       (selectedFrequencyFilter === 'monthly' && r.frequencyType.toLowerCase().includes('bulan')) ||
       (selectedFrequencyFilter === 'weekly' && r.frequencyType.toLowerCase().includes('minggu')) ||
-      (selectedFrequencyFilter === 'semester' && r.frequencyType.toLowerCase().includes('semester'));
+      (selectedFrequencyFilter === 'semester' && r.frequencyType.toLowerCase().includes('semester')) ||
+      (selectedFrequencyFilter === 'custom_month' && r.frequencyType.toLowerCase().includes('rentang'));
 
-    return matchesSearch && matchesType && matchesFreq;
+    const matchesMonth =
+      selectedMonthFilter === 'all' ||
+      r.periodLabel.toLowerCase().includes(MONTH_NAMES[parseInt(selectedMonthFilter, 10) - 1].toLowerCase()) ||
+      r.fileName.toLowerCase().includes(`m${selectedMonthFilter.padStart(2, '0')}`);
+
+    const matchesYear =
+      selectedYearFilter === 'all' ||
+      r.periodLabel.includes(selectedYearFilter) ||
+      r.fileName.includes(selectedYearFilter);
+
+    return matchesSearch && matchesType && matchesFreq && matchesMonth && matchesYear;
   });
 
   // Calculate totals
@@ -144,6 +278,10 @@ export const ScheduledExportManager: React.FC = () => {
     setFormIncludeKopSurat(true);
     setFormPaperSize('a4');
     setFormPaperOrientation('portrait');
+    setFormStartMonth(nowObj.getMonth() + 1);
+    setFormStartYear(nowObj.getFullYear());
+    setFormEndMonth(nowObj.getMonth() + 1);
+    setFormEndYear(nowObj.getFullYear());
     setIsScheduleModalOpen(true);
   };
 
@@ -160,6 +298,10 @@ export const ScheduledExportManager: React.FC = () => {
     setFormIncludeKopSurat(sched.includeKopSurat);
     setFormPaperSize(sched.paperSize || 'a4');
     setFormPaperOrientation(sched.paperOrientation || 'portrait');
+    setFormStartMonth(sched.startMonth || nowObj.getMonth() + 1);
+    setFormStartYear(sched.startYear || nowObj.getFullYear());
+    setFormEndMonth(sched.endMonth || nowObj.getMonth() + 1);
+    setFormEndYear(sched.endYear || nowObj.getFullYear());
     setIsScheduleModalOpen(true);
   };
 
@@ -191,6 +333,10 @@ export const ScheduledExportManager: React.FC = () => {
         paperSize: formPaperSize,
         paperOrientation: formPaperOrientation,
         storageDestination: 'firebase_storage',
+        startMonth: formFrequency === 'custom_month_range' ? formStartMonth : undefined,
+        startYear: formFrequency === 'custom_month_range' ? formStartYear : undefined,
+        endMonth: formFrequency === 'custom_month_range' ? formEndMonth : undefined,
+        endYear: formFrequency === 'custom_month_range' ? formEndYear : undefined,
         isEnabled: editingSchedule ? editingSchedule.isEnabled : true
       });
 
@@ -293,13 +439,18 @@ export const ScheduledExportManager: React.FC = () => {
     setIsExecuting(true);
 
     try {
+      const isMonthRange = quickPeriodMode === 'month_range';
       const report = await exportService.generateAndUploadReport(
         undefined,
         {
           title: quickTitle,
           reportType: quickReportType,
-          frequency: quickFrequency,
+          frequency: isMonthRange ? 'custom_month_range' : quickFrequency,
           targetClassId: quickTargetClassId,
+          startMonth: isMonthRange ? quickStartMonth : undefined,
+          startYear: isMonthRange ? quickStartYear : undefined,
+          endMonth: isMonthRange ? quickEndMonth : undefined,
+          endYear: isMonthRange ? quickEndYear : undefined,
           includeSignatures: true,
           includeKopSurat: true
         },
@@ -415,7 +566,7 @@ export const ScheduledExportManager: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => setIsQuickTriggerModalOpen(true)}
+              onClick={handleOpenQuickTriggerModal}
               disabled={isExecuting}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition cursor-pointer active:scale-95 disabled:opacity-50"
             >
@@ -536,11 +687,11 @@ export const ScheduledExportManager: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto flex-wrap">
               <select
                 value={selectedTypeFilter}
                 onChange={(e) => setSelectedTypeFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 outline-none"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
               >
                 <option value="all">Semua Jenis Laporan</option>
                 <option value="attendance_recap">Rekapitulasi Presensi</option>
@@ -552,12 +703,39 @@ export const ScheduledExportManager: React.FC = () => {
               <select
                 value={selectedFrequencyFilter}
                 onChange={(e) => setSelectedFrequencyFilter(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 outline-none"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
               >
                 <option value="all">Semua Frekuensi</option>
+                <option value="custom_month">Rentang Bulan Spesifik</option>
                 <option value="monthly">Akhir Bulan</option>
                 <option value="weekly">Mingguan</option>
                 <option value="semester">Akhir Semester</option>
+              </select>
+
+              <select
+                value={selectedMonthFilter}
+                onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+              >
+                <option value="all">Semua Bulan</option>
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={name} value={String(idx + 1)}>
+                    Bulan {name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedYearFilter}
+                onChange={(e) => setSelectedYearFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+              >
+                <option value="all">Semua Tahun</option>
+                {AVAILABLE_YEARS.map((yr) => (
+                  <option key={yr} value={String(yr)}>
+                    {yr}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -570,13 +748,13 @@ export const ScheduledExportManager: React.FC = () => {
                 Belum Ada Arsip Laporan PDF
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                {searchQuery
-                  ? 'Tidak ada dokumen yang cocok dengan kata kunci pencarian Anda.'
+                {searchQuery || selectedMonthFilter !== 'all' || selectedYearFilter !== 'all'
+                  ? 'Tidak ada dokumen yang cocok dengan filter atau kata kunci pencarian Anda.'
                   : 'Laporan otomatis akan muncul di sini setiap kali jadwal ekspor dijalankan atau saat Anda mengeksekusi ekspor manual.'}
               </p>
               <button
                 type="button"
-                onClick={() => setIsQuickTriggerModalOpen(true)}
+                onClick={handleOpenQuickTriggerModal}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5" />
@@ -1000,12 +1178,78 @@ export const ScheduledExportManager: React.FC = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
                   >
                     <option value="monthly_end">Setiap Akhir Bulan (Hari Terakhir)</option>
+                    <option value="custom_month_range">Rentang Bulan Spesifik (Kustom Periode Bulan)</option>
                     <option value="weekly">Setiap Akhir Pekan (Mingguan)</option>
                     <option value="daily">Setiap Hari (Harian)</option>
                     <option value="semester_end">Setiap Akhir Semester (Juni/Desember)</option>
                   </select>
                 </div>
               </div>
+
+              {/* Pemilihan Rentang Bulan Khusus pada Jadwal */}
+              {formFrequency === 'custom_month_range' && (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                    <CalendarRange className="w-4 h-4 text-amber-500" />
+                    <span>Rentang Bulan Spesifik yang Diekspor:</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Mulai Bulan:
+                      </span>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        <select
+                          value={formStartMonth}
+                          onChange={(e) => setFormStartMonth(Number(e.target.value))}
+                          className="col-span-3 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          {MONTH_NAMES.map((m, idx) => (
+                            <option key={m} value={idx + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={formStartYear}
+                          onChange={(e) => setFormStartYear(Number(e.target.value))}
+                          className="col-span-2 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          {AVAILABLE_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Sampai Bulan:
+                      </span>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        <select
+                          value={formEndMonth}
+                          onChange={(e) => setFormEndMonth(Number(e.target.value))}
+                          className="col-span-3 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          {MONTH_NAMES.map((m, idx) => (
+                            <option key={m} value={idx + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={formEndYear}
+                          onChange={(e) => setFormEndYear(Number(e.target.value))}
+                          className="col-span-2 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                        >
+                          {AVAILABLE_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                    📌 Dokumen PDF yang digenerate oleh jadwal ini akan otomatis memuat rekapitulasi data dari {MONTH_NAMES[formStartMonth - 1]} {formStartYear} s/d {MONTH_NAMES[formEndMonth - 1]} {formEndYear}.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -1094,85 +1338,252 @@ export const ScheduledExportManager: React.FC = () => {
 
       {/* MODAL: QUICK TRIGGER EKSPOR SEKARANG */}
       {isQuickTriggerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto">
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-amber-500/10">
               <div className="flex items-center gap-2">
                 <Play className="w-5 h-5 text-amber-500 fill-current" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Eksekusi Ekspor PDF Sekarang
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Eksekusi Ekspor PDF Sekarang
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Pilih rentang bulan spesifik atau preset untuk membuat dokumen PDF resmi seketika
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsQuickTriggerModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleQuickTrigger} className="p-5 space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Jalankan pembuatan dokumen PDF seketika dan simpan langsung ke Firebase Storage untuk diunduh.
-              </p>
-
+              {/* Mode Switcher Tabs */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Nama Laporan:
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Metode Pemilihan Periode Data:
                 </label>
-                <input
-                  type="text"
-                  value={quickTitle}
-                  onChange={(e) => setQuickTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
-                  required
-                />
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickPeriodMode('month_range');
+                      setQuickTitle(getAutoTitleForMonthRange(quickReportType, quickStartMonth, quickStartYear, quickEndMonth, quickEndYear));
+                    }}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                      quickPeriodMode === 'month_range'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <CalendarRange className="w-4 h-4" />
+                    <span>Rentang Bulan Spesifik</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickPeriodMode('preset')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                      quickPeriodMode === 'preset'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span>Preset Frekuensi Standar</span>
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Jenis Laporan:
-                </label>
-                <select
-                  value={quickReportType}
-                  onChange={(e) => setQuickReportType(e.target.value as ScheduledReportType)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
-                >
-                  <option value="attendance_recap">Rekapitulasi Presensi Lengkap</option>
-                  <option value="grades_recap">Rekapitulasi Nilai Akademik</option>
-                  <option value="homeroom_summary">Laporan Presensi & Evaluasi Wali Kelas</option>
-                  <option value="comprehensive_academic">Laporan Akademik Terpadu</option>
-                </select>
-              </div>
+              {/* RENTANG BULAN SPESIFIK VIEW */}
+              {quickPeriodMode === 'month_range' ? (
+                <div className="space-y-3 p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                  {/* Shortcut Chips */}
+                  <div>
+                    <span className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+                      Pilihan Cepat Rentang Bulan:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => applyQuickMonthPreset('this_month')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        Bulan Ini ({MONTH_NAMES[nowObj.getMonth()]})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyQuickMonthPreset('last_month')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        Bulan Kemarin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyQuickMonthPreset('quarter_3m')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        3 Bulan Terakhir
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyQuickMonthPreset('semester_ganjil')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        Sem. Ganjil (Jul - Des)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyQuickMonthPreset('semester_genap')}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                      >
+                        Sem. Genap (Jan - Jun)
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
+                  {/* Month Range Selectors */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Mulai Dari Bulan:
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        <select
+                          value={quickStartMonth}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setQuickStartMonth(val);
+                            setQuickTitle(getAutoTitleForMonthRange(quickReportType, val, quickStartYear, quickEndMonth, quickEndYear));
+                          }}
+                          className="col-span-3 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                        >
+                          {MONTH_NAMES.map((m, idx) => (
+                            <option key={m} value={idx + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={quickStartYear}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setQuickStartYear(val);
+                            setQuickTitle(getAutoTitleForMonthRange(quickReportType, quickStartMonth, val, quickEndMonth, quickEndYear));
+                          }}
+                          className="col-span-2 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                        >
+                          {AVAILABLE_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Sampai Dengan Bulan:
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        <select
+                          value={quickEndMonth}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setQuickEndMonth(val);
+                            setQuickTitle(getAutoTitleForMonthRange(quickReportType, quickStartMonth, quickStartYear, val, quickEndYear));
+                          }}
+                          className="col-span-3 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                        >
+                          {MONTH_NAMES.map((m, idx) => (
+                            <option key={m} value={idx + 1}>{m}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={quickEndYear}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setQuickEndYear(val);
+                            setQuickTitle(getAutoTitleForMonthRange(quickReportType, quickStartMonth, quickStartYear, quickEndMonth, val));
+                          }}
+                          className="col-span-2 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                        >
+                          {AVAILABLE_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary & Reassurance Callout */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-2.5">
+                    <CalendarRange className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-amber-900 dark:text-amber-200">
+                        Cakupan Laporan: {MONTH_NAMES[quickStartMonth - 1]} {quickStartYear} {quickStartMonth === quickEndMonth && quickStartYear === quickEndYear ? '(1 Bulan Penuh)' : `s/d ${MONTH_NAMES[quickEndMonth - 1]} ${quickEndYear}`}
+                      </p>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                        Hanya data pada rentang bulan yang dipilih ini yang diproses dan diekspor ke PDF resmi tanpa perlu mengunduh seluruh data tahunan.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* PRESET FREKUENSI VIEW */
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Pilihan Periode Preset:
+                    </label>
+                    <select
+                      value={quickFrequency}
+                      onChange={(e) => setQuickFrequency(e.target.value as ScheduleFrequency)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                    >
+                      <option value="monthly_end">Bulan Berjalan Ini (Akhir Bulan)</option>
+                      <option value="weekly">Minggu Ini (7 Hari Terakhir)</option>
+                      <option value="semester_end">Semester Berjalan Ini (6 Bulan)</option>
+                      <option value="daily">Hari Ini</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Jenis Laporan & Target Kelas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Periode Data:
+                    Jenis Dokumen Laporan:
                   </label>
                   <select
-                    value={quickFrequency}
-                    onChange={(e) => setQuickFrequency(e.target.value as ScheduleFrequency)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                    value={quickReportType}
+                    onChange={(e) => {
+                      const newType = e.target.value as ScheduledReportType;
+                      setQuickReportType(newType);
+                      if (quickPeriodMode === 'month_range') {
+                        setQuickTitle(getAutoTitleForMonthRange(newType, quickStartMonth, quickStartYear, quickEndMonth, quickEndYear));
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
                   >
-                    <option value="monthly_end">Bulan Ini (Akhir Bulan)</option>
-                    <option value="weekly">Minggu Ini (7 Hari)</option>
-                    <option value="semester_end">Semester Ini</option>
-                    <option value="daily">Hari Ini</option>
+                    <option value="attendance_recap">Rekapitulasi Presensi Lengkap</option>
+                    <option value="grades_recap">Rekapitulasi Nilai Akademik</option>
+                    <option value="homeroom_summary">Laporan Presensi & Evaluasi Wali Kelas</option>
+                    <option value="comprehensive_academic">Laporan Akademik Terpadu</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Target Kelas:
+                    Target Rombel / Kelas:
                   </label>
                   <select
                     value={quickTargetClassId}
                     onChange={(e) => setQuickTargetClassId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
                   >
-                    <option value="all">Semua Kelas</option>
+                    <option value="all">Semua Kelas (Seluruh Rombel)</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nama_kelas}
@@ -1182,28 +1593,56 @@ export const ScheduledExportManager: React.FC = () => {
                 </div>
               </div>
 
+              {/* Nama Laporan */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Nama / Judul Dokumen Laporan:
+                  </label>
+                  {quickPeriodMode === 'month_range' && (
+                    <button
+                      type="button"
+                      onClick={() => setQuickTitle(getAutoTitleForMonthRange(quickReportType, quickStartMonth, quickStartYear, quickEndMonth, quickEndYear))}
+                      className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Sesuaikan Judul Otomatis
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={quickTitle}
+                  onChange={(e) => setQuickTitle(e.target.value)}
+                  placeholder="Masukkan judul laporan PDF..."
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                  required
+                />
+              </div>
+
+              {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsQuickTriggerModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isExecuting}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition cursor-pointer disabled:opacity-50"
                 >
                   {isExecuting ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Memproses PDF...</span>
+                      <span>Membuat PDF & Menyimpan ke Cloud...</span>
                     </>
                   ) : (
                     <>
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Generate & Simpan</span>
+                      <span>Generate & Simpan ke Firebase</span>
                     </>
                   )}
                 </button>

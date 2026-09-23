@@ -13,7 +13,9 @@ import {
   Megaphone,
   Award,
   AlertCircle,
-  FileText
+  FileText,
+  BookOpen,
+  School
 } from 'lucide-react';
 import { User, ClassEntity, Subject, AttendanceStatus } from '../types';
 import { DatabaseService } from '../services/databaseService';
@@ -233,6 +235,46 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
               <span>Kirim Pengumuman</span>
             </button>
           </QuickActionTooltip>
+
+          {onNavigateTab && (currentUser.role === 'guru' || currentUser.role === 'wali_kelas' || currentUser.role === 'admin') && (
+            <QuickActionTooltip
+              id="tooltip-teacher-journal"
+              label="Jurnal Mengajar Guru Mapel"
+              description="Input aktivitas KBM, materi pokok, presensi jam pelajaran, dan lacak validasi oleh Wali Kelas."
+              badge="KBM & Validasi"
+              position="bottom"
+              align="center"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigateTab('teacher_journal')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 text-blue-800 dark:text-blue-200 rounded-xl text-xs font-bold shadow-2xs transition cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Jurnal Mengajar</span>
+              </button>
+            </QuickActionTooltip>
+          )}
+
+          {onNavigateTab && (currentUser.role === 'wali_kelas' || currentUser.role === 'admin') && (
+            <QuickActionTooltip
+              id="tooltip-homeroom-books"
+              label="Administrasi & Validasi Wali Kelas"
+              description="Buka 18 buku administrasi wali kelas, validasi jurnal KBM, kelola jadwal pelajaran & kas."
+              badge="18 Buku Wali"
+              position="bottom"
+              align="center"
+            >
+              <button
+                type="button"
+                onClick={() => onNavigateTab('homeroom')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 dark:bg-violet-950 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 text-violet-800 dark:text-violet-200 rounded-xl text-xs font-bold shadow-2xs transition cursor-pointer"
+              >
+                <School className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                <span>Menu Wali Kelas</span>
+              </button>
+            </QuickActionTooltip>
+          )}
 
           {onNavigateTab && (
             <QuickActionTooltip
@@ -477,7 +519,7 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
                             className={`w-6 h-6 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center ${
                               isSelected
                                 ? activeStyle
-                                : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                                : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
                             }`}
                           >
                             {status}

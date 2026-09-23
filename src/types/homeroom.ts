@@ -245,6 +245,8 @@ export interface ClassTreasuryTransaction {
   recordedBy: string;
 }
 
+export type JournalValidationStatus = 'Menunggu Validasi' | 'Terverifikasi' | 'Perlu Revisi';
+
 export interface ClassJournalItem {
   id: string;
   class_id: string;
@@ -252,11 +254,17 @@ export interface ClassJournalItem {
   period: string; // Jam ke-1 - 2 (07:15 - 08:45)
   subjectName: string;
   teacherName: string;
+  teacherId?: string;
   competencyOrTopic: string;
   materialsSummary: string;
   attendanceNote: string; // e.g. 35 Hadir, 1 Izin (Dewi)
   classIncident: string;
   teacherSign: boolean;
+  submittedByRole?: 'guru_mapel' | 'wali_kelas' | 'admin';
+  validationStatus?: JournalValidationStatus; // Menunggu Validasi | Terverifikasi | Perlu Revisi
+  validationDate?: string;
+  validatedByWaliName?: string;
+  validationNotes?: string;
 }
 
 export interface StudentMutationItem {

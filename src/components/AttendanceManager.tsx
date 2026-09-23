@@ -452,7 +452,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 dateFilterMode === 'single'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -465,7 +465,7 @@ export const AttendanceManager: React.FC<AttendanceManagerProps> = ({ currentRol
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 dateFilterMode === 'range'
                   ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <CalendarRange className="w-3.5 h-3.5" />

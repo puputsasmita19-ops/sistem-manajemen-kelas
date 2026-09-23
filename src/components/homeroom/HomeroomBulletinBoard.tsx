@@ -767,7 +767,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     }
                   }}
                   placeholder="Tulis tanggapan / apresiasi sebagai Wali Kelas..."
-                  className="flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-rose-500"
+                  className="flex-1 px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-1 focus:ring-rose-500"
                 />
                 <button
                   type="button"
@@ -806,7 +806,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as BulletinCategory)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Pengumuman Resmi">Pengumuman Resmi</option>
                     <option value="Dokumentasi Kegiatan">Dokumentasi Kegiatan</option>
@@ -822,7 +822,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     type="date"
                     value={publishDate}
                     onChange={e => setPublishDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -835,7 +835,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="Contoh: Gelar Karya P5: Gaya Hidup Berkelanjutan..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-bold"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-bold"
                   required
                 />
               </div>
@@ -848,7 +848,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     value={author}
                     onChange={e => setAuthor(e.target.value)}
                     placeholder="Nama penulis atau siswa..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="mading-authors"
                     required
                   />
@@ -869,7 +869,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     value={authorRole}
                     onChange={e => setAuthorRole(e.target.value)}
                     placeholder="Contoh: Wali Kelas / Siswa / Ketua Kelas"
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>
@@ -881,7 +881,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                   onChange={e => setContent(e.target.value)}
                   rows={4}
                   placeholder="Tuliskan isi pengumuman, bait puisi, artikel opini, atau rincian kegiatan kelas..."
-                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none leading-relaxed"
+                  className="w-full mt-1 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 leading-relaxed"
                   required
                 />
               </div>
@@ -893,7 +893,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                   value={imageUrl}
                   onChange={e => setImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
                 <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                   <span className="text-[10px] text-slate-400">Rekomendasi preset foto:</span>
@@ -918,7 +918,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     value={tagsInput}
                     onChange={e => setTagsInput(e.target.value)}
                     placeholder="#P5, #Literasi, #Karya"
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
 
@@ -929,7 +929,7 @@ export const HomeroomBulletinBoard: React.FC<HomeroomBulletinBoardProps> = ({
                     value={attachmentName}
                     onChange={e => setAttachmentName(e.target.value)}
                     placeholder="Contoh: Proposal_P5.pdf"
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   />
                 </div>
               </div>

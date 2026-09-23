@@ -519,6 +519,18 @@ export class ScheduledExportService {
       return new Date(year + 1, 5, 30, hours, minutes, 0, 0);
     }
 
+    if (frequency === 'custom_month_range') {
+      // Eksekusi pada hari terakhir bulan berjalan
+      const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      lastDayOfCurrentMonth.setHours(hours, minutes, 0, 0);
+      if (lastDayOfCurrentMonth <= now) {
+        const lastDayOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+        lastDayOfNextMonth.setHours(hours, minutes, 0, 0);
+        return lastDayOfNextMonth;
+      }
+      return lastDayOfCurrentMonth;
+    }
+
     // Custom day of month
     const targetDayNumber = dayOfMonth || 1;
     const next = new Date(now.getFullYear(), now.getMonth(), targetDayNumber, hours, minutes, 0, 0);
@@ -560,6 +572,10 @@ export class ScheduledExportService {
         paperSize: manualConfig.paperSize || 'a4',
         paperOrientation: manualConfig.paperOrientation || 'portrait',
         storageDestination: 'firebase_storage',
+        startMonth: manualConfig.startMonth,
+        startYear: manualConfig.startYear,
+        endMonth: manualConfig.endMonth,
+        endYear: manualConfig.endYear,
         isEnabled: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -569,7 +585,12 @@ export class ScheduledExportService {
     }
 
     const now = new Date();
-    const dateRange = this.calculateDateRange(config.frequency, now);
+    const dateRange = this.calculateDateRange(config.frequency, now, {
+      startMonth: config.startMonth,
+      startYear: config.startYear,
+      endMonth: config.endMonth,
+      endYear: config.endYear
+    });
 
     // 2. Bangun dokumen PDF
     const { doc: pdfDoc, totalRecords, safeTitle } = this.buildPDFDocument(
@@ -966,11 +987,17 @@ export class ScheduledExportService {
   }
 
   /**
-   * Hitung rentang tanggal berdasarkan frekuensi
+   * Hitung rentang tanggal berdasarkan frekuensi atau rentang bulan spesifik
    */
-  private calculateDateRange(
+  public calculateDateRange(
     freq: ScheduleFrequency,
-    refDate: Date = new Date()
+    refDate: Date = new Date(),
+    monthRange?: {
+      startMonth?: number;
+      startYear?: number;
+      endMonth?: number;
+      endYear?: number;
+    }
   ): { periodLabel: string; startDate: string; endDate: string; dateCode: string } {
     const year = refDate.getFullYear();
     const month = refDate.getMonth(); // 0-indexed
@@ -979,6 +1006,41 @@ export class ScheduledExportService {
       'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
+
+    // Jika frekuensi custom_month_range atau disediakan monthRange
+    if (freq === 'custom_month_range' || (monthRange && monthRange.startMonth && monthRange.endMonth)) {
+      let sYear = monthRange?.startYear || year;
+      let sMonth = monthRange?.startMonth || (month + 1);
+      let eYear = monthRange?.endYear || sYear;
+      let eMonth = monthRange?.endMonth || sMonth;
+
+      // Validasi urutan agar start <= end
+      if (sYear > eYear || (sYear === eYear && sMonth > eMonth)) {
+        const tempY = sYear; sYear = eYear; eYear = tempY;
+        const tempM = sMonth; sMonth = eMonth; eMonth = tempM;
+      }
+
+      const firstDay = new Date(sYear, sMonth - 1, 1);
+      const lastDay = new Date(eYear, eMonth, 0); // hari terakhir di bulan eMonth
+      const startStr = this.formatDateIso(firstDay);
+      const endStr = this.formatDateIso(lastDay);
+
+      let label = '';
+      let code = '';
+
+      if (sYear === eYear && sMonth === eMonth) {
+        label = `Bulan ${monthNames[sMonth - 1]} ${sYear}`;
+        code = `${sYear}_M${String(sMonth).padStart(2, '0')}`;
+      } else if (sYear === eYear) {
+        label = `${monthNames[sMonth - 1]} - ${monthNames[eMonth - 1]} ${sYear}`;
+        code = `${sYear}_M${String(sMonth).padStart(2, '0')}_sd_M${String(eMonth).padStart(2, '0')}`;
+      } else {
+        label = `${monthNames[sMonth - 1]} ${sYear} - ${monthNames[eMonth - 1]} ${eYear}`;
+        code = `${sYear}_M${String(sMonth).padStart(2, '0')}_sd_${eYear}_M${String(eMonth).padStart(2, '0')}`;
+      }
+
+      return { periodLabel: label, startDate: startStr, endDate: endStr, dateCode: code };
+    }
 
     if (freq === 'monthly_end') {
       const firstDay = new Date(year, month, 1);
@@ -1049,6 +1111,8 @@ export class ScheduledExportService {
         return 'Akhir Semester';
       case 'custom_day':
         return 'Kustom';
+      case 'custom_month_range':
+        return 'Rentang Bulan Spesifik';
       default:
         return freq;
     }

@@ -19,6 +19,7 @@ import { FirebaseStatusBadge } from './components/FirebaseStatusBadge';
 import { DrivePhotoManager } from './components/DrivePhotoManager';
 import { DashboardOverview } from './components/DashboardOverview';
 import { HomeroomDashboard } from './components/homeroom/HomeroomDashboard';
+import { TeacherJournalPortal } from './components/TeacherJournalPortal';
 import { RunningText } from './components/RunningText';
 import { ActivityLogViewer } from './components/ActivityLogViewer';
 import { MasterAcademicData } from './components/MasterAcademicData';
@@ -82,6 +83,7 @@ const VALID_ROLE_TABS: Record<UserRole, string[]> = {
     'attendance',
     'grades',
     'homeroom',
+    'teacher_journal',
     'master_academic',
     'users',
     'scheduled_exports',
@@ -93,8 +95,8 @@ const VALID_ROLE_TABS: Record<UserRole, string[]> = {
     'security_settings',
     'activity_logs'
   ],
-  wali_kelas: ['dashboard', 'attendance', 'grades', 'homeroom'],
-  guru: ['dashboard', 'attendance', 'grades'],
+  wali_kelas: ['dashboard', 'attendance', 'grades', 'homeroom', 'teacher_journal'],
+  guru: ['dashboard', 'teacher_journal', 'attendance', 'grades'],
   siswa: ['student_portal', 'dashboard'],
   orang_tua: ['student_portal', 'dashboard']
 };
@@ -719,8 +721,14 @@ export default function App() {
               <HomeroomDashboard
                 currentClassId="class_10_ipa1"
                 userRole={currentUser.role}
+                currentUserName={currentUser.nama}
                 studentList={students.map(s => ({ id: s.id, nama: s.nama }))}
               />
+            )}
+
+            {/* VIEW: JURNAL MENGAJAR GURU MAPEL (Input KBM & Pelacakan Validasi Wali Kelas) */}
+            {activeTab === 'teacher_journal' && (currentUser.role === 'admin' || currentUser.role === 'wali_kelas' || currentUser.role === 'guru') && (
+              <TeacherJournalPortal currentUser={currentUser} />
             )}
 
             {/* VIEW: MASTER DATA AKADEMIK (Khusus Role Admin) */}

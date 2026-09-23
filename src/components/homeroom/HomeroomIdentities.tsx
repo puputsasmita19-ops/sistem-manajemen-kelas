@@ -288,7 +288,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                     type="text"
                     value={editingStudent.nis}
                     onChange={e => setEditingStudent({ ...editingStudent, nis: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -298,7 +298,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                     type="text"
                     value={editingStudent.nisn}
                     onChange={e => setEditingStudent({ ...editingStudent, nisn: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -310,7 +310,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                   type="text"
                   value={editingStudent.fullName}
                   onChange={e => setEditingStudent({ ...editingStudent, fullName: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -321,7 +321,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                   type="text"
                   value={editingStudent.address}
                   onChange={e => setEditingStudent({ ...editingStudent, address: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -333,7 +333,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                     type="text"
                     value={editingStudent.parentPhone}
                     onChange={e => setEditingStudent({ ...editingStudent, parentPhone: e.target.value })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -342,7 +342,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                   <select
                     value={editingStudent.economicStatus}
                     onChange={e => setEditingStudent({ ...editingStudent, economicStatus: e.target.value as any })}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Mampu">Mampu</option>
                     <option value="KIP / PIP">KIP / PIP</option>
@@ -357,7 +357,7 @@ export const HomeroomIdentities: React.FC<HomeroomIdentitiesProps> = ({
                   type="text"
                   value={editingStudent.healthNotes}
                   onChange={e => setEditingStudent({ ...editingStudent, healthNotes: e.target.value })}
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 

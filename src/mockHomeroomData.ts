@@ -802,7 +802,7 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
       }
     ],
 
-    // 13) JURNAL KELAS
+    // 13) JURNAL KELAS (Diinput Guru Mapel & Divalidasi Wali Kelas)
     classJournals: [
       {
         id: 'jrnl_1',
@@ -811,11 +811,17 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
         period: 'Jam ke 1 - 2 (07:45 - 09:15)',
         subjectName: 'Pendidikan Pancasila',
         teacherName: 'Drs. Hendrawan',
+        teacherId: 'user_guru3',
+        submittedByRole: 'guru_mapel',
         competencyOrTopic: 'Bab 2: Penerapan Norma & Konstitusi dalam Kehidupan Berbangsa',
         materialsSummary: 'Diskusi kelompok mengenai penyelesaian sengketa musyawarah mufakat, presentasi kelompok 1 & 2.',
-        attendanceNote: '5 Hadir Lengkap (100%)',
+        attendanceNote: '35 Hadir Lengkap (100%)',
         classIncident: 'KBM berjalan sangat kondusif, siswa antusias berdebat secara sehat.',
-        teacherSign: true
+        teacherSign: true,
+        validationStatus: 'Terverifikasi',
+        validationDate: '2026-09-18',
+        validatedByWaliName: 'Puput Sasmita, S.Pd., Gr.',
+        validationNotes: 'KBM terlaksana sangat baik sesuai RPP/Modul Ajar.'
       },
       {
         id: 'jrnl_2',
@@ -824,11 +830,14 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
         period: 'Jam ke 1 - 2 (07:15 - 08:45)',
         subjectName: 'PJOK',
         teacherName: 'Hendra Setiawan, S.Pd',
+        teacherId: 'user_guru2',
+        submittedByRole: 'guru_mapel',
         competencyOrTopic: 'Permainan Bola Besar: Variasi Passing & Dribbling Bola Basket',
         materialsSummary: 'Praktek lapangan teknik chest pass, bounce pass, dan overhead pass berpasangan.',
-        attendanceNote: '4 Hadir, 1 Izin (Dewi Lestari flu ringan)',
+        attendanceNote: '34 Hadir, 1 Izin (Dewi Lestari flu ringan)',
         classIncident: 'Cuaca cerah berawan, semua siswa memakai seragam olahraga lengkap.',
-        teacherSign: true
+        teacherSign: true,
+        validationStatus: 'Menunggu Validasi'
       },
       {
         id: 'jrnl_3',
@@ -837,11 +846,36 @@ export const INITIAL_HOMEROOM_DATA: Record<string, HomeroomClassData> = {
         period: 'Jam ke 2 - 3 (09:00 - 10:30)',
         subjectName: 'Matematika Wajib',
         teacherName: 'Siti Rahmawati, M.Pd',
+        teacherId: 'user_guru1',
+        submittedByRole: 'guru_mapel',
         competencyOrTopic: 'Sistem Persamaan Linear Tiga Variabel (SPLTV)',
         materialsSummary: 'Metode eliminasi dan substitusi gabungan pada studi kasus permasalahan ekonomi.',
-        attendanceNote: '5 Hadir Lengkap (100%)',
+        attendanceNote: '35 Hadir Lengkap (100%)',
         classIncident: 'Latihan soal mandiri 5 nomor, rata-rata ketuntasan mencapai 88%.',
-        teacherSign: true
+        teacherSign: true,
+        validationStatus: 'Terverifikasi',
+        validationDate: '2026-09-16',
+        validatedByWaliName: 'Puput Sasmita, S.Pd., Gr.',
+        validationNotes: 'Tercatat tuntas. Absensi sinkron.'
+      },
+      {
+        id: 'jrnl_4',
+        class_id: 'class_10_ipa1',
+        date: '2026-09-15',
+        period: 'Jam ke 5 - 6 (11:00 - 12:30)',
+        subjectName: 'Informatika & Coding',
+        teacherName: 'Budi Santoso, S.Pd',
+        teacherId: 'user_guru4',
+        submittedByRole: 'guru_mapel',
+        competencyOrTopic: 'Algoritma Percabangan & Logika Kondisional',
+        materialsSummary: 'Praktikum Lab Komputer membuat program penentuan kelulusan nilai.',
+        attendanceNote: '33 Hadir, 2 Sakit (Bayu, Rizky)',
+        classIncident: 'Perangkat lab no 12 error kabel LAN, siswa bergabung di unit no 13.',
+        teacherSign: true,
+        validationStatus: 'Perlu Revisi',
+        validationDate: '2026-09-15',
+        validatedByWaliName: 'Puput Sasmita, S.Pd., Gr.',
+        validationNotes: 'Mohon lampirkan rincian materi lanjutan untuk 2 siswa yang sakit saat KBM.'
       }
     ],
 

@@ -1767,7 +1767,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                     const wk = allUsers.find(u => u.id === cls.wali_kelas_id);
                     const members = getStudentClassMembers(cls.id);
                     return (
-                      <tr key={cls.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                      <tr key={cls.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                         <td className="px-4 py-3 font-semibold text-slate-400">
                           {(currentPage - 1) * itemsPerPage + idx + 1}
                         </td>
@@ -1887,7 +1887,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                     const wkClass = dbService.getHomeroomClass(t.id);
                     const mapelList = dbService.getSubjectsByTeacher(t.id);
                     return (
-                      <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                      <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                         <td className="px-4 py-3 font-semibold text-slate-400">
                           {(currentPage - 1) * itemsPerPage + idx + 1}
                         </td>
@@ -2005,7 +2005,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                     const cls = dbService.getStudentClass(s.id);
                     const parent = getParentOfStudent(s.id);
                     return (
-                      <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                      <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                         <td className="px-4 py-3 font-semibold text-slate-400">
                           {(currentPage - 1) * itemsPerPage + idx + 1}
                         </td>
@@ -2113,7 +2113,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                   paginatedParents.map((p, idx) => {
                     const children = dbService.getChildrenOfParent(p.id);
                     return (
-                      <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                      <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                         <td className="px-4 py-3 font-semibold text-slate-400">
                           {(currentPage - 1) * itemsPerPage + idx + 1}
                         </td>
@@ -2212,7 +2212,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                   </tr>
                 ) : (
                   paginatedSubjects.map((sb, idx) => (
-                    <tr key={sb.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                    <tr key={sb.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                       <td className="px-4 py-3 font-semibold text-slate-400">
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </td>
@@ -2315,7 +2315,7 @@ export const OverallMasterDataManager: React.FC<OverallMasterDataManagerProps> =
                   </tr>
                 ) : (
                   paginatedEvents.map((ev: AcademicEvent, idx: number) => (
-                    <tr key={ev.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-750 transition">
+                    <tr key={ev.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/60 transition">
                       <td className="px-4 py-3 font-semibold text-slate-400">
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </td>

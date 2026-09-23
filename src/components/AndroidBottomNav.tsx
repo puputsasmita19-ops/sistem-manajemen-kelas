@@ -6,7 +6,8 @@ import {
   School,
   GraduationCap,
   LayoutGrid,
-  Users
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { User } from '../types';
 
@@ -76,6 +77,11 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
         id: 'dashboard',
         label: 'Dasbor',
         icon: TrendingUp
+      },
+      {
+        id: 'teacher_journal',
+        label: 'Jurnal KBM',
+        icon: BookOpen
       },
       {
         id: 'attendance',

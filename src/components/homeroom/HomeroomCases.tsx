@@ -290,7 +290,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     required
                   />
                 </div>
@@ -301,7 +301,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                     value={studentName}
                     onChange={e => setStudentName(e.target.value)}
                     placeholder="Nama siswa..."
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     list="cases-student-list"
                     required
                   />
@@ -319,7 +319,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                   <select
                     value={incidentCategory}
                     onChange={e => setIncidentCategory(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Keterlambatan">Keterlambatan</option>
                     <option value="Kerapian / Seragam">Kerapian / Seragam</option>
@@ -334,7 +334,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                   <select
                     value={severity}
                     onChange={e => setSeverity(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Ringan">Ringan</option>
                     <option value="Sedang">Sedang</option>
@@ -347,7 +347,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                     type="number"
                     value={penaltyPoints}
                     onChange={e => setPenaltyPoints(Number(e.target.value))}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                     min="1"
                     max="100"
                   />
@@ -363,7 +363,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                   value={chronology}
                   onChange={e => setChronology(e.target.value)}
                   placeholder="Uraian kejadian, saksi, dan situasi..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -377,7 +377,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                   value={actionTaken}
                   onChange={e => setActionTaken(e.target.value)}
                   placeholder="Teguran lisan, tugas mendidik, pembuatan komitmen..."
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -387,7 +387,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                   <select
                     value={resolutionStatus}
                     onChange={e => setResolutionStatus(e.target.value as any)}
-                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                    className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                   >
                     <option value="Selesai">Selesai</option>
                     <option value="Dalam Pembinaan">Dalam Pembinaan</option>
@@ -458,7 +458,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                       resolutionStatus: e.target.value as any
                     })
                   }
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 >
                   <option value="Selesai">Selesai</option>
                   <option value="Dalam Pembinaan">Dalam Pembinaan</option>
@@ -480,7 +480,7 @@ export const HomeroomCases: React.FC<HomeroomCasesProps> = ({
                       actionTaken: e.target.value
                     })
                   }
-                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                  className="w-full mt-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
