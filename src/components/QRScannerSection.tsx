@@ -20,7 +20,8 @@ import {
   ShieldCheck,
   ArrowLeft,
   KeyRound,
-  Maximize2
+  Maximize2,
+  SwitchCamera
 } from 'lucide-react';
 import { navigationBackService } from '../services/navigationBackService';
 import { DynamicQRAttendanceService } from '../services/dynamicQRAttendanceService';
@@ -59,7 +60,9 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
     return () => unregister();
   }, [onClose]);
   const [activeSubTab, setActiveSubTab] = useState<'camera' | 'upload' | 'simulate' | 'cards' | 'pin'>('camera');
+  const [cameraFacingMode, setCameraFacingMode] = useState<'environment' | 'user'>('environment');
   const [cameraActive, setCameraActive] = useState<boolean>(false);
+  const [cameraLoading, setCameraLoading] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [scannedLogs, setScannedLogs] = useState<ScannedLog[]>([]);
@@ -343,28 +346,127 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
     }
   };
 
+  // Helper untuk mendapatkan MediaStream dengan multi-level fallback
+  const acquireCameraStream = async (targetFacing: 'environment' | 'user'): Promise<MediaStream> => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('BROWSER_UNSUPPORTED');
+    }
+
+    // Attempt 1: Target facing mode with flexible ideal dimensions
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: targetFacing },
+          width: { ideal: 1280, min: 320 },
+          height: { ideal: 720, min: 240 }
+        },
+        audio: false
+      });
+    } catch (err1: any) {
+      console.warn('QRScanner Attempt 1 failed:', err1?.name || err1);
+    }
+
+    // Attempt 2: Opposite facing mode with ideal constraint
+    try {
+      const fallbackFacing = targetFacing === 'environment' ? 'user' : 'environment';
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: fallbackFacing }
+        },
+        audio: false
+      });
+    } catch (err2: any) {
+      console.warn('QRScanner Attempt 2 failed:', err2?.name || err2);
+    }
+
+    // Attempt 3: Generic unconstrained video
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    } catch (err3: any) {
+      console.warn('QRScanner Attempt 3 failed:', err3?.name || err3);
+    }
+
+    // Attempt 4: Enumerate available video inputs
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
+      if (videoInputs.length > 0) {
+        return await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: videoInputs[0].deviceId } },
+          audio: false
+        });
+      }
+    } catch (err4: any) {
+      console.warn('QRScanner Attempt 4 failed:', err4?.name || err4);
+    }
+
+    throw new Error('ALL_ATTEMPTS_FAILED');
+  };
+
   // Camera scanner routine using requestAnimationFrame and jsQR
   const startCamera = async () => {
+    stopCamera();
     setCameraError(null);
+    setCameraLoading(true);
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-      });
+      const stream = await acquireCameraStream(cameraFacingMode);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
         videoRef.current.setAttribute('playsinline', 'true');
-        videoRef.current.play();
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+
+        await new Promise<void>((resolve) => {
+          if (videoRef.current && videoRef.current.readyState >= 2) {
+            resolve();
+          } else if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => resolve();
+            setTimeout(resolve, 800);
+          } else {
+            resolve();
+          }
+        });
+
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn('Video play warning:', playErr);
+        }
+
         setCameraActive(true);
+        setCameraLoading(false);
         isScanningRef.current = true;
         scanFrame();
       }
     } catch (err: any) {
       console.error('Camera access error:', err);
-      setCameraError(
-        'Kamera tidak dapat diakses atau izin ditolak. Anda tetap dapat menggunakan tab "Simulasi Kartu" atau "Unggah Gambar QR".'
-      );
       setCameraActive(false);
+      setCameraLoading(false);
+
+      const errName = err?.name || '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        setCameraError(
+          'Izin kamera diblokir browser. Izinkan akses kamera melalui ikon gembok pada bilah browser Anda.'
+        );
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        setCameraError(
+          'Perangkat kamera tidak terdeteksi. Anda tetap dapat menggunakan tab "Simulasi Kartu" atau "Unggah Gambar QR".'
+        );
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+        setCameraError(
+          'Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi lain lalu coba aktifkan kembali.'
+        );
+      } else {
+        setCameraError(
+          'Kamera tidak dapat diakses saat ini. Anda dapat mencoba mengganti kamera, tab "Simulasi Kartu", atau "Unggah Gambar QR".'
+        );
+      }
     }
   };
 
@@ -376,38 +478,48 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
     }
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
     setCameraActive(false);
+    setCameraLoading(false);
   };
 
   const scanFrame = () => {
     if (!isScanningRef.current) return;
 
-    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+    if (
+      videoRef.current &&
+      videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA &&
+      videoRef.current.videoWidth > 0 &&
+      videoRef.current.videoHeight > 0
+    ) {
       const canvas = canvasRef.current;
       if (canvas) {
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (ctx) {
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert'
-          });
+          try {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: 'attemptBoth'
+            });
 
-          if (code && code.data) {
-            handleDecodedText(code.data, 'Kamera Live');
-            // Pause momentarily before next scan
-            isScanningRef.current = false;
-            setTimeout(() => {
-              isScanningRef.current = true;
-              scanFrame();
-            }, 2500);
-            return;
+            if (code && code.data) {
+              handleDecodedText(code.data.trim(), 'Kamera Live');
+              // Pause momentarily before next scan
+              isScanningRef.current = false;
+              setTimeout(() => {
+                isScanningRef.current = true;
+                scanFrame();
+              }, 2500);
+              return;
+            }
+          } catch (e) {
+            // Ignore temporary canvas read glitches
           }
         }
       }
@@ -425,7 +537,7 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
     return () => {
       stopCamera();
     };
-  }, [activeSubTab]);
+  }, [activeSubTab, cameraFacingMode]);
 
   // Handle Image File Upload Decode
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -649,14 +761,26 @@ export const QRScannerSection: React.FC<QRScannerSectionProps> = ({
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={cameraActive ? stopCamera : startCamera}
-                  className="w-full sm:w-auto py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${cameraActive ? 'text-emerald-400' : 'text-amber-400'}`} />
-                  <span>{cameraActive ? 'Jeda Kamera' : 'Aktifkan Kamera'}</span>
-                </button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCameraFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))}
+                    className="flex-1 sm:flex-initial py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                    title="Ganti Kamera Belakang / Depan"
+                  >
+                    <SwitchCamera className="w-3.5 h-3.5 text-blue-400" />
+                    <span>{cameraFacingMode === 'environment' ? 'Kamera Depan' : 'Kamera Belakang'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cameraActive ? stopCamera : startCamera}
+                    className="flex-1 sm:flex-initial py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${cameraActive ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span>{cameraActive ? 'Jeda Kamera' : 'Aktifkan Kamera'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

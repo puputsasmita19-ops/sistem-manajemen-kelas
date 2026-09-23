@@ -227,29 +227,109 @@ export const StudentSelfieAttendanceModal: React.FC<StudentSelfieAttendanceModal
   }, [schoolLat, schoolLng, schoolRadiusMeters]);
 
   // Start / Stop Camera
-  const startCamera = async () => {
-    setCameraError(null);
+  const acquireCameraStream = async (targetFacing: 'user' | 'environment'): Promise<MediaStream> => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('BROWSER_UNSUPPORTED');
+    }
+
+    // Attempt 1: Target facing mode with ideal constraints
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      return await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: facingMode,
-          width: { ideal: 720 },
-          height: { ideal: 540 }
+          facingMode: { ideal: targetFacing },
+          width: { ideal: 1280, min: 320 },
+          height: { ideal: 720, min: 240 }
         },
         audio: false
       });
+    } catch (err1: any) {
+      console.warn('Selfie modal Attempt 1 failed:', err1?.name || err1);
+    }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true');
-        await videoRef.current.play();
+    // Attempt 2: Opposite facing mode with ideal
+    try {
+      const fallbackFacing = targetFacing === 'user' ? 'environment' : 'user';
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: fallbackFacing }
+        },
+        audio: false
+      });
+    } catch (err2: any) {
+      console.warn('Selfie modal Attempt 2 failed:', err2?.name || err2);
+    }
+
+    // Attempt 3: Generic video
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    } catch (err3: any) {
+      console.warn('Selfie modal Attempt 3 failed:', err3?.name || err3);
+    }
+
+    // Attempt 4: Enumerate available video inputs
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
+      if (videoInputs.length > 0) {
+        return await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: videoInputs[0].deviceId } },
+          audio: false
+        });
+      }
+    } catch (err4: any) {
+      console.warn('Selfie modal Attempt 4 failed:', err4?.name || err4);
+    }
+
+    throw new Error('ALL_ATTEMPTS_FAILED');
+  };
+
+  const startCamera = async () => {
+    stopCamera();
+    setCameraError(null);
+    try {
+      const stream = await acquireCameraStream(facingMode);
+
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+
+        await new Promise<void>((resolve) => {
+          if (video.readyState >= 2) {
+            resolve();
+          } else {
+            video.onloadedmetadata = () => resolve();
+            setTimeout(resolve, 800);
+          }
+        });
+
+        try {
+          await video.play();
+        } catch (playErr) {
+          console.warn('Video auto-play warning:', playErr);
+        }
         setCameraActive(true);
       }
     } catch (err: any) {
       console.error('Camera stream error:', err);
-      setCameraError(
-        'Kamera tidak dapat diakses atau izin ditolak. Pastikan izin kamera telah disetujui di pengaturan browser.'
-      );
+      const errName = err?.name || '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        setCameraError('Izin kamera ditolak oleh browser. Buka pengaturan browser untuk mengizinkan akses kamera.');
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        setCameraError('Perangkat kamera tidak ditemukan pada perangkat Anda.');
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+        setCameraError('Kamera sedang dipakai aplikasi lain. Harap tutup aplikasi kamera lain lalu coba lagi.');
+      } else {
+        setCameraError(
+          'Kamera tidak dapat diakses atau izin ditolak. Pastikan izin kamera telah disetujui di pengaturan browser.'
+        );
+      }
       setCameraActive(false);
     }
   };

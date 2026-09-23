@@ -307,31 +307,31 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
       }`}
     >
       <div
-        className={`bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl text-white w-full flex flex-col overflow-hidden transition-all ${
+        className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-2xl text-slate-900 dark:text-white w-full flex flex-col overflow-hidden transition-all ${
           isFullscreen
             ? 'h-full w-full rounded-none border-none max-w-none'
             : 'max-w-4xl max-h-[92vh]'
         }`}
       >
         {/* MODAL TOP HEADER */}
-        <div className="px-6 py-4 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between gap-4 flex-wrap">
+        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
               <QrCode className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                   QR Code Presensi Dinamis Kelas
                 </h3>
                 {session && (
                   <span
                     className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 border ${
                       isExpired
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/40'
                         : isLocked
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse'
+                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40'
+                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/40 animate-pulse'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -339,10 +339,10 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Kelas: <strong className="text-slate-200">{classNameTitle}</strong> • Mapel:{' '}
-                <strong className="text-slate-200">{subjectNameTitle}</strong> • Tanggal:{' '}
-                <span className="text-blue-400 font-mono">{selectedDate}</span>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
+                Kelas: <strong className="text-slate-900 dark:text-white font-bold">{classNameTitle}</strong> • Mapel:{' '}
+                <strong className="text-slate-900 dark:text-white font-bold">{subjectNameTitle}</strong> • Tanggal:{' '}
+                <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">{selectedDate}</span>
               </p>
             </div>
           </div>
@@ -353,8 +353,8 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={`p-2 rounded-xl text-xs font-bold border transition flex items-center gap-1 cursor-pointer ${
                 soundEnabled
-                  ? 'bg-blue-900/40 border-blue-700/60 text-blue-300'
-                  : 'bg-slate-800 border-slate-700 text-slate-400'
+                  ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-200 dark:border-blue-700/60 text-blue-600 dark:text-blue-300'
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
               title="Suara Beep Notifikasi"
             >
@@ -364,7 +364,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 rounded-xl text-xs font-bold border bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200 transition cursor-pointer flex items-center gap-1"
+              className="p-2 sm:px-3 rounded-xl text-xs font-bold border bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer flex items-center gap-1"
               title={isFullscreen ? 'Keluar Layar Penuh' : 'Mode Proyektor Layar Penuh'}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -376,7 +376,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-rose-900/50 hover:text-rose-200 border border-slate-700 text-slate-400 transition cursor-pointer"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 hover:text-rose-600 dark:hover:text-rose-200 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 transition cursor-pointer"
               title="Tutup Modal"
             >
               <X className="w-4 h-4" />
@@ -390,11 +390,13 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
             /* CONFIGURATOR VIEW (BUAT SESI BARU) */
             <div className="max-w-xl mx-auto py-4 space-y-6">
               <div className="text-center space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold">
-                  <ShieldCheck className="w-4 h-4" /> Sistem Presensi Anti-Kecurangan
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-bold shadow-xs">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Sistem Presensi Anti-Kecurangan
                 </div>
-                <h4 className="text-xl font-black text-white">Atur Masa Berlaku QR Code Kelas</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                <h4 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                  Atur Masa Berlaku QR Code Kelas
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto leading-relaxed font-medium">
                   Tentukan durasi aktifnya kode QR di layar. Setelah masa berlaku habis, kode otomatis
                   terkunci sehingga mencegah siswa titip absen dari luar kelas.
                 </p>
@@ -402,12 +404,12 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
 
               {/* DURATION PRESET BUTTONS */}
               <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-blue-400" />
+                    <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     Pilih Masa Berlaku QR Code:
                   </span>
-                  <span className="text-blue-400 font-bold">
+                  <span className="text-blue-600 dark:text-blue-400 font-black text-sm">
                     {customDuration ? `${customDuration} Menit` : `${selectedDuration} Menit`}
                   </span>
                 </label>
@@ -420,35 +422,50 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                     { min: 10, label: '10 Menit', desc: 'Fleksibel' },
                     { min: 15, label: '15 Menit', desc: 'Panjang' },
                     { min: 30, label: '30 Menit', desc: '1 Jam Mapel' }
-                  ].map((d) => (
-                    <button
-                      key={d.min}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDuration(d.min);
-                        setCustomDuration('');
-                      }}
-                      className={`p-3 rounded-2xl border text-center transition cursor-pointer relative ${
-                        selectedDuration === d.min && !customDuration
-                          ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/30 ring-2 ring-blue-400'
-                          : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700/80'
-                      }`}
-                    >
-                      {d.min === 5 && (
-                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-amber-500 text-[9px] font-black uppercase tracking-wider text-slate-950 px-1.5 py-0.2 rounded-full shadow-xs">
-                          Populer
-                        </span>
-                      )}
-                      <div className="text-sm font-black">{d.label}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{d.desc}</div>
-                    </button>
-                  ))}
+                  ].map((d) => {
+                    const isSelected = selectedDuration === d.min && !customDuration;
+                    return (
+                      <button
+                        key={d.min}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDuration(d.min);
+                          setCustomDuration('');
+                        }}
+                        className={`p-3 rounded-2xl border text-center transition cursor-pointer relative ${
+                          isSelected
+                            ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-400'
+                            : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-800 dark:text-slate-100'
+                        }`}
+                      >
+                        {d.min === 5 && (
+                          <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-[9px] font-black uppercase tracking-wider text-slate-950 px-2 py-0.5 rounded-full shadow-xs">
+                            Populer
+                          </span>
+                        )}
+                        <div className={`text-sm font-black ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                          {d.label}
+                        </div>
+                        <div
+                          className={`text-[10px] mt-0.5 font-bold ${
+                            isSelected
+                              ? 'text-blue-100'
+                              : 'text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          {d.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Custom duration input */}
                 <div className="pt-2 flex items-center gap-3">
-                  <span className="text-xs text-slate-400 whitespace-nowrap">Atau durasi kustom:</span>
-                  <div className="flex items-center gap-2 max-w-[140px]">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    Atau durasi kustom:
+                  </span>
+                  <div className="flex items-center gap-2 max-w-[150px]">
                     <input
                       type="number"
                       min="1"
@@ -456,17 +473,17 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                       value={customDuration}
                       onChange={(e) => setCustomDuration(e.target.value)}
                       placeholder="Contoh: 7"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-400 text-center font-bold focus:ring-2 focus:ring-blue-500 outline-none"
                     />
-                    <span className="text-xs text-slate-400">Menit</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Menit</span>
                   </div>
                 </div>
               </div>
 
               {/* SECURITY OPTIONS */}
-              <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-amber-400" />
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-500" />
                   Fitur Tambahan Anti-Screenshot (Auto-Rotate):
                 </div>
 
@@ -475,21 +492,28 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                     { val: 0, label: 'Nonaktif', sub: 'Token Statis selama durasi' },
                     { val: 15, label: 'Tiap 15 Detik', sub: 'Berganti sangat cepat' },
                     { val: 30, label: 'Tiap 30 Detik', sub: 'Anti-share foto WhatsApp' }
-                  ].map((opt) => (
-                    <button
-                      key={opt.val}
-                      type="button"
-                      onClick={() => setAutoRotate(opt.val)}
-                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
-                        autoRotate === opt.val
-                          ? 'bg-indigo-600/30 border-indigo-500 text-indigo-200 ring-1 ring-indigo-400'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <div className="font-bold text-white text-xs">{opt.label}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{opt.sub}</div>
-                    </button>
-                  ))}
+                  ].map((opt) => {
+                    const isSelected = autoRotate === opt.val;
+                    return (
+                      <button
+                        key={opt.val}
+                        type="button"
+                        onClick={() => setAutoRotate(opt.val)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-50 dark:bg-indigo-950/70 border-2 border-blue-600 dark:border-indigo-500 shadow-sm ring-1 ring-blue-500/30'
+                            : 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/60'
+                        }`}
+                      >
+                        <div className={`font-black text-xs ${isSelected ? 'text-blue-900 dark:text-white' : 'text-slate-900 dark:text-white'}`}>
+                          {opt.label}
+                        </div>
+                        <div className={`text-[10px] mt-0.5 font-bold ${isSelected ? 'text-blue-700 dark:text-indigo-200' : 'text-slate-600 dark:text-slate-300'}`}>
+                          {opt.sub}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -497,7 +521,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
               <button
                 type="button"
                 onClick={handleCreateSession}
-                className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-black rounded-2xl shadow-xl shadow-blue-600/20 transition transform active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-black rounded-2xl shadow-xl shadow-blue-600/25 transition transform active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-300" />
                 <span>Terbitkan QR Code Dinamis ({customDuration || selectedDuration} Menit)</span>
@@ -507,7 +531,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
             /* ACTIVE PROJECTOR & LIVE ATTENDANCE VIEW */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* LEFT / CENTER: QR HERO CARD & COUNTDOWN (COL 7) */}
-              <div className="lg:col-span-7 flex flex-col items-center justify-center space-y-4 bg-slate-950/80 rounded-3xl p-6 border border-slate-800 relative overflow-hidden">
+              <div className="lg:col-span-7 flex flex-col items-center justify-center space-y-4 bg-slate-50 dark:bg-slate-950/80 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
                 {/* Visual Security Radar Halo */}
                 <div
                   className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
@@ -525,23 +549,23 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                     <Clock
                       className={`w-4 h-4 ${
                         isExpired
-                          ? 'text-rose-400'
+                          ? 'text-rose-500 dark:text-rose-400'
                           : timeLeftSeconds < 60
-                          ? 'text-amber-400 animate-bounce'
-                          : 'text-emerald-400'
+                          ? 'text-amber-500 dark:text-amber-400 animate-bounce'
+                          : 'text-emerald-500 dark:text-emerald-400'
                       }`}
                     />
-                    <span className="text-xs font-bold text-slate-300">Waktu Tersisa:</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Waktu Tersisa:</span>
                   </div>
 
                   <div className="text-right">
                     <span
                       className={`text-2xl sm:text-3xl font-black font-mono tracking-wider ${
                         isExpired
-                          ? 'text-rose-400'
+                          ? 'text-rose-500 dark:text-rose-400'
                           : timeLeftSeconds < 60
-                          ? 'text-amber-400 animate-pulse'
-                          : 'text-emerald-400'
+                          ? 'text-amber-500 dark:text-amber-400 animate-pulse'
+                          : 'text-emerald-500 dark:text-emerald-400'
                       }`}
                     >
                       {formattedTime}
@@ -550,7 +574,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                 </div>
 
                 {/* COUNTDOWN PROGRESS BAR */}
-                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden z-10">
+                <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden z-10">
                   <div
                     className={`h-full transition-all duration-1000 ${
                       isExpired
@@ -564,7 +588,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                 </div>
 
                 {/* THE QR CODE DISPLAY BOX */}
-                <div className="relative p-4 bg-white rounded-3xl shadow-2xl border-4 border-slate-700/50 mt-2 z-10 group">
+                <div className="relative p-4 bg-white rounded-3xl shadow-2xl border-4 border-slate-200 dark:border-slate-700/50 mt-2 z-10 group">
                   {qrDataUrl ? (
                     <img
                       src={qrDataUrl}
@@ -624,19 +648,19 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                 </div>
 
                 {/* 6-DIGIT BACKUP PIN OTP */}
-                <div className="z-10 w-full flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs">
+                <div className="z-10 w-full flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
                   <div className="flex items-center gap-2">
-                    <KeyRound className="w-4 h-4 text-amber-400" />
-                    <span className="text-slate-400">Kode PIN Cadangan Siswa:</span>
+                    <KeyRound className="w-4 h-4 text-amber-500" />
+                    <span className="text-slate-700 dark:text-slate-300 font-bold">Kode PIN Cadangan Siswa:</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-base font-black tracking-widest text-amber-300 bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-800/80">
+                    <span className="font-mono text-base font-black tracking-widest text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-300 dark:border-amber-800/80">
                       {session.otpCode}
                     </span>
                     <button
                       type="button"
                       onClick={handleRegenerateToken}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition cursor-pointer"
                       title="Ganti Kode Baru"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -649,28 +673,28 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                   <button
                     type="button"
                     onClick={() => handleExtend(5)}
-                    className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <PlusCircle className="w-3.5 h-3.5 text-emerald-500" />
                     <span>+5 Menit</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleExtend(1)}
-                    className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <PlusCircle className="w-3.5 h-3.5 text-emerald-500" />
                     <span>+1 Menit</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleToggleLock}
-                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
                       isLocked
                         ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-500'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                        : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     {isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
@@ -680,9 +704,9 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                   <button
                     type="button"
                     onClick={handleDownloadQRImage}
-                    className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2 px-3 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Download className="w-3.5 h-3.5 text-blue-400" />
+                    <Download className="w-3.5 h-3.5 text-blue-500" />
                     <span>Unduh PNG</span>
                   </button>
                 </div>
@@ -691,59 +715,59 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
               {/* RIGHT: REALTIME ATTENDEES LIST & SIMULATION (COL 5) */}
               <div className="lg:col-span-5 space-y-4">
                 {/* STATS HERO CARD */}
-                <div className="p-4 rounded-3xl bg-gradient-to-r from-blue-900/60 to-indigo-900/60 border border-blue-700/50 space-y-3">
+                <div className="p-4 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900/60 dark:to-indigo-900/60 text-white border border-blue-500/30 dark:border-blue-700/50 space-y-3 shadow-md">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-blue-200">
+                    <div className="flex items-center gap-2 text-xs font-bold text-blue-100 dark:text-blue-200">
                       <Users className="w-4 h-4" />
                       <span>Kehadiran Terverifikasi</span>
                     </div>
-                    <span className="text-xs font-black text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+                    <span className="text-xs font-black text-emerald-100 dark:text-emerald-300 bg-emerald-700/60 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-400/40 dark:border-emerald-800">
                       {progressPercent}%
                     </span>
                   </div>
 
                   <div className="flex items-baseline justify-between">
                     <div className="text-2xl font-black text-white">
-                      {scannedCount} <span className="text-sm font-normal text-slate-300">/ {totalStudents} Siswa</span>
+                      {scannedCount} <span className="text-sm font-normal text-blue-100 dark:text-slate-300">/ {totalStudents} Siswa</span>
                     </div>
-                    <span className="text-[11px] text-blue-300">
+                    <span className="text-[11px] text-blue-100 dark:text-blue-300 font-semibold">
                       {totalStudents - scannedCount} Belum Presensi
                     </span>
                   </div>
 
-                  <div className="w-full h-2 bg-slate-900/80 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-black/20 dark:bg-slate-900/80 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-400 to-emerald-400 transition-all duration-500"
+                      className="h-full bg-emerald-300 dark:bg-gradient-to-r dark:from-blue-400 dark:to-emerald-400 transition-all duration-500"
                       style={{ width: `${progressPercent}%` }}
                     ></div>
                   </div>
                 </div>
 
                 {/* LIVE SCANNED FEED TABLE */}
-                <div className="bg-slate-950/80 border border-slate-800 rounded-3xl p-4 space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
-                    <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 text-xs">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       Daftar Masuk Realtime
                     </span>
-                    <span className="text-[10px] text-slate-400">Terbaru di atas</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Terbaru di atas</span>
                   </div>
 
-                  <div className="divide-y divide-slate-800/80 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="divide-y divide-slate-200 dark:divide-slate-800/80 max-h-[220px] overflow-y-auto pr-1">
                     {session.scannedStudents.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                      <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
                         Menunggu siswa memindai kode QR di layar proyektor...
                       </div>
                     ) : (
                       session.scannedStudents.map((st, i) => (
                         <div key={i} className="py-2 flex items-center justify-between text-xs animate-fadeIn">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px] shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[10px] shrink-0">
                               {i + 1}
                             </div>
-                            <span className="font-bold text-slate-200 truncate">{st.nama}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{st.nama}</span>
                           </div>
-                          <span className="font-mono text-[11px] text-emerald-400 shrink-0 font-semibold">
+                          <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 shrink-0 font-semibold">
                             {st.scannedAt}
                           </span>
                         </div>
@@ -753,13 +777,13 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                 </div>
 
                 {/* SIMULASI CEPAT UJI SCAN (UNTUK GURU/PENGUJI) */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/50 border border-slate-800/80 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
-                    <span className="flex items-center gap-1 text-amber-400">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 dark:text-slate-300">
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                       <Sparkles className="w-3.5 h-3.5" /> Uji Coba Scan Cepat (Simulasi Siswa)
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">
                     Klik nama siswa di bawah untuk menguji respons real-time layar:
                   </p>
                   <div className="flex flex-wrap gap-1.5 max-h-[110px] overflow-y-auto">
@@ -772,8 +796,8 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                           onClick={() => handleSimulateStudentScan(std)}
                           className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition cursor-pointer flex items-center gap-1 ${
                             already
-                              ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-800'
-                              : 'bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white border border-slate-700'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                              : 'bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
                           {already && <CheckCircle2 className="w-2.5 h-2.5" />}
@@ -789,7 +813,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                   <button
                     type="button"
                     onClick={handleCreateSession}
-                    className="text-xs text-blue-400 hover:text-blue-300 font-bold transition flex items-center gap-1 cursor-pointer"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold transition flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Buat Ulang Sesi</span>
@@ -798,7 +822,7 @@ export const DynamicQRAttendanceModal: React.FC<DynamicQRAttendanceModalProps> =
                   <button
                     type="button"
                     onClick={handleCloseSession}
-                    className="px-3 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 text-xs font-bold rounded-xl border border-rose-700/60 transition cursor-pointer"
+                    className="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-800 text-rose-700 dark:text-rose-200 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-700/60 transition cursor-pointer"
                   >
                     Selesaikan Sesi
                   </button>
