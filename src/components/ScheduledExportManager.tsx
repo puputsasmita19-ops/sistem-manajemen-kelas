@@ -106,6 +106,23 @@ export const ScheduledExportManager: React.FC = () => {
   const [quickEndMonth, setQuickEndMonth] = useState<number>(currentMonthNum);
   const [quickEndYear, setQuickEndYear] = useState<number>(currentYearNum);
 
+  // Immediate Bulk Academic Export State
+  const [isBulkExportModalOpen, setIsBulkExportModalOpen] = useState(false);
+  const [bulkStartDate, setBulkStartDate] = useState(new Date(nowObj.getFullYear(), nowObj.getMonth(), 1).toISOString().split('T')[0]);
+  const [bulkEndDate, setBulkEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [bulkTargetClassId, setBulkTargetClassId] = useState('all');
+  const [bulkTitle, setBulkTitle] = useState('Laporan Akademik Terpadu (Presensi, Nilai & Jurnal KBM)');
+  const [bulkIncludeAttendance, setBulkIncludeAttendance] = useState(true);
+  const [bulkIncludeGrades, setBulkIncludeGrades] = useState(true);
+  const [bulkIncludeTeachingJournal, setBulkIncludeTeachingJournal] = useState(true);
+  const [bulkIncludeClassRoster, setBulkIncludeClassRoster] = useState(true);
+  const [bulkIncludeExecutiveSummary, setBulkIncludeExecutiveSummary] = useState(true);
+  const [bulkIncludeKopSurat, setBulkIncludeKopSurat] = useState(true);
+  const [bulkIncludeSignatures, setBulkIncludeSignatures] = useState(true);
+  const [bulkPaperSize, setBulkPaperSize] = useState<'a4' | 'f4' | 'letter' | 'legal'>('a4');
+  const [bulkPaperOrientation, setBulkPaperOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [isBulkExecuting, setIsBulkExecuting] = useState(false);
+
   const refreshData = () => {
     setSchedules(exportService.getSchedules());
     setReports(exportService.getReports());
@@ -223,6 +240,145 @@ export const ScheduledExportManager: React.FC = () => {
     setQuickEndYear(curY);
     setQuickTitle(getAutoTitleForMonthRange(quickReportType, curM, curY, curM, curY));
     setIsQuickTriggerModalOpen(true);
+  };
+
+  const applyBulkDatePreset = (preset: 'today' | 'last_7d' | 'last_30d' | 'this_month' | 'last_month' | 'semester_1' | 'semester_2' | 'full_year') => {
+    const today = new Date();
+    const formatYmd = (d: Date) => d.toISOString().split('T')[0];
+
+    let start = new Date();
+    let end = new Date();
+
+    if (preset === 'today') {
+      start = new Date(today);
+      end = new Date(today);
+    } else if (preset === 'last_7d') {
+      start.setDate(today.getDate() - 6);
+      end = new Date(today);
+    } else if (preset === 'last_30d') {
+      start.setDate(today.getDate() - 29);
+      end = new Date(today);
+    } else if (preset === 'this_month') {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (preset === 'last_month') {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (preset === 'semester_1') {
+      start = new Date(today.getFullYear(), 6, 1); // 1 Juli
+      end = new Date(today.getFullYear(), 11, 31); // 31 Des
+    } else if (preset === 'semester_2') {
+      start = new Date(today.getFullYear(), 0, 1); // 1 Jan
+      end = new Date(today.getFullYear(), 5, 30); // 30 Jun
+    } else if (preset === 'full_year') {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31);
+    }
+
+    const sStr = formatYmd(start);
+    const eStr = formatYmd(end);
+    setBulkStartDate(sStr);
+    setBulkEndDate(eStr);
+    setBulkTitle(`Laporan Akademik Terpadu (${sStr} s/d ${eStr})`);
+  };
+
+  const handleOpenBulkExportModal = () => {
+    applyBulkDatePreset('this_month');
+    setIsBulkExportModalOpen(true);
+  };
+
+  const handleExecuteBulkExport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkStartDate || !bulkEndDate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Rentang Tanggal Belum Lengkap',
+        text: 'Silakan tentukan tanggal mulai dan tanggal akhir untuk ekspor massal data akademik.',
+        background: '#0F172A',
+        color: '#F8FAFC'
+      });
+      return;
+    }
+
+    if (bulkStartDate > bulkEndDate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Rentang Tanggal Terbalik',
+        text: 'Tanggal mulai tidak boleh lebih akhir daripada tanggal selesai.',
+        background: '#0F172A',
+        color: '#F8FAFC'
+      });
+      return;
+    }
+
+    setIsBulkExecuting(true);
+    try {
+      const report = await exportService.exportImmediateBulkAcademicPDF(
+        {
+          startDate: bulkStartDate,
+          endDate: bulkEndDate,
+          targetClassId: bulkTargetClassId,
+          title: bulkTitle,
+          includeAttendance: bulkIncludeAttendance,
+          includeGrades: bulkIncludeGrades,
+          includeTeachingJournal: bulkIncludeTeachingJournal,
+          includeClassRoster: bulkIncludeClassRoster,
+          includeExecutiveSummary: bulkIncludeExecutiveSummary,
+          includeKopSurat: bulkIncludeKopSurat,
+          includeSignatures: bulkIncludeSignatures,
+          paperSize: bulkPaperSize,
+          paperOrientation: bulkPaperOrientation
+        },
+        'user_admin1'
+      );
+
+      setIsBulkExportModalOpen(false);
+      refreshData();
+
+      // Trigger instant direct download for the user
+      const link = document.createElement('a');
+      link.href = report.pdfBase64 || report.downloadUrl;
+      link.download = report.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Massal PDF Selesai!',
+        html: `
+          <div class="text-xs text-left space-y-2 mt-2">
+            <p><strong>Berkas:</strong> <span class="text-indigo-400 font-mono">${report.fileName}</span></p>
+            <p><strong>Ukuran:</strong> ${report.fileSizeFormatted}</p>
+            <p><strong>Periode:</strong> ${report.periodLabel}</p>
+            <p><strong>Total Data:</strong> ${report.totalRecordsCount} entri akademik dikompilasi</p>
+            <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-[11px]">
+              Dokumen PDF otomatis diunduh dan diarsipkan ke riwayat laporan sistem.
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Buka Pratinjau PDF',
+        cancelButtonText: 'Tutup',
+        background: '#0F172A',
+        color: '#F8FAFC'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setPreviewReport(report);
+        }
+        setActiveTab('archives');
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Membuat Ekspor Massal',
+        text: err?.message || 'Terjadi kesalahan sistem saat memproses berkas PDF massal.',
+        background: '#0F172A',
+        color: '#F8FAFC'
+      });
+    } finally {
+      setIsBulkExecuting(false);
+    }
   };
 
   // Filtered reports
@@ -564,6 +720,15 @@ export const ScheduledExportManager: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleOpenBulkExportModal}
+              disabled={isBulkExecuting}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-100 animate-pulse" />
+              <span>Ekspor Massal PDF (Rentang Tanggal)</span>
+            </button>
             <button
               type="button"
               onClick={handleOpenQuickTriggerModal}
@@ -1643,6 +1808,276 @@ export const ScheduledExportManager: React.FC = () => {
                     <>
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Generate & Simpan ke Firebase</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BULK EXPORT MASSAL DATA AKADEMIK (RENTANG TANGGAL) */}
+      {isBulkExportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
+            <div className="p-6 bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-900 text-white flex items-center justify-between border-b border-emerald-500/20">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                    Ekspor Massal Semua Data Akademik ke PDF
+                  </h3>
+                  <p className="text-xs text-emerald-200/80 mt-0.5">
+                    Kompilasi satu bundel PDF resmi mencakup presensi, nilai, agenda guru, dan data rombel untuk rentang tanggal kustom.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBulkExportModalOpen(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteBulkExport} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {/* Preset Rentang Tanggal Cepat */}
+              <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                    <CalendarRange className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    Pilihan Cepat Rentang Waktu (Preset):
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'today', label: 'Hari Ini' },
+                    { id: 'last_7d', label: '7 Hari Terakhir' },
+                    { id: 'last_30d', label: '30 Hari Terakhir' },
+                    { id: 'this_month', label: 'Bulan Ini' },
+                    { id: 'last_month', label: 'Bulan Lalu' },
+                    { id: 'semester_1', label: 'Semester 1 (Ganjil)' },
+                    { id: 'semester_2', label: 'Semester 2 (Genap)' },
+                    { id: 'full_year', label: '1 Tahun Penuh' }
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyBulkDatePreset(p.id as any)}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-white dark:bg-slate-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition cursor-pointer active:scale-95"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input Tanggal Mulai & Tanggal Selesai */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Tanggal Mulai (Start Date):
+                  </label>
+                  <input
+                    type="date"
+                    value={bulkStartDate}
+                    onChange={(e) => {
+                      setBulkStartDate(e.target.value);
+                      setBulkTitle(`Laporan Akademik Terpadu (${e.target.value} s/d ${bulkEndDate})`);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Tanggal Selesai (End Date):
+                  </label>
+                  <input
+                    type="date"
+                    value={bulkEndDate}
+                    onChange={(e) => {
+                      setBulkEndDate(e.target.value);
+                      setBulkTitle(`Laporan Akademik Terpadu (${bulkStartDate} s/d ${e.target.value})`);
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Target Rombel / Kelas */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Cakupan Rombongan Belajar (Kelas):
+                </label>
+                <select
+                  value={bulkTargetClassId}
+                  onChange={(e) => setBulkTargetClassId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20"
+                >
+                  <option value="all">Semua Kelas & Rombongan Belajar (Seluruh Sekolah)</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nama_kelas} ({c.tahun_ajaran || '2025/2026'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Modul Akademik yang Dimasukkan ke Bundel PDF */}
+              <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <span className="block text-xs font-bold text-slate-900 dark:text-white">
+                  Komponen & Modul yang Dimasukkan ke PDF:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeAttendance}
+                      onChange={(e) => setBulkIncludeAttendance(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Rekap Presensi & Kehadiran Siswa</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeGrades}
+                      onChange={(e) => setBulkIncludeGrades(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Ledger Nilai & Capaian Belajar</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeTeachingJournal}
+                      onChange={(e) => setBulkIncludeTeachingJournal(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Jurnal Mengajar & Agenda KBM Guru</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeClassRoster}
+                      onChange={(e) => setBulkIncludeClassRoster(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Struktur Rombel & Wali Kelas</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeExecutiveSummary}
+                      onChange={(e) => setBulkIncludeExecutiveSummary(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Ringkasan Eksekutif & Statistik</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeKopSurat}
+                      onChange={(e) => setBulkIncludeKopSurat(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Kop Surat Resmi Kedinasan</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 cursor-pointer sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={bulkIncludeSignatures}
+                      onChange={(e) => setBulkIncludeSignatures(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span className="text-slate-700 dark:text-slate-200 font-medium">Lembar Pengesahan & Tanda Tangan Resmi</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Format Kertas & Orientasi */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Ukuran Kertas:
+                  </label>
+                  <select
+                    value={bulkPaperSize}
+                    onChange={(e) => setBulkPaperSize(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                  >
+                    <option value="a4">A4 (210 x 297 mm)</option>
+                    <option value="f4">F4 / Folio (215 x 330 mm)</option>
+                    <option value="letter">Letter</option>
+                    <option value="legal">Legal</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Orientasi Halaman:
+                  </label>
+                  <select
+                    value={bulkPaperOrientation}
+                    onChange={(e) => setBulkPaperOrientation(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+                  >
+                    <option value="portrait">Tegak (Portrait)</option>
+                    <option value="landscape">Mendatar (Landscape)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Judul Dokumen */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nama / Judul Dokumen PDF:
+                </label>
+                <input
+                  type="text"
+                  value={bulkTitle}
+                  onChange={(e) => setBulkTitle(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/20 font-medium"
+                  required
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkExportModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isBulkExecuting}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition cursor-pointer disabled:opacity-50 active:scale-95"
+                >
+                  {isBulkExecuting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Memproses Ekspor Massal PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Proses & Unduh PDF Massal Seketika</span>
                     </>
                   )}
                 </button>

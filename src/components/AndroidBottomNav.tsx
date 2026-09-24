@@ -113,10 +113,10 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
             key={item.id}
             id={`android-nav-${item.id}`}
             onClick={() => onSelectTab(item.id)}
-            className={`flex flex-col items-center justify-center flex-1 py-1 px-1.5 rounded-2xl transition cursor-pointer relative min-h-[50px] ${
+            className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition cursor-pointer relative min-h-[52px] active:scale-95 ${
               isActive
                 ? 'text-blue-600 dark:text-blue-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium'
             }`}
           >
             {/* Material You Active Pill Indicator */}
@@ -124,7 +124,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
               className={`w-12 h-7 rounded-full flex items-center justify-center transition-all ${
                 isActive
                   ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 shadow-2xs scale-105'
-                  : 'bg-transparent'
+                  : 'bg-transparent text-slate-600 dark:text-slate-300'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -134,7 +134,7 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
                 </span>
               )}
             </div>
-            <span className="text-[10px] mt-0.5 tracking-tight truncate max-w-[68px]">
+            <span className="text-[10.5px] mt-0.5 tracking-tight truncate max-w-[72px]">
               {item.label}
             </span>
           </button>
@@ -145,10 +145,10 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
       <button
         id="android-nav-drawer-btn"
         onClick={onOpenDrawer}
-        className={`flex flex-col items-center justify-center flex-1 py-1 px-1.5 rounded-2xl transition cursor-pointer relative min-h-[50px] ${
+        className={`flex flex-col items-center justify-center flex-1 py-1 px-1 rounded-2xl transition cursor-pointer relative min-h-[52px] active:scale-95 ${
           isDrawerOpen
             ? 'text-blue-600 dark:text-blue-400 font-bold'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium'
+            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium'
         }`}
         aria-label="Buka Semua Fitur"
       >
@@ -156,12 +156,12 @@ export const AndroidBottomNav: React.FC<AndroidBottomNavProps> = ({
           className={`w-12 h-7 rounded-full flex items-center justify-center transition-all ${
             isDrawerOpen
               ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 shadow-2xs scale-105'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
           }`}
         >
           <LayoutGrid className="w-5 h-5" />
         </div>
-        <span className="text-[10px] mt-0.5 tracking-tight font-semibold">
+        <span className="text-[10.5px] mt-0.5 tracking-tight font-semibold">
           Semua Fitur
         </span>
       </button>

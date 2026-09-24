@@ -30,6 +30,7 @@ import { AndroidTopBar } from './components/AndroidTopBar';
 import { AndroidBottomNav } from './components/AndroidBottomNav';
 import { AndroidAppDrawer } from './components/AndroidAppDrawer';
 import { ExitAppConfirmModal } from './components/ExitAppConfirmModal';
+import { QuickCommandPalette } from './components/QuickCommandPalette';
 import { realtimeNotificationService } from './services/realtimeNotificationService';
 import { navigationBackService } from './services/navigationBackService';
 import { antiCheatSecurityService } from './services/antiCheatSecurityService';
@@ -70,7 +71,8 @@ import {
   History,
   HelpCircle,
   ArrowLeft,
-  CalendarClock
+  CalendarClock,
+  Search
 } from 'lucide-react';
 
 const SESSION_STORAGE_KEY = 'SIMAK_ACTIVE_USER_SESSION';
@@ -211,6 +213,7 @@ export default function App() {
 
   // Active Tab state - Robust persistence across page reload / refresh & URL hash synchronization
   const [showExitConfirmModal, setShowExitConfirmModal] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [tabResetKey, setTabResetKey] = useState<number>(0);
   const [appSettingsSubTab, setAppSettingsSubTab] = useState<AppSettingsSubTab>(() => {
     try {
@@ -220,6 +223,19 @@ export default function App() {
     } catch (e) {}
     return 'general';
   });
+
+  // Global Keyboard Shortcut for Command Palette (Ctrl+K / Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [activeTab, setActiveTab] = useState<string>(() => {
     try {
@@ -567,6 +583,7 @@ export default function App() {
         }}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebarCollapse}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
       {/* ===================================================================== */}
@@ -881,6 +898,27 @@ export default function App() {
         }}
         appName={appSettings.appName}
       />
+
+      {/* ===================================================================== */}
+      {/* QUICK COMMAND PALETTE & MODULE SEARCH (CTRL + K / CMD + K)            */}
+      {/* ===================================================================== */}
+      {currentUser && (
+        <QuickCommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          currentUser={currentUser}
+          onSelectTab={handleSelectTab}
+          onOpenTour={() => {
+            TourService.getInstance().startTour(
+              currentUser,
+              appSettings.appName,
+              (tab) => handleSelectTab(tab),
+              true
+            );
+          }}
+          onLogout={handleLogout}
+        />
+      )}
     </div>
   );
 }

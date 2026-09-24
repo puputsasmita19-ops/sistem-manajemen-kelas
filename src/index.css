@@ -74,6 +74,75 @@ body {
   animation-play-state: paused !important;
 }
 
+/* Realistic Moving Cloud Animations for Login Background */
+@keyframes cloud-drift-slow {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(60px, -12px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cloud-drift-reverse {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-70px, 10px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes cloud-drift-fast {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(85px, -18px, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes cloud-drift-continuous {
+  0% {
+    transform: translateX(-10%);
+  }
+  50% {
+    transform: translateX(10%);
+  }
+  100% {
+    transform: translateX(-10%);
+  }
+}
+
+.animate-cloud-slow {
+  animation: cloud-drift-slow 24s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-cloud-reverse {
+  animation: cloud-drift-reverse 30s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-cloud-fast {
+  animation: cloud-drift-fast 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-cloud-continuous {
+  animation: cloud-drift-continuous 36s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Smartphone Proportional Layout & Touch Enhancements */
 @media (max-width: 640px) {
   /* Ensure smooth responsive fluid text and elements without overflowing viewport */

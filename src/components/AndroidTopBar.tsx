@@ -71,9 +71,9 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
       className="md:hidden sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-2xs transition-colors"
     >
       {/* Row 1: App Brand Logo & Quick Action Control Chips */}
-      <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-slate-100 dark:border-slate-800/60">
+      <div className="flex items-center justify-between gap-1.5 px-3 py-2 border-b border-slate-100 dark:border-slate-800/60">
         {/* Left: App Logo & School Name */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <AppLogo settings={appSettings} size="sm" />
           <div className="flex items-center min-w-0">
             <h1 className="text-xs font-black text-slate-900 dark:text-white leading-none tracking-tight truncate">
@@ -97,46 +97,22 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
                 `Waktu aktif sesi login Anda tersisa ${remainingTimeFormatted} sebelum otomatis logout demi keamanan data.`
               );
             }}
-            className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 px-2 py-1 rounded-xl text-[10px] font-bold text-slate-700 dark:text-slate-300 transition cursor-pointer"
+            className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/80 px-2 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 dark:text-slate-200 transition cursor-pointer active:scale-95"
             title={`Sesi aktif. Waktu otomatis logout: ${remainingTimeFormatted}`}
           >
-            <Clock className="w-3 h-3 text-amber-500 shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span className="font-mono">{remainingTimeFormatted}</span>
-          </button>
-
-          {/* Push Notification Button */}
-          <button
-            type="button"
-            onClick={async () => {
-              const perm = await realtimeNotificationService.requestBrowserNotificationPermission();
-              if (perm === 'granted') {
-                realtimeNotificationService.notifyActionSuccess(
-                  'Notifikasi Siap',
-                  'Pemberitahuan perubahan nilai dan pengumuman sekolah akan langsung muncul.'
-                );
-              } else if (perm === 'default') {
-                realtimeNotificationService.notifyActionInfo(
-                  'Izin Notifikasi',
-                  'Silakan izinkan notifikasi pada peramban Anda untuk pembaruan realtime.'
-                );
-              }
-            }}
-            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-center transition cursor-pointer"
-            title="Pengaturan Notifikasi Realtime"
-            aria-label="Pengaturan Notifikasi Realtime"
-          >
-            <Bell className="w-4 h-4" />
           </button>
 
           {/* Android App Drawer Hamburger Button */}
           <button
             type="button"
             onClick={onOpenDrawer}
-            className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center transition shadow-2xs cursor-pointer"
+            className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center transition shadow-2xs cursor-pointer active:scale-95"
             title="Buka Menu Aplikasi Android"
             aria-label="Buka Menu Aplikasi Android"
           >
-            <Menu className="w-4 h-4" />
+            <Menu className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -149,7 +125,7 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
             `${userStatusRunningText} • Role: ${currentUser.role.toUpperCase()}`
           );
         }}
-        className="flex items-center gap-2 px-3 py-1 bg-slate-50/90 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800/80 text-[11px] cursor-pointer"
+        className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/90 dark:bg-slate-950/80 border-t border-slate-100 dark:border-slate-800 text-[11px] cursor-pointer"
         title="Klik untuk info detail status akun Anda"
       >
         <div className="flex items-center gap-1.5 shrink-0">

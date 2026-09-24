@@ -25,6 +25,7 @@ import { WeeklyAttendanceSparkline } from './WeeklyAttendanceSparkline';
 import { StudentDirectorySearch } from './StudentDirectorySearch';
 import { DashboardQuickActions } from './DashboardQuickActions';
 import { AcademicCalendarWidget } from './AcademicCalendarWidget';
+import { RecentActivityFeed } from './RecentActivityFeed';
 
 // Framer Motion staggered entrance animations for summary cards
 const staggerContainerVariants: Variants = {
@@ -499,6 +500,9 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
       {/* Recharts: Grafik Perbandingan Nilai Rata-Rata Kelas Antar Semester */}
       <SemesterGradeComparisonChart classes={classes} />
+
+      {/* Umpan Aktivitas Terbaru Pengguna (Recent Activity Feed) */}
+      <RecentActivityFeed currentUser={currentUser} onNavigateTab={onNavigateTab} />
 
       {/* RBAC Access Matrix Reference (Hanya tampil untuk role Admin) */}
       {currentUser.role === 'admin' && (

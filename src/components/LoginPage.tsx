@@ -444,55 +444,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, appSetting
         <div className="absolute inset-0 -m-[420px] rounded-full border border-white/20 dark:border-slate-700/15" />
       </div>
 
-      {/* Realistic Layered Clouds Backdrop */}
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none z-0 h-[65vh] overflow-hidden opacity-95 dark:opacity-20 transition-opacity">
-        <svg
-          viewBox="0 0 1440 600"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="absolute bottom-0 w-full h-full object-cover preserve-3d"
-        >
-          <defs>
-            <linearGradient id="cloudGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="#e2f1fc" stopOpacity="0.95" />
-            </linearGradient>
-            <linearGradient id="cloudGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-              <stop offset="60%" stopColor="#f5faff" stopOpacity="0.98" />
-              <stop offset="100%" stopColor="#dbeeff" stopOpacity="1" />
-            </linearGradient>
-            <filter id="cloudSoftBlur" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="14" />
-            </filter>
-            <filter id="cloudDistantBlur" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="28" />
-            </filter>
-          </defs>
-
-          <g filter="url(#cloudDistantBlur)" opacity="0.6">
-            <ellipse cx="220" cy="420" rx="340" ry="140" fill="url(#cloudGrad1)" />
-            <ellipse cx="720" cy="450" rx="420" ry="160" fill="url(#cloudGrad1)" />
-            <ellipse cx="1260" cy="410" rx="360" ry="150" fill="url(#cloudGrad1)" />
-          </g>
-
-          <g filter="url(#cloudSoftBlur)" opacity="0.85">
-            <path
-              d="M-50 600 C 60 480, 200 420, 360 450 C 490 350, 680 370, 780 440 C 900 340, 1100 350, 1220 420 C 1320 370, 1450 430, 1500 520 L 1500 600 Z"
-              fill="url(#cloudGrad1)"
-            />
-          </g>
-
-          <path
-            d="M-40 600 C 40 500, 160 460, 280 490 C 360 410, 520 400, 620 470 C 700 420, 840 430, 920 480 C 1040 390, 1220 400, 1340 470 C 1410 430, 1480 480, 1520 560 L 1520 600 Z"
-            fill="url(#cloudGrad2)"
-          />
-
-          <ellipse cx="120" cy="380" rx="180" ry="75" fill="#ffffff" opacity="0.8" />
-          <ellipse cx="1320" cy="360" rx="200" ry="80" fill="#ffffff" opacity="0.85" />
-          <ellipse cx="40" cy="450" rx="240" ry="90" fill="#ffffff" opacity="0.9" />
-          <ellipse cx="1400" cy="440" rx="260" ry="95" fill="#ffffff" opacity="0.9" />
-        </svg>
+      {/* Minimalist Ambient Glow Backdrop (Clean & Ergonomic) */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-400/10 dark:bg-indigo-600/5 rounded-full blur-3xl" />
       </div>
 
       {/* ========================================================================= */}

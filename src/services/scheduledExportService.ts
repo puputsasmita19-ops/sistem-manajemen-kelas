@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc as firestoreDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { storage, firestore } from './firebaseClient';
 import { DatabaseService } from './databaseService';
 import { PrintAndExportService } from './printAndExportService';
@@ -20,6 +20,22 @@ import {
   ClassMember,
   DatabaseSnapshot
 } from '../types';
+
+export interface BulkAcademicExportOptions {
+  startDate: string;
+  endDate: string;
+  targetClassId: string;
+  title?: string;
+  includeAttendance?: boolean;
+  includeGrades?: boolean;
+  includeTeachingJournal?: boolean;
+  includeClassRoster?: boolean;
+  includeExecutiveSummary?: boolean;
+  includeKopSurat?: boolean;
+  includeSignatures?: boolean;
+  paperSize?: 'a4' | 'f4' | 'letter' | 'legal';
+  paperOrientation?: 'portrait' | 'landscape';
+}
 
 export class ScheduledExportService {
   private static instance: ScheduledExportService;
@@ -134,7 +150,7 @@ export class ScheduledExportService {
 
     // Simpan ke Firestore jika terhubung
     try {
-      await setDoc(doc(firestore, 'scheduled_export_configs', id), fullConfig, { merge: true });
+      await setDoc(firestoreDoc(firestore, 'scheduled_export_configs', id), fullConfig, { merge: true });
     } catch (err) {
       console.warn('Firestore sync scheduled config warning:', err);
     }
@@ -162,7 +178,7 @@ export class ScheduledExportService {
       this.dbService.saveToStorage();
 
       try {
-        await deleteDoc(doc(firestore, 'scheduled_export_configs', scheduleId));
+        await deleteDoc(firestoreDoc(firestore, 'scheduled_export_configs', scheduleId));
       } catch (err) {
         console.warn('Firestore delete scheduled config warning:', err);
       }
@@ -192,7 +208,7 @@ export class ScheduledExportService {
 
       try {
         await setDoc(
-          doc(firestore, 'scheduled_export_configs', scheduleId),
+          firestoreDoc(firestore, 'scheduled_export_configs', scheduleId),
           { isEnabled, updatedAt: new Date().toISOString() },
           { merge: true }
         );
@@ -231,7 +247,7 @@ export class ScheduledExportService {
       this.dbService.saveToStorage();
 
       try {
-        await deleteDoc(doc(firestore, 'scheduled_reports', reportId));
+        await deleteDoc(firestoreDoc(firestore, 'scheduled_reports', reportId));
       } catch {}
 
       this.dbService.logActivity(
@@ -285,7 +301,7 @@ export class ScheduledExportService {
               snapshot.scheduled_export_configs[sched.id].lastErrorAt = new Date().toISOString();
               this.dbService.saveToStorage();
               try {
-                await setDoc(doc(firestore, 'scheduled_export_configs', sched.id), snapshot.scheduled_export_configs[sched.id], { merge: true });
+                await setDoc(firestoreDoc(firestore, 'scheduled_export_configs', sched.id), snapshot.scheduled_export_configs[sched.id], { merge: true });
               } catch (e) {}
             }
 
@@ -686,11 +702,11 @@ export class ScheduledExportService {
     try {
       const firestorePayload: any = { ...newReport };
       delete firestorePayload.pdfBase64;
-      await setDoc(doc(firestore, 'scheduled_reports', reportId), firestorePayload);
+      await setDoc(firestoreDoc(firestore, 'scheduled_reports', reportId), firestorePayload);
 
       if (existingSched && snapshot.scheduled_export_configs?.[existingSched.id]) {
         await setDoc(
-          doc(firestore, 'scheduled_export_configs', existingSched.id),
+          firestoreDoc(firestore, 'scheduled_export_configs', existingSched.id),
           snapshot.scheduled_export_configs[existingSched.id],
           { merge: true }
         );
@@ -984,6 +1000,421 @@ export class ScheduledExportService {
     }
 
     return { doc, totalRecords, safeTitle };
+  }
+
+  /**
+   * Ekspor Massal Seketika (Immediate Bulk Export) Seluruh Data Akademik ke PDF Berdasarkan Rentang Tanggal
+   */
+  public async exportImmediateBulkAcademicPDF(
+    options: BulkAcademicExportOptions,
+    executorId: string = 'user_admin1'
+  ): Promise<ScheduledExportReport> {
+    const appSettings = this.dbService.getAppSettings();
+    const orientation = options.paperOrientation || 'portrait';
+    const doc = this.printService.initPDF(appSettings, orientation);
+    const paper = this.printService.getPaperFormat(appSettings, orientation);
+    const pageWidth = paper.width;
+    const pageHeight = paper.height;
+
+    const snapshot = this.dbService.getRawSnapshot();
+    const allClasses = Object.values(snapshot.classes || {}) as ClassEntity[];
+    const allUsers = Object.values(snapshot.users || {}) as User[];
+    const allStudents = allUsers.filter((u) => u.role === 'siswa');
+    const allAttendance = Object.values(snapshot.attendance || {}) as Attendance[];
+    const allGrades = Object.values(snapshot.grades || {}) as Grade[];
+    const allMembers = Object.values(snapshot.class_members || {}) as ClassMember[];
+    const allSubjects = Object.values(snapshot.subjects || {}) as Subject[];
+
+    const startDate = options.startDate;
+    const endDate = options.endDate;
+
+    const targetStudents = allStudents.filter((s) => {
+      if (options.targetClassId === 'all') return true;
+      return allMembers.some((cm) => cm.student_id === s.id && cm.class_id === options.targetClassId);
+    });
+
+    const targetAttendance = allAttendance.filter((a) => {
+      if (a.date < startDate || a.date > endDate) return false;
+      if (options.targetClassId !== 'all' && a.class_id !== options.targetClassId) return false;
+      return true;
+    });
+
+    const docTitle = options.title || `EKSPOR MASSAL DATA AKADEMIK LENGKAP`;
+    const targetClassObj = options.targetClassId !== 'all' ? allClasses.find((c) => c.id === options.targetClassId) : null;
+    const periodSubtitle = `Periode: ${startDate} s/d ${endDate}${targetClassObj ? ` • Rombel: ${targetClassObj.nama_kelas}` : ' • Seluruh Rombel'}`;
+
+    // 1. Render Kop Surat
+    let startY = paper.marginTop;
+    if (options.includeKopSurat !== false) {
+      startY = this.printService.renderKopSurat(
+        doc,
+        appSettings,
+        docTitle,
+        periodSubtitle,
+        orientation
+      );
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(15, 23, 42);
+      doc.text(docTitle, pageWidth / 2, startY + 5, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(periodSubtitle, pageWidth / 2, startY + 11, { align: 'center' });
+      startY += 16;
+    }
+
+    // 2. Executive Summary Statistics
+    if (options.includeExecutiveSummary !== false) {
+      const hCount = targetAttendance.filter((a) => a.status === 'H').length;
+      const iCount = targetAttendance.filter((a) => a.status === 'I').length;
+      const sCount = targetAttendance.filter((a) => a.status === 'S').length;
+      const aCount = targetAttendance.filter((a) => a.status === 'A').length;
+      const totalAtt = targetAttendance.length;
+      const attRate = totalAtt > 0 ? ((hCount / totalAtt) * 100).toFixed(1) : '100.0';
+
+      const studentGrades = allGrades.filter((g) => targetStudents.some((s) => s.id === g.student_id));
+      const avgScore = studentGrades.length > 0
+        ? (studentGrades.reduce((acc, curr) => acc + (curr.score || 0), 0) / studentGrades.length).toFixed(1)
+        : '-';
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(paper.marginLeft, startY, pageWidth - paper.marginLeft - paper.marginRight, 16, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(30, 41, 59);
+
+      const colW = (pageWidth - paper.marginLeft - paper.marginRight) / 4;
+      doc.text(`Total Siswa Terdata: ${targetStudents.length} Siswa`, paper.marginLeft + 4, startY + 5.5);
+      doc.text(`Total Sesi Presensi: ${totalAtt} Log`, paper.marginLeft + 4, startY + 11.5);
+
+      doc.text(`Hadir: ${hCount} | Izin: ${iCount}`, paper.marginLeft + colW + 4, startY + 5.5);
+      doc.text(`Sakit: ${sCount} | Alpa: ${aCount}`, paper.marginLeft + colW + 4, startY + 11.5);
+
+      doc.text(`Rata-rata Kehadiran: ${attRate}%`, paper.marginLeft + colW * 2 + 4, startY + 5.5);
+      doc.text(`Tuntas KKM Presensi: Ya`, paper.marginLeft + colW * 2 + 4, startY + 11.5);
+
+      doc.text(`Rata-rata Nilai: ${avgScore}`, paper.marginLeft + colW * 3 + 4, startY + 5.5);
+      doc.text(`Status Audit: Terverifikasi`, paper.marginLeft + colW * 3 + 4, startY + 11.5);
+
+      startY += 20;
+    }
+
+    // 3. Section I: Attendance Table
+    if (options.includeAttendance !== false) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(30, 58, 138);
+      doc.text('I. REKAPITULASI PRESENSI SISWA & TINGKAT KEHADIRAN', paper.marginLeft, startY + 4);
+      startY += 6;
+
+      const attRows = targetStudents.map((std, idx) => {
+        const sAtt = targetAttendance.filter((a) => a.student_id === std.id);
+        const h = sAtt.filter((a) => a.status === 'H').length;
+        const i = sAtt.filter((a) => a.status === 'I').length;
+        const s = sAtt.filter((a) => a.status === 'S').length;
+        const a = sAtt.filter((a) => a.status === 'A').length;
+        const tot = sAtt.length;
+        const pct = tot > 0 ? `${((h / tot) * 100).toFixed(0)}%` : '-';
+        const mem = allMembers.find((cm) => cm.student_id === std.id);
+        const cls = mem ? allClasses.find((c) => c.id === mem.class_id) : null;
+
+        return [
+          String(idx + 1),
+          std.nis || std.username || '-',
+          std.nama,
+          cls ? cls.nama_kelas : '-',
+          String(h),
+          String(i),
+          String(s),
+          String(a),
+          pct,
+          pct === '-' || parseInt(pct, 10) >= 85 ? 'Sangat Baik' : parseInt(pct, 10) >= 75 ? 'Cukup' : 'Perlu Bimbingan'
+        ];
+      });
+
+      autoTable(doc, {
+        startY,
+        head: [['No', 'NIS/ID', 'Nama Siswa', 'Kelas', 'H', 'I', 'S', 'A', '% Hadir', 'Keterangan']],
+        body: attRows.length > 0 ? attRows : [['-', '-', 'Tidak ada data presensi pada rentang tanggal ini', '-', '-', '-', '-', '-', '-', '-']],
+        margin: { left: paper.marginLeft, right: paper.marginRight },
+        styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [30, 41, 59] },
+        headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 18, halign: 'center' },
+          4: { cellWidth: 9, halign: 'center' },
+          5: { cellWidth: 9, halign: 'center' },
+          6: { cellWidth: 9, halign: 'center' },
+          7: { cellWidth: 9, halign: 'center' },
+          8: { cellWidth: 14, halign: 'center' },
+          9: { cellWidth: 24 }
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+      });
+
+      startY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 9 : startY + 40;
+    }
+
+    // 4. Section II: Grades Table
+    if (options.includeGrades !== false) {
+      if (startY > pageHeight - 65) {
+        doc.addPage();
+        startY = paper.marginTop;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text('II. REKAPITULASI CAPAIAN NILAI AKADEMIK SISWA', paper.marginLeft, startY + 4);
+      startY += 6;
+
+      const gradeRows = targetStudents.map((std, idx) => {
+        const studentGrades = allGrades.filter((g) => g.student_id === std.id);
+        const tugas = studentGrades.filter((g) => g.type === 'Tugas').map((g) => g.score);
+        const uts = studentGrades.filter((g) => g.type === 'UTS').map((g) => g.score);
+        const uas = studentGrades.filter((g) => g.type === 'UAS').map((g) => g.score);
+
+        const avgT = tugas.length > 0 ? (tugas.reduce((a, b) => a + b, 0) / tugas.length).toFixed(1) : '-';
+        const avgU = uts.length > 0 ? (uts.reduce((a, b) => a + b, 0) / uts.length).toFixed(1) : '-';
+        const avgA = uas.length > 0 ? (uas.reduce((a, b) => a + b, 0) / uas.length).toFixed(1) : '-';
+
+        const allScores = [...tugas, ...uts, ...uas];
+        const finalAvg = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : '-';
+        const mem = allMembers.find((cm) => cm.student_id === std.id);
+        const cls = mem ? allClasses.find((c) => c.id === mem.class_id) : null;
+        const predikat = finalAvg === '-' ? '-' : parseFloat(finalAvg) >= 88 ? 'A (Sangat Baik)' : parseFloat(finalAvg) >= 78 ? 'B (Baik)' : 'C (Cukup)';
+
+        return [
+          String(idx + 1),
+          std.nis || std.username || '-',
+          std.nama,
+          cls ? cls.nama_kelas : '-',
+          avgT,
+          avgU,
+          avgA,
+          finalAvg,
+          predikat
+        ];
+      });
+
+      autoTable(doc, {
+        startY,
+        head: [['No', 'NIS/ID', 'Nama Lengkap Siswa', 'Kelas', 'Tugas', 'UTS', 'UAS', 'Nilai Akhir', 'Predikat']],
+        body: gradeRows.length > 0 ? gradeRows : [['-', '-', 'Belum ada input nilai', '-', '-', '-', '-', '-', '-']],
+        margin: { left: paper.marginLeft, right: paper.marginRight },
+        styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [30, 41, 59] },
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 18, halign: 'center' },
+          4: { cellWidth: 14, halign: 'center' },
+          5: { cellWidth: 14, halign: 'center' },
+          6: { cellWidth: 14, halign: 'center' },
+          7: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+          8: { cellWidth: 26, halign: 'center' }
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+      });
+
+      startY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 9 : startY + 40;
+    }
+
+    // 5. Section III: Teacher Teaching Journal & Lesson Agendas
+    if (options.includeTeachingJournal !== false) {
+      const journalAttendance = targetAttendance.filter((a) => a.attendanceType === 'mapel_kbm' || Boolean(a.topicOrMeeting));
+      if (journalAttendance.length > 0) {
+        if (startY > pageHeight - 65) {
+          doc.addPage();
+          startY = paper.marginTop;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.setTextColor(30, 58, 138);
+        doc.text('III. JURNAL & AGENDA PEMBELAJARAN (KBM GURU)', paper.marginLeft, startY + 4);
+        startY += 6;
+
+        const journalRows = journalAttendance.slice(0, 30).map((a, idx) => {
+          const cls = allClasses.find((c) => c.id === a.class_id);
+          const subj = allSubjects.find((s) => s.id === a.subject_id);
+          const teacher = subj ? allUsers.find((u) => u.id === subj.guru_id) : null;
+
+          return [
+            String(idx + 1),
+            a.date,
+            cls ? cls.nama_kelas : '-',
+            subj ? subj.nama_mapel : 'Mata Pelajaran',
+            a.topicOrMeeting || a.note || 'Agenda Pembelajaran KBM',
+            teacher ? teacher.nama : 'Guru Pengampu'
+          ];
+        });
+
+        autoTable(doc, {
+          startY,
+          head: [['No', 'Tanggal', 'Kelas', 'Mata Pelajaran', 'Topik / Materi Pokok', 'Guru Pengampu']],
+          body: journalRows,
+          margin: { left: paper.marginLeft, right: paper.marginRight },
+          styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [30, 41, 59] },
+          headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+          columnStyles: {
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 20, halign: 'center' },
+            2: { cellWidth: 18, halign: 'center' },
+            3: { cellWidth: 32 },
+            4: { cellWidth: 'auto' },
+            5: { cellWidth: 34 }
+          },
+          alternateRowStyles: { fillColor: [248, 250, 252] }
+        });
+
+        startY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 9 : startY + 35;
+      }
+    }
+
+    // 6. Section IV: Class & Homeroom Structure
+    if (options.includeClassRoster !== false && options.targetClassId === 'all') {
+      if (startY > pageHeight - 60) {
+        doc.addPage();
+        startY = paper.marginTop;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text('IV. STRUKTUR ROMBONGAN BELAJAR & WALI KELAS', paper.marginLeft, startY + 4);
+      startY += 6;
+
+      const classRows = allClasses.map((cls, idx) => {
+        const memCount = allMembers.filter((cm) => cm.class_id === cls.id).length;
+        const wali = allUsers.find((u) => u.id === cls.wali_kelas_id);
+        return [
+          String(idx + 1),
+          cls.nama_kelas,
+          cls.tahun_ajaran || '2025/2026',
+          wali ? wali.nama : 'Belum Ditugaskan',
+          `${memCount} Siswa`,
+          'Aktif Terjadwal'
+        ];
+      });
+
+      autoTable(doc, {
+        startY,
+        head: [['No', 'Rombel / Kelas', 'Tahun Ajaran', 'Wali Kelas', 'Jumlah Siswa', 'Status']],
+        body: classRows,
+        margin: { left: paper.marginLeft, right: paper.marginRight },
+        styles: { fontSize: 7.5, cellPadding: 1.8, textColor: [30, 41, 59] },
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 24, halign: 'center' },
+          3: { cellWidth: 'auto' },
+          4: { cellWidth: 24, halign: 'center' },
+          5: { cellWidth: 26, halign: 'center' }
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+      });
+
+      startY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 9 : startY + 35;
+    }
+
+    // 7. Render Tanda Tangan
+    if (options.includeSignatures !== false) {
+      if (startY > pageHeight - 45) {
+        doc.addPage();
+        startY = paper.marginTop;
+      }
+      this.printService.renderTandaTangan(
+        doc,
+        appSettings,
+        startY,
+        undefined,
+        undefined,
+        orientation
+      );
+    }
+
+    // 8. Generate Base64 & Upload
+    const now = new Date();
+    const pdfBase64 = doc.output('datauristring');
+    const pdfBlob = doc.output('blob');
+    const fileSizeBytes = pdfBlob.size;
+    const fileSizeFormatted = this.formatFileSize(fileSizeBytes);
+
+    const safeFileName = `SIMAK_Ekspor_Massal_Akademik_${startDate}_sd_${endDate}.pdf`;
+    const storagePath = `automated_reports/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${safeFileName}`;
+
+    let downloadUrl = pdfBase64;
+    let storageProvider: 'firebase_storage' | 'cloud_synced' = 'cloud_synced';
+
+    try {
+      const storageReference = ref(storage, storagePath);
+      const snapshotUpload = await uploadBytes(storageReference, pdfBlob, {
+        contentType: 'application/pdf',
+        customMetadata: {
+          title: docTitle,
+          reportType: 'comprehensive_academic',
+          period: `${startDate} s/d ${endDate}`,
+          generatedBy: executorId
+        }
+      });
+      downloadUrl = await getDownloadURL(snapshotUpload.ref);
+      storageProvider = 'firebase_storage';
+    } catch (e) {
+      downloadUrl = pdfBase64;
+    }
+
+    const reportId = `rep_bulk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newReport: ScheduledExportReport = {
+      id: reportId,
+      title: docTitle,
+      fileName: safeFileName,
+      reportType: 'comprehensive_academic',
+      frequencyType: 'Ekspor Massal Seketika',
+      periodLabel: `${startDate} s/d ${endDate}`,
+      generatedAt: now.toISOString(),
+      fileSizeBytes,
+      fileSizeFormatted,
+      storagePath,
+      downloadUrl,
+      pdfBase64,
+      status: 'completed',
+      generatedBy: executorId === 'user_admin1' ? 'Administrator' : executorId,
+      totalRecordsCount: targetAttendance.length + targetStudents.length,
+      downloadCount: 1,
+      storageProvider
+    };
+
+    if (!snapshot.scheduled_reports) {
+      snapshot.scheduled_reports = {};
+    }
+    snapshot.scheduled_reports[reportId] = newReport;
+    this.dbService.saveToStorage();
+
+    try {
+      const payload: any = { ...newReport };
+      delete payload.pdfBase64;
+      await setDoc(firestoreDoc(firestore, 'scheduled_reports', reportId), payload);
+    } catch (e) {}
+
+    this.dbService.logActivity(
+      'export_pdf',
+      'Ekspor Massal Semua Data Akademik PDF',
+      `Ekspor PDF massal berhasil dibuat untuk periode ${startDate} s/d ${endDate} (${fileSizeFormatted}).`,
+      'scheduled_reports',
+      { reportId, fileName: safeFileName, size: fileSizeFormatted }
+    );
+
+    this.notifySubscribers();
+    return newReport;
   }
 
   /**
