@@ -35,7 +35,7 @@ interface ChartGradesProps {
   onTimeRangeChange?: (range: TimeRangeFilter) => void;
 }
 
-export const ChartGrades: React.FC<ChartGradesProps> = ({
+export const ChartGrades: React.FC<ChartGradesProps> = React.memo(({
   labels: propLabels,
   tugas: propTugas,
   uts: propUts,
@@ -47,9 +47,9 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
   onTimeRangeChange
 }) => {
   const dbService = DatabaseService.getInstance();
-  const subjects = dbService.getAllSubjects();
-  const students = dbService.getClassStudents(classId);
-  const appSettings = dbService.getAppSettings();
+  const subjects = useMemo(() => dbService.getAllSubjects(), [dbService]);
+  const students = useMemo(() => dbService.getClassStudents(classId), [dbService, classId]);
+  const appSettings = useMemo(() => dbService.getAppSettings(), [dbService]);
   const { isDark } = useTheme();
 
   // Active Time Range State (synced with parent or local)
@@ -79,17 +79,17 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       setRealtimeVersion(v => v + 1);
     });
     return () => unsub();
-  }, []);
+  }, [dbService]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
+  const prevChartTypeRef = useRef<string>(chartType);
 
-  // Compute dataset based on selected filters
+  // Compute dataset based on selected filters with efficient memoization
   const chartData = useMemo(() => {
-    // If props are provided and filter is 'all', we can use props or construct from database
     const studentNames = students.map((s: User) => s.nama.split(' ')[0]); // Nickname for chart x-axis
     const rawSnapshot = dbService.getRawSnapshot();
-    const allGrades = Object.values(rawSnapshot.grades);
+    const allGrades = Object.values(rawSnapshot.grades || {});
 
     const tugasList: number[] = [];
     const utsList: number[] = [];
@@ -132,9 +132,9 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     const activeFinals = finalList.length > 0 ? finalList : (propFinalScores || [88, 84, 75, 96, 70]);
     const maxScore = Math.max(...activeFinals);
     const minScore = Math.min(...activeFinals);
-    const avgScore = Math.round(activeFinals.reduce((a, b) => a + b, 0) / activeFinals.length);
+    const avgScore = Math.round(activeFinals.reduce((a, b) => a + b, 0) / (activeFinals.length || 1));
     const passingCount = activeFinals.filter(s => s >= 75).length;
-    const passingRate = Math.round((passingCount / activeFinals.length) * 100);
+    const passingRate = Math.round((passingCount / (activeFinals.length || 1)) * 100);
 
     return {
       labels: studentNames.length > 0 ? studentNames : (propLabels || ['Ahmad', 'Dewi', 'Fahri', 'Nabila', 'Reza']),
@@ -149,31 +149,11 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
         passingRate
       }
     };
-  }, [selectedSubjectId, selectedComponent, students, propLabels, propTugas, propUts, propUas, propFinalScores, realtimeVersion, activeRange]);
+  }, [selectedSubjectId, students, propLabels, propTugas, propUts, propUas, propFinalScores, realtimeVersion, activeRange, dbService]);
 
-  // Render Chart.js
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-
-    const isDarkMode = typeof document !== 'undefined' 
-      ? document.documentElement.classList.contains('dark') 
-      : isDark;
-    const yTickColor = isDarkMode ? '#CBD5E1' : '#0F172A';
-    const xLabelColor = isDarkMode ? '#F8FAFC' : '#0F172A';
-    const gridColor = isDarkMode ? 'rgba(148, 163, 184, 0.2)' : '#E2E8F0';
-    const legendColor = isDarkMode ? '#F8FAFC' : '#0F172A';
-
-    Chart.defaults.color = isDarkMode ? '#F8FAFC' : '#0F172A';
-    Chart.defaults.borderColor = gridColor;
-
-    const datasets: any[] = [];
+  // Memoized datasets definition
+  const datasets = useMemo(() => {
+    const list: any[] = [];
     const isLineOrArea = chartType === 'line' || chartType === 'area';
     const fillOption = chartType === 'area';
 
@@ -195,7 +175,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
         : 'Nilai Akhir Semester (100%)';
 
     if (selectedComponent === 'all' || selectedComponent === 'Tugas') {
-      datasets.push({
+      list.push({
         type: isLineOrArea ? 'line' : 'bar',
         label: tugasLabel,
         data: chartData.tugas,
@@ -208,9 +188,8 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       });
     }
 
-    // UTS ditampilkan pada mode bulanan dan semester (atau jika komponen dipilih manual)
     if ((activeRange !== 'mingguan' || selectedComponent === 'UTS') && (selectedComponent === 'all' || selectedComponent === 'UTS')) {
-      datasets.push({
+      list.push({
         type: isLineOrArea ? 'line' : 'bar',
         label: utsLabel,
         data: chartData.uts,
@@ -223,9 +202,8 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       });
     }
 
-    // UAS ditampilkan pada mode semester (atau jika komponen dipilih manual)
     if ((activeRange === 'semester' || selectedComponent === 'UAS') && (selectedComponent === 'all' || selectedComponent === 'UAS')) {
-      datasets.push({
+      list.push({
         type: isLineOrArea ? 'line' : 'bar',
         label: 'UAS Semester (40%)',
         data: chartData.uas,
@@ -239,7 +217,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     }
 
     if (selectedComponent === 'all' || selectedComponent === 'Final') {
-      datasets.push({
+      list.push({
         type: 'line',
         label: finalScoreLabel,
         data: chartData.finalScores,
@@ -256,6 +234,50 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       });
     }
 
+    return list;
+  }, [chartType, activeRange, selectedComponent, chartData.tugas, chartData.uts, chartData.uas, chartData.finalScores]);
+
+  // Efficient Chart.js Lifecycle Management (In-Place Update without destruction flicker)
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const isDarkMode = typeof document !== 'undefined' 
+      ? document.documentElement.classList.contains('dark') 
+      : isDark;
+    const yTickColor = isDarkMode ? '#CBD5E1' : '#0F172A';
+    const xLabelColor = isDarkMode ? '#F8FAFC' : '#0F172A';
+    const gridColor = isDarkMode ? 'rgba(148, 163, 184, 0.2)' : '#E2E8F0';
+    const legendColor = isDarkMode ? '#F8FAFC' : '#0F172A';
+
+    // If chart instance exists and chartType is unchanged, update datasets in place for smooth performance
+    if (chartInstanceRef.current && prevChartTypeRef.current === chartType) {
+      chartInstanceRef.current.data.labels = chartData.labels;
+      chartInstanceRef.current.data.datasets = datasets;
+      if (chartInstanceRef.current.options.plugins?.legend?.labels) {
+        chartInstanceRef.current.options.plugins.legend.labels.color = legendColor;
+      }
+      if (chartInstanceRef.current.options.scales?.y?.ticks) {
+        chartInstanceRef.current.options.scales.y.ticks.color = yTickColor;
+      }
+      if (chartInstanceRef.current.options.scales?.x?.ticks) {
+        chartInstanceRef.current.options.scales.x.ticks.color = xLabelColor;
+      }
+      chartInstanceRef.current.update();
+      return;
+    }
+
+    prevChartTypeRef.current = chartType;
+
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    Chart.defaults.color = isDarkMode ? '#F8FAFC' : '#0F172A';
+    Chart.defaults.borderColor = gridColor;
+
     chartInstanceRef.current = new Chart(ctx, {
       type: chartType === 'bar' ? 'bar' : 'line',
       data: {
@@ -265,6 +287,9 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 350
+        },
         interaction: {
           mode: 'index',
           intersect: false
@@ -318,9 +343,10 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
       }
     };
-  }, [chartData, selectedComponent, chartType, isDark]);
+  }, [chartData.labels, datasets, chartType, isDark]);
 
   const exportVisualAnalysisPDF = () => {
     if (!canvasRef.current) {
@@ -671,4 +697,7 @@ export const ChartGrades: React.FC<ChartGradesProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ChartGrades.displayName = 'ChartGrades';
+

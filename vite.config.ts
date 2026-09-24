@@ -44,17 +44,23 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//],
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,webmanifest}'],
           runtimeCaching: [
             {
+              // Google Fonts Stylesheets
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
+              handler: 'StaleWhileRevalidate',
               options: {
-                cacheName: 'google-fonts-cache',
+                cacheName: 'google-fonts-stylesheets',
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                  maxEntries: 20,
+                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 tahun
                 },
                 cacheableResponse: {
                   statuses: [0, 200],
@@ -62,13 +68,60 @@ export default defineConfig(() => {
               },
             },
             {
+              // Google Fonts Webfonts
               urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
               handler: 'CacheFirst',
               options: {
-                cacheName: 'gstatic-fonts-cache',
+                cacheName: 'google-fonts-webfonts',
                 expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                  maxEntries: 30,
+                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1 tahun
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              // Static Images, Icons & Media Assets
+              urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|avif)$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'app-static-images',
+                expiration: {
+                  maxEntries: 150,
+                  maxAgeSeconds: 60 * 60 * 24 * 60, // 60 hari
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              // Cloud Storage, Google Drive Photo Thumbnails & External CDN Assets
+              urlPattern: /^https:\/\/(?:images\.unsplash\.com|drive\.google\.com|lh3\.googleusercontent\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|firebasestorage\.googleapis\.com)\/.*/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'cloud-media-cdn-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 hari
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              // Firebase Firestore & Realtime Sync Offline Fallback
+              urlPattern: /^https:\/\/(?:firestore\.googleapis\.com|identitytoolkit\.googleapis\.com)\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'firebase-offline-cache',
+                networkTimeoutSeconds: 3,
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 hari
                 },
                 cacheableResponse: {
                   statuses: [0, 200],

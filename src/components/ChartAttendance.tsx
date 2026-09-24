@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { useTheme } from '../utils/useTheme';
 import { TimeRangeFilter } from '../types';
@@ -18,7 +18,7 @@ interface ChartAttendanceProps {
   periodLabel?: string;
 }
 
-export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
+export const ChartAttendance: React.FC<ChartAttendanceProps> = React.memo(({
   data,
   title = 'Distribusi Kehadiran',
   timeRange = 'mingguan',
@@ -26,12 +26,18 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
+  const prevDataRef = useRef<{ h: number; i: number; s: number; a: number; isDark: boolean } | null>(null);
   const { isDark } = useTheme();
 
-  const total = data.Hadir + data.Izin + data.Sakit + data.Alpa;
-  const attendanceRate = total > 0 ? Math.round((data.Hadir / total) * 100) : 0;
+  // 1. Memoized Calculations for Totals & Attendance Percentage
+  const { total, attendanceRate } = useMemo(() => {
+    const totalCount = data.Hadir + data.Izin + data.Sakit + data.Alpa;
+    const rate = totalCount > 0 ? Math.round((data.Hadir / totalCount) * 100) : 0;
+    return { total: totalCount, attendanceRate: rate };
+  }, [data.Hadir, data.Izin, data.Sakit, data.Alpa]);
 
-  const getRangeBadge = () => {
+  // 2. Memoized Range Badge Configuration
+  const badge = useMemo(() => {
     switch (timeRange) {
       case 'mingguan':
         return { label: 'Pekan Berjalan', color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800' };
@@ -39,11 +45,12 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
         return { label: 'Bulan Ini', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' };
       case 'semester':
         return { label: 'Semester Berjalan', color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' };
+      default:
+        return { label: 'Semua Waktu', color: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' };
     }
-  };
+  }, [timeRange]);
 
-  const badge = getRangeBadge();
-
+  // 3. Stable Chart Initialization & In-Place Updates (Zero Flicker during Firebase Sync)
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -53,11 +60,35 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
     const legendTextColor = isDarkMode ? '#F8FAFC' : '#0F172A';
     const sliceBorderColor = isDarkMode ? '#1E293B' : '#FFFFFF';
 
-    // If chart instance already exists, update data in place for smooth real-time animation
+    const currentSnapshot = {
+      h: data.Hadir,
+      i: data.Izin,
+      s: data.Sakit,
+      a: data.Alpa,
+      isDark: isDarkMode
+    };
+
+    // Check if data or theme actually changed before calling Chart.js updates
+    const hasDataChanged = !prevDataRef.current ||
+      prevDataRef.current.h !== currentSnapshot.h ||
+      prevDataRef.current.i !== currentSnapshot.i ||
+      prevDataRef.current.s !== currentSnapshot.s ||
+      prevDataRef.current.a !== currentSnapshot.a ||
+      prevDataRef.current.isDark !== currentSnapshot.isDark;
+
+    if (!hasDataChanged && chartInstanceRef.current) {
+      return;
+    }
+
+    prevDataRef.current = currentSnapshot;
+
+    // If chart instance already exists, update data in place smoothly without destroying canvas
     if (chartInstanceRef.current) {
       chartInstanceRef.current.data.datasets[0].data = [data.Hadir, data.Izin, data.Sakit, data.Alpa];
       chartInstanceRef.current.data.datasets[0].borderColor = sliceBorderColor;
-      chartInstanceRef.current.options.plugins!.legend!.labels!.color = legendTextColor;
+      if (chartInstanceRef.current.options.plugins?.legend?.labels) {
+        chartInstanceRef.current.options.plugins.legend.labels.color = legendTextColor;
+      }
       chartInstanceRef.current.update();
       return;
     }
@@ -90,6 +121,9 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 400
+        },
         plugins: {
           legend: {
             position: 'bottom',
@@ -108,9 +142,9 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
             cornerRadius: 10,
             callbacks: {
               label: function (context) {
-                const total = data.Hadir + data.Izin + data.Sakit + data.Alpa;
+                const totalCount = data.Hadir + data.Izin + data.Sakit + data.Alpa;
                 const value = Number(context.raw) || 0;
-                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                const pct = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : '0';
                 return ` ${context.label}: ${value} (${pct}%)`;
               }
             }
@@ -177,4 +211,17 @@ export const ChartAttendance: React.FC<ChartAttendanceProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.data.Hadir === nextProps.data.Hadir &&
+    prevProps.data.Izin === nextProps.data.Izin &&
+    prevProps.data.Sakit === nextProps.data.Sakit &&
+    prevProps.data.Alpa === nextProps.data.Alpa &&
+    prevProps.title === nextProps.title &&
+    prevProps.timeRange === nextProps.timeRange &&
+    prevProps.periodLabel === nextProps.periodLabel
+  );
+});
+
+ChartAttendance.displayName = 'ChartAttendance';
+
