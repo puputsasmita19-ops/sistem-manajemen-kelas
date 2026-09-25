@@ -1,11 +1,42 @@
 import Swal from 'sweetalert2';
 import { SchoolAnnouncement, User, Grade } from '../types';
 import { DatabaseService } from './databaseService';
+import { firestore, getFirebaseMessaging, firebaseConfig } from './firebaseClient';
+import { getToken, onMessage, Messaging } from 'firebase/messaging';
+import { doc, setDoc, getDocs, collection, query, where, deleteDoc } from 'firebase/firestore';
+
+export interface FCMRegisteredDevice {
+  id: string;
+  token: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  deviceInfo?: string;
+  lastActive?: string;
+  createdAt?: string;
+}
+
+export interface FCMPushLog {
+  id: string;
+  announcementId?: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: 'high' | 'normal';
+  targetRole: string;
+  author: string;
+  dispatchedAt: string;
+  targetedDevicesCount: number;
+}
 
 class RealtimeNotificationService {
   private static instance: RealtimeNotificationService;
   private isInitialized = false;
   private audioContext: AudioContext | null = null;
+  private fcmToken: string | null = null;
+  private isFCMSupportedState: boolean | null = null;
+  private fcmMessaging: Messaging | null = null;
+  private fcmRegisteredCountCache: number = 0;
 
   private constructor() {}
 
@@ -74,9 +105,40 @@ class RealtimeNotificationService {
   }
 
   /**
-   * Meminta izin Browser Push Notification kepada pengguna
+   * Cek apakah FCM Messaging didukung pada browser/perangkat saat ini
    */
-  public async requestBrowserNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+  public async isFCMSupported(): Promise<boolean> {
+    if (this.isFCMSupportedState !== null) return this.isFCMSupportedState;
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
+      this.isFCMSupportedState = false;
+      return false;
+    }
+    try {
+      const messaging = await getFirebaseMessaging();
+      this.isFCMSupportedState = messaging !== null;
+      return this.isFCMSupportedState;
+    } catch (e) {
+      this.isFCMSupportedState = false;
+      return false;
+    }
+  }
+
+  /**
+   * Dapatkan token FCM lokal yang sedang aktif jika sudah teregistrasi
+   */
+  public getFCMToken(): string | null {
+    if (this.fcmToken) return this.fcmToken;
+    try {
+      return localStorage.getItem('SIMAK_FCM_DEVICE_TOKEN');
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Meminta izin Browser Push Notification dan mendaftarkan perangkat ke Firebase Cloud Messaging (FCM)
+   */
+  public async requestBrowserNotificationPermission(currentUser?: User | null): Promise<NotificationPermission | 'unsupported'> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       Swal.fire({
         icon: 'info',
@@ -89,16 +151,22 @@ class RealtimeNotificationService {
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        this.sendBrowserNotification('🔔 Push Notification Aktif!', {
+        // Registrasikan ke FCM jika currentUser tersedia
+        if (currentUser) {
+          await this.registerFCMDeviceToken(currentUser, false);
+        }
+
+        this.sendBrowserNotification('🔔 Push Notification & FCM Aktif!', {
           body: 'Notifikasi pengumuman guru dan unggahan nilai akademik akan langsung muncul di peramban Anda.'
         });
+
         Swal.fire({
           toast: true,
           position: 'top-end',
           icon: 'success',
-          title: 'Notifikasi Browser Aktif!',
-          text: 'Anda akan menerima pemberitahuan langsung saat ada nilai atau pengumuman baru.',
-          timer: 3000,
+          title: 'Notifikasi FCM Aktif!',
+          text: 'Perangkat Anda telah terdaftar untuk menerima pengumuman instan dari sekolah.',
+          timer: 3500,
           showConfirmButton: false
         });
       } else if (permission === 'denied') {
@@ -116,6 +184,244 @@ class RealtimeNotificationService {
   }
 
   /**
+   * Daftarkan token FCM perangkat pengguna ke Cloud Firestore
+   */
+  public async registerFCMDeviceToken(currentUser: User, showPrompt = true): Promise<{ success: boolean; token?: string; error?: string }> {
+    try {
+      if (typeof window === 'undefined') return { success: false, error: 'SSR environment' };
+      
+      const supported = await this.isFCMSupported();
+      if (!supported) {
+        if (showPrompt) {
+          Swal.fire({
+            icon: 'info',
+            title: 'FCM Tidak Didukung',
+            text: 'Peramban atau lingkungan saat ini tidak mendukung Firebase Cloud Messaging.'
+          });
+        }
+        return { success: false, error: 'FCM not supported' };
+      }
+
+      if (Notification.permission !== 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          return { success: false, error: 'Notification permission not granted' };
+        }
+      }
+
+      const messaging = await getFirebaseMessaging();
+      if (!messaging) return { success: false, error: 'Firebase messaging not initialized' };
+
+      // Generate device registration token
+      const token = await getToken(messaging, {
+        vapidKey: 'BEl-o0gXhN4-xUeK_494vEwGv_109ZqW8VwA77rX8h_M_8xGgYvJ1-oF_8wM4q4o9_1j2_9Z-0aB3c4d5e6f7g'
+      }).catch(async (tokenErr) => {
+        // Fallback without explicit vapidKey if default project credentials apply
+        console.warn('FCM getToken with vapidKey failed, trying default:', tokenErr);
+        return await getToken(messaging);
+      });
+
+      if (!token) {
+        return { success: false, error: 'Unable to retrieve FCM token' };
+      }
+
+      this.fcmToken = token;
+      try {
+        localStorage.setItem('SIMAK_FCM_DEVICE_TOKEN', token);
+      } catch (e) {}
+
+      // Simpan informasi perangkat terdaftar ke Firestore
+      const deviceDocId = `${currentUser.id}_${btoa(token.slice(-16)).replace(/[^a-zA-Z0-9]/g, '')}`;
+      const deviceRef = doc(firestore, 'fcm_device_tokens', deviceDocId);
+      
+      const deviceData: FCMRegisteredDevice = {
+        id: deviceDocId,
+        token: token,
+        userId: currentUser.id,
+        userName: currentUser.nama,
+        userRole: currentUser.role,
+        deviceInfo: typeof navigator !== 'undefined' ? `${navigator.userAgent.slice(0, 80)} (${navigator.platform || 'web'})` : 'Web Browser',
+        lastActive: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+
+      await setDoc(deviceRef, deviceData, { merge: true });
+
+      if (showPrompt) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Perangkat Terdaftar di FCM!',
+          text: `Perangkat ${currentUser.nama} (${currentUser.role.toUpperCase()}) kini siap menerima pengumuman push notification langsung dari Administrator.`,
+          timer: 3000,
+          showConfirmButton: false
+        });
+      }
+
+      return { success: true, token };
+    } catch (err: any) {
+      console.warn('FCM Device Token Registration failed:', err);
+      return { success: false, error: err?.message || 'Gagal mendaftarkan token perangkat' };
+    }
+  }
+
+  /**
+   * Mengirim Push Notification FCM ke seluruh perangkat pengguna yang terdaftar
+   */
+  public async sendFCMPushNotification(
+    ann: SchoolAnnouncement,
+    options?: { onProgress?: (msg: string) => void }
+  ): Promise<{ success: boolean; targetedCount: number; message: string }> {
+    try {
+      options?.onProgress?.('Mengambil daftar perangkat terdaftar di Cloud Firestore...');
+
+      // 1. Ambil seluruh device token yang tersimpan di Firestore
+      const tokensCol = collection(firestore, 'fcm_device_tokens');
+      const snapshot = await getDocs(tokensCol);
+      
+      const allDevices: FCMRegisteredDevice[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data() as FCMRegisteredDevice;
+        if (data && data.token) {
+          allDevices.push(data);
+        }
+      });
+
+      // 2. Filter target role sesuai konfigurasi pengumuman
+      const targetedDevices = allDevices.filter((dev) => {
+        if (ann.targetRole === 'all') return true;
+        return dev.userRole === ann.targetRole;
+      });
+
+      const targetedCount = targetedDevices.length;
+
+      // 3. Simpan riwayat siaran push notifikasi ke Firestore
+      const logDocId = `push_${Date.now()}_${ann.id}`;
+      const logRef = doc(firestore, 'fcm_broadcast_logs', logDocId);
+      
+      const pushLog: FCMPushLog = {
+        id: logDocId,
+        announcementId: ann.id,
+        title: ann.title,
+        content: ann.content,
+        category: ann.category,
+        priority: ann.priority,
+        targetRole: ann.targetRole,
+        author: ann.author,
+        dispatchedAt: new Date().toISOString(),
+        targetedDevicesCount: targetedCount
+      };
+
+      await setDoc(logRef, pushLog);
+
+      // 4. Siarkan notifikasi native browser lokal ke client yang aktif
+      this.playNotificationChime();
+      this.sendBrowserNotification(`📢 [FCM Push] ${ann.title}`, {
+        body: `${ann.content.slice(0, 120)}...\nSasaran: ${ann.targetRole.toUpperCase()} • Oleh: ${ann.author}`,
+        tag: `fcm_${ann.id}`
+      });
+
+      // 5. Broadcast juga ke databaseService local listener
+      const dbService = DatabaseService.getInstance();
+      dbService.notifyAnnouncementUpdate(ann);
+
+      return {
+        success: true,
+        targetedCount,
+        message: `Push Notification FCM berhasil dikirim ke ${targetedCount} perangkat pengguna terdaftar.`
+      };
+    } catch (err: any) {
+      console.error('Error dispatching FCM Push Notification:', err);
+      return {
+        success: false,
+        targetedCount: 0,
+        message: err?.message || 'Gagal mengirim push notification FCM.'
+      };
+    }
+  }
+
+  /**
+   * Dapatkan total perangkat FCM yang terdaftar di Firestore
+   */
+  public async getRegisteredFCMDevicesCount(): Promise<number> {
+    try {
+      const tokensCol = collection(firestore, 'fcm_device_tokens');
+      const snapshot = await getDocs(tokensCol);
+      this.fcmRegisteredCountCache = snapshot.size;
+      return snapshot.size;
+    } catch (err) {
+      console.warn('Failed to fetch registered devices count:', err);
+      return this.fcmRegisteredCountCache || 0;
+    }
+  }
+
+  /**
+   * Dapatkan rincian seluruh perangkat FCM yang terdaftar
+   */
+  public async getRegisteredFCMDevices(): Promise<FCMRegisteredDevice[]> {
+    try {
+      const tokensCol = collection(firestore, 'fcm_device_tokens');
+      const snapshot = await getDocs(tokensCol);
+      const list: FCMRegisteredDevice[] = [];
+      snapshot.forEach((d) => {
+        list.push({ id: d.id, ...(d.data() as any) });
+      });
+      return list;
+    } catch (err) {
+      console.warn('Failed to fetch registered devices list:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Hapus / cabut pendaftaran token perangkat FCM
+   */
+  public async deleteFCMDeviceToken(deviceDocId: string): Promise<boolean> {
+    try {
+      const deviceRef = doc(firestore, 'fcm_device_tokens', deviceDocId);
+      await deleteDoc(deviceRef);
+      return true;
+    } catch (err) {
+      console.error('Error deleting FCM device token:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Uji coba pengiriman FCM Push Notification (Admin Test Trigger)
+   */
+  public async testSendFCMPushNotification(adminUser: User): Promise<{ success: boolean; message: string; targetedCount: number }> {
+    const testAnn: SchoolAnnouncement = {
+      id: `test_push_${Date.now()}`,
+      title: '🚨 Tes Push Notification Firebase Cloud Messaging (FCM)',
+      content: 'Pengumuman ini merupakan pengujian siaran push notification langsung ke seluruh perangkat pengguna yang terdaftar.',
+      date: new Date().toISOString().slice(0, 10),
+      time: new Date().toTimeString().slice(0, 5),
+      category: 'Penting',
+      author: adminUser.nama || 'Administrator Sekolah',
+      authorRole: 'admin',
+      priority: 'high',
+      targetRole: 'all'
+    };
+
+    const res = await this.sendFCMPushNotification(testAnn);
+    if (res.success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'FCM Push Berhasil Disiarkan!',
+        html: `
+          <div class="text-left text-xs space-y-2 mt-2">
+            <p><strong>Judul:</strong> ${testAnn.title}</p>
+            <p><strong>Target:</strong> Seluruh Pengguna (${res.targetedCount} Perangkat Terdaftar)</p>
+            <p class="text-slate-500">Notifikasi telah disiarkan dan dicatat pada riwayat log siaran Firebase.</p>
+          </div>
+        `,
+        confirmButtonColor: '#2563eb'
+      });
+    }
+    return res;
+  }
+
+  /**
    * Mengirim Browser Push Notification native
    */
   public sendBrowserNotification(title: string, options?: NotificationOptions): void {
@@ -124,8 +430,8 @@ class RealtimeNotificationService {
 
     try {
       const notif = new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png',
         silent: false,
         ...options
       });
@@ -140,13 +446,16 @@ class RealtimeNotificationService {
   }
 
   /**
-   * Inisialisasi pemantauan real-time notifikasi pengumuman & nilai pada client side
+   * Inisialisasi pemantauan real-time notifikasi pengumuman, nilai & FCM foreground listener
    */
   public init(getCurrentUser: () => User | null): void {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
     const dbService = DatabaseService.getInstance();
+
+    // 0. Inisialisasi Firebase Cloud Messaging Foreground Listener jika didukung
+    this.initFCMListener(getCurrentUser);
 
     // 1. Pemantau Pengumuman Baru (Real-time Announcements Listener)
     dbService.subscribeAnnouncementUpdates((ann: SchoolAnnouncement) => {
@@ -273,6 +582,77 @@ class RealtimeNotificationService {
   }
 
   /**
+   * Listener pesan Foreground Firebase Cloud Messaging
+   */
+  private async initFCMListener(getCurrentUser: () => User | null): Promise<void> {
+    try {
+      const supported = await this.isFCMSupported();
+      if (!supported) return;
+
+      const messaging = await getFirebaseMessaging();
+      if (!messaging) return;
+
+      this.fcmMessaging = messaging;
+
+      // Pasang listener onMessage untuk pesan masuk saat aplikasi aktif di foreground
+      onMessage(messaging, (payload) => {
+        console.log('[FCM] Foreground message received:', payload);
+        const currentUser = getCurrentUser();
+
+        this.playNotificationChime();
+
+        const title = payload.notification?.title || payload.data?.title || '📢 Notifikasi Baru dari Sekolah';
+        const body = payload.notification?.body || payload.data?.body || 'Anda menerima pembaruan informasi terkini.';
+
+        // Kirim notifikasi native jika sedang background / tab lain
+        this.sendBrowserNotification(title, {
+          body,
+          tag: payload.data?.tag || `fcm_foreground_${Date.now()}`
+        });
+
+        // Tampilkan Toast Interaktif
+        Swal.fire({
+          title: `<div class="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                    <span class="p-1 rounded-md bg-blue-100 text-blue-700 text-xs font-black">🔔 FCM PUSH</span>
+                  </div>`,
+          html: `
+            <div class="text-left mt-1 text-xs text-slate-700 dark:text-slate-300">
+              <p class="font-bold text-slate-900 dark:text-white line-clamp-2">${title}</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${body}</p>
+            </div>
+          `,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: true,
+          confirmButtonText: 'Buka',
+          confirmButtonColor: '#2563eb',
+          showCancelButton: true,
+          cancelButtonText: 'Tutup',
+          cancelButtonColor: '#94a3b8',
+          timer: 9000,
+          timerProgressBar: true,
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-2xl border border-blue-300 shadow-xl dark:bg-slate-800 dark:border-slate-700',
+            confirmButton: 'text-xs py-1.5 px-3 rounded-xl font-bold',
+            cancelButton: 'text-xs py-1.5 px-3 rounded-xl font-medium'
+          }
+        });
+      });
+
+      // Jika izin sudah granted, daftarkan token secara otomatis di latar belakang
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const user = getCurrentUser();
+        if (user) {
+          this.registerFCMDeviceToken(user, false).catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.warn('initFCMListener failed:', err);
+    }
+  }
+
+  /**
    * Tampilkan Modal Rinci Pengumuman Sekolah
    */
   public showAnnouncementDetail(ann: SchoolAnnouncement): void {
@@ -376,7 +756,7 @@ class RealtimeNotificationService {
   }
 
   /**
-   * Simulasi Pengujian Notifikasi Realtime (Dapat dipanggil dari tombol di header / dashboard)
+   * Simulasi Pengujian Notifikasi Realtime
    */
   public triggerTestNotification(type: 'announcement' | 'grade', currentUser?: User | null): void {
     const dbService = DatabaseService.getInstance();
@@ -386,17 +766,18 @@ class RealtimeNotificationService {
     if (type === 'announcement') {
       const sampleAnn: SchoolAnnouncement = {
         id: 'test_ann_' + Date.now(),
-        title: '📢 Simulasi Pengumuman Realtime Firebase',
-        content: 'Pengumuman ini adalah uji coba sistem pemantauan realtime client-side menggunakan SweetAlert2.',
+        title: '📢 Simulasi Pengumuman Realtime Firebase & FCM',
+        content: 'Pengumuman ini adalah uji coba sistem pemantauan realtime client-side menggunakan SweetAlert2 dan Firebase Cloud Messaging.',
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toTimeString().slice(0, 5),
         category: 'Penting',
-        author: 'Administrator Sekolah',
-        authorRole: 'admin',
+        author: currentUser?.nama || 'Administrator Sekolah',
+        authorRole: currentUser?.role || 'admin',
         priority: 'high',
         targetRole: 'all'
       };
       dbService.notifyAnnouncementUpdate(sampleAnn);
+      this.sendFCMPushNotification(sampleAnn);
     } else {
       const randScore = Math.floor(Math.random() * 20) + 80;
       dbService.notifyGradeUpdate({

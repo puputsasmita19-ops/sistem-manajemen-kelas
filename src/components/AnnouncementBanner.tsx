@@ -19,7 +19,10 @@ import {
   ArrowLeft,
   Users,
   School,
-  BookOpen
+  BookOpen,
+  Smartphone,
+  Radio,
+  Send
 } from 'lucide-react';
 import { navigationBackService } from '../services/navigationBackService';
 
@@ -39,6 +42,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   const [activeIdx, setActiveIdx] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<SchoolAnnouncement | null>(null);
+  const [sendFCMPush, setSendFCMPush] = useState<boolean>(true);
+  const [registeredFCMDevicesCount, setRegisteredFCMDevicesCount] = useState<number>(0);
 
   const classes = dbService.getAllClasses();
   const myHomeroom = currentUser && currentUser.role === 'wali_kelas' ? dbService.getHomeroomClass(currentUser.id) : null;
@@ -69,8 +74,16 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     }
   };
 
+  const loadFCMDevicesCount = async () => {
+    try {
+      const count = await realtimeNotificationService.getRegisteredFCMDevicesCount();
+      setRegisteredFCMDevicesCount(count);
+    } catch (e) {}
+  };
+
   useEffect(() => {
     loadAnnouncements();
+    loadFCMDevicesCount();
 
     // Subscribe to realtime announcement additions
     const unsubscribe = dbService.onAnnouncementAdded((newAnn) => {
@@ -115,6 +128,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   // Intercept tombol kembali saat modal buat pengumuman baru aktif
   useEffect(() => {
     if (!isModalOpen) return;
+    loadFCMDevicesCount();
     const unregister = navigationBackService.registerHandler('announcement_create_modal', () => {
       setIsModalOpen(false);
       return true;
@@ -122,7 +136,7 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     return () => unregister();
   }, [isModalOpen]);
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) {
       Swal.fire({ icon: 'warning', title: 'Mohon isi judul dan isi pengumuman' });
@@ -145,7 +159,8 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
       audienceLabel = `Siswa & Wali Kelas ${targetCls?.nama_kelas || 'Kelas'}`;
     }
 
-    dbService.createAnnouncement({
+    const newAnnouncement: SchoolAnnouncement = {
+      id: 'ann_' + Date.now(),
       title: newTitle.trim(),
       content: newContent.trim(),
       category: newCategory,
@@ -157,19 +172,37 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
       scope: newScope,
       targetClassId: newTargetClassId,
       targetClassName: targetCls?.nama_kelas,
-      audienceLabel
-    });
+      audienceLabel,
+      date: new Date().toISOString().slice(0, 10),
+      time: new Date().toTimeString().slice(0, 5)
+    };
+
+    dbService.createAnnouncement(newAnnouncement);
+
+    // Kirim Push Notification FCM ke perangkat terdaftar jika opsi aktif
+    let fcmSummary = '';
+    if (sendFCMPush) {
+      try {
+        const fcmResult = await realtimeNotificationService.sendFCMPushNotification(newAnnouncement);
+        if (fcmResult.success && fcmResult.targetedCount > 0) {
+          fcmSummary = ` • Disiarkan ke ${fcmResult.targetedCount} perangkat FCM aktif.`;
+        }
+      } catch (fcmErr) {
+        console.warn('FCM dispatch error:', fcmErr);
+      }
+    }
 
     setIsModalOpen(false);
     setNewTitle('');
     setNewContent('');
     loadAnnouncements();
+    loadFCMDevicesCount();
 
     Swal.fire({
       icon: 'success',
       title: 'Pengumuman Diterbitkan!',
-      text: `Informasi telah disiarkan ke ${audienceLabel}.`,
-      timer: 2000,
+      text: `Informasi telah disiarkan ke ${audienceLabel}${fcmSummary}`,
+      timer: 2500,
       showConfirmButton: false
     });
   };
@@ -732,6 +765,32 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
                   onChange={(e) => setNewContent(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
+              </div>
+
+              {/* FCM Push Notification Section */}
+              <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={sendFCMPush}
+                      onChange={(e) => setSendFCMPush(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                      Kirim Push Notifikasi FCM ke Perangkat Pengguna
+                    </span>
+                  </label>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                    {registeredFCMDevicesCount} Perangkat Terdaftar
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
+                  {sendFCMPush
+                    ? `Notifikasi push otomatis disiarkan langsung ke ponsel/perangkat pengguna target yang tersambung melalui Firebase Cloud Messaging.`
+                    : `Push notification dinonaktifkan (hanya ditampilkan di papan pengumuman internal).`}
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">

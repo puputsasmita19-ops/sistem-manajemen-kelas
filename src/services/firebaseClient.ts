@@ -2,15 +2,33 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, doc, getDocFromServer, collection, getDocs, writeBatch, setDoc } from 'firebase/firestore';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported, Messaging } from 'firebase/messaging';
 import { firebaseConfig } from './firebaseConfig';
 
 // Initialize Firebase App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Cloud Firestore, Auth & Firebase Storage
 export const firestore = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+// Lazy initialize Firebase Cloud Messaging instance
+let messagingInstance: Messaging | null = null;
+export async function getFirebaseMessaging(): Promise<Messaging | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const supported = await isSupported();
+    if (!supported) return null;
+    if (!messagingInstance) {
+      messagingInstance = getMessaging(app);
+    }
+    return messagingInstance;
+  } catch (e) {
+    console.warn('Firebase Messaging is not supported in this environment:', e);
+    return null;
+  }
+}
 
 /**
  * Mengirim email pemulihan / reset kata sandi melalui Firebase Auth

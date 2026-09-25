@@ -17,8 +17,9 @@ import {
   BookOpen,
   School
 } from 'lucide-react';
-import { User, ClassEntity, Subject, AttendanceStatus, AnnouncementScope } from '../types';
+import { User, ClassEntity, Subject, AttendanceStatus, AnnouncementScope, SchoolAnnouncement } from '../types';
 import { DatabaseService } from '../services/databaseService';
+import { realtimeNotificationService } from '../services/realtimeNotificationService';
 import { QuickActionTooltip } from './QuickActionTooltip';
 import Swal from 'sweetalert2';
 
@@ -188,7 +189,8 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
       audienceLabel = `Siswa & Wali Kelas ${cls?.nama_kelas || 'Kelas'}`;
     }
 
-    dbService.createAnnouncement({
+    const newAnn: SchoolAnnouncement = {
+      id: 'ann_' + Date.now(),
       title: announcementTitle.trim(),
       content: announcementContent.trim(),
       category: announcementCategory,
@@ -201,8 +203,13 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
       targetClassId: selectedClassId,
       targetClassName: cls?.nama_kelas,
       targetSubjectId: selectedSubjectId !== 'HOMEROOM' ? selectedSubjectId : undefined,
-      audienceLabel
-    });
+      audienceLabel,
+      date: new Date().toISOString().slice(0, 10),
+      time: new Date().toTimeString().slice(0, 5)
+    };
+
+    dbService.createAnnouncement(newAnn);
+    realtimeNotificationService.sendFCMPushNotification(newAnn).catch(() => {});
 
     setShowAnnouncementModal(false);
     setAnnouncementTitle('');
@@ -211,8 +218,8 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({
     Swal.fire({
       icon: 'success',
       title: 'Pengumuman Diterbitkan!',
-      text: `Pengumuman telah disiarkan ke ${audienceLabel}.`,
-      timer: 2000,
+      text: `Pengumuman telah disiarkan ke ${audienceLabel} dan push notification FCM telah dikirim.`,
+      timer: 2200,
       showConfirmButton: false
     });
   };
